@@ -19,7 +19,7 @@ import java.util.zip.ZipInputStream;
 public class ReleaseImporter {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
-	private final Long2ObjectMap<Concept> concepts;
+	private Long2ObjectMap<Concept> concepts;
 
 	public ReleaseImporter() {
 		concepts = new Long2ObjectOpenHashMap<>();
@@ -54,7 +54,7 @@ public class ReleaseImporter {
 			logger.info("Closing Lucene writer.");
 		}
 
-		concepts.clear();
+		concepts = null;
 		System.gc();
 		logger.info("Written to Lucene. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 
