@@ -42,14 +42,16 @@ public class ReleaseReader {
 		return concepts;
 	}
 
-	public String[] retrieveConcept(String conceptId) throws ParseException, IOException, NotFoundException {
+	public String[] retrieveConceptAncestors(String conceptId) throws ParseException, IOException, NotFoundException {
+		return getConceptDoc(conceptId).getValues(Concept.ANCESTOR);
+	}
+
+	private Document getConceptDoc(String conceptId) throws IOException, NotFoundException {
 		final Long idLong = new Long(conceptId);
 		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ID, idLong, idLong, true, true), 1);
-//		final TopDocs docs = isearcher.search(parser.parse(conceptId), 1);
 		if (docs.totalHits < 1) {
 			throw new NotFoundException("Concept with id " + conceptId + " could not be found.");
 		}
-		final Document document = indexSearcher.doc(docs.scoreDocs[0].doc);
-		return document.getValues(Concept.ANCESTOR);
+		return indexSearcher.doc(docs.scoreDocs[0].doc);
 	}
 }
