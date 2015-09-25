@@ -19,17 +19,24 @@ public class ConceptController {
 	private ReleaseReader releaseReader;
 
 	@RequestMapping
-	@ApiOperation(value = "List concept IDs", notes = "List concept IDs")
+	@ApiOperation(value = "List concept IDs", notes = "List all concept identifiers.")
 	@ResponseBody
 	public List<String> retrieveConcepts(@RequestParam(defaultValue = "50") int limit) throws IOException, ParseException {
 		return releaseReader.retrieveConcepts(limit);
 	}
 
 	@RequestMapping("/{conceptId}/ancestors")
-	@ApiOperation(value = "List concept ancestor IDs", notes = "List all concept ancestor IDs including those from multiple parents.")
+	@ApiOperation(value = "List concept ancestor IDs", notes = "List the identifiers of all ancestors of the given concept, including those from multiple parents.")
 	@ResponseBody
 	public String[] retrieveConceptAncestors(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
 		return releaseReader.retrieveConceptAncestors(conceptId);
+	}
+
+	@RequestMapping("/{conceptId}/descendants")
+	@ApiOperation(value = "List concept descendant IDs", notes = "List the identifiers of all descendants of the given concept.")
+	@ResponseBody
+	public List<String> retrieveConceptDescendants(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
+		return releaseReader.retrieveConceptDescendants(conceptId);
 	}
 
 }

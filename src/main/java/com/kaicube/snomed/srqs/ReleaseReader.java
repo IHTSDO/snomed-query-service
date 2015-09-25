@@ -37,13 +37,27 @@ public class ReleaseReader {
 		List<String> concepts = new ArrayList<>();
 		final TopDocs topDocs = indexSearcher.search(parser.parse("*"), limit);
 		for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-			concepts.add(indexSearcher.doc(scoreDoc.doc).get(Concept.ID));
+			concepts.add(getId(scoreDoc));
 		}
 		return concepts;
 	}
 
 	public String[] retrieveConceptAncestors(String conceptId) throws ParseException, IOException, NotFoundException {
 		return getConceptDoc(conceptId).getValues(Concept.ANCESTOR);
+	}
+
+	public List<String> retrieveConceptDescendants(String conceptId) throws ParseException, IOException {
+		List<String> concepts = new ArrayList<>();
+		final Long idLong = new Long(conceptId);
+		final TopDocs topDocs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ANCESTOR, idLong, idLong, true, true), Integer.MAX_VALUE);
+		for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+			concepts.add(getId(scoreDoc));
+		}
+		return concepts;
+	}
+
+	private String getId(ScoreDoc scoreDoc) throws IOException {
+		return indexSearcher.doc(scoreDoc.doc).get(Concept.ID);
 	}
 
 	private Document getConceptDoc(String conceptId) throws IOException, NotFoundException {
