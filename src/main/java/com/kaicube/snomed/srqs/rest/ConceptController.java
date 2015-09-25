@@ -1,6 +1,6 @@
 package com.kaicube.snomed.srqs.rest;
 
-import com.kaicube.snomed.srqs.ReleaseReader;
+import com.kaicube.snomed.srqs.service.ReleaseReader;
 import com.kaicube.snomed.srqs.exceptions.NotFoundException;
 import com.wordnik.swagger.annotations.ApiOperation;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -19,10 +19,11 @@ public class ConceptController {
 	private ReleaseReader releaseReader;
 
 	@RequestMapping
-	@ApiOperation(value = "List concept IDs", notes = "List all concept identifiers.")
+	@ApiOperation(value = "List concept IDs", notes = "Minimal SNOMED CT Expression Constraint queries can be used. " +
+			"Only constraint operators are supported (<, <<, >, >>). Example: < 39928001")
 	@ResponseBody
-	public List<String> retrieveConcepts(@RequestParam(defaultValue = "50") int limit) throws IOException, ParseException {
-		return releaseReader.retrieveConcepts(limit);
+	public List<String> retrieveConcepts(@RequestParam String ecQuery, @RequestParam(defaultValue = "50") int limit) throws IOException, ParseException, NotFoundException {
+		return releaseReader.retrieveConcepts(ecQuery, limit);
 	}
 
 	@RequestMapping("/{conceptId}/ancestors")

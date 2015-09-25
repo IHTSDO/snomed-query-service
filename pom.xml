@@ -57,8 +57,22 @@
 			<artifactId>swagger-springmvc</artifactId>
 			<version>0.9.5</version>
 		</dependency>
+		<dependency>
+			<groupId>com.coasttocoastresearch</groupId>
+			<artifactId>agp</artifactId>
+			<version>1.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.antlr</groupId>
+			<artifactId>antlr4-runtime</artifactId>
+			<version>4.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
-	
 	<build>
 		<plugins>
 			<plugin>
@@ -67,6 +81,16 @@
 			</plugin>
 		</plugins>
 	</build>
-	
-
+	<repositories>
+		<repository>
+			<id>kaicode-github</id>
+			<url>https://raw.githubusercontent.com/kaicode/maven-repo/master/</url>
+			<releases>
+				<enabled>true</enabled>
+			</releases>
+			<snapshots>
+				<enabled>false</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
 </project>

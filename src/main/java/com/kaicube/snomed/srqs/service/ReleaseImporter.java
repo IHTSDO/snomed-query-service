@@ -1,4 +1,4 @@
-package com.kaicube.snomed.srqs;
+package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;

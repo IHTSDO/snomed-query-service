@@ -1,6 +1,6 @@
 package com.kaicube.snomed.srqs.rest;
 
-import com.kaicube.snomed.srqs.ReleaseReader;
+import com.kaicube.snomed.srqs.service.ReleaseReader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;

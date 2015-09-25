@@ -1,4 +1,4 @@
-package com.kaicube.snomed.srqs;
+package com.kaicube.snomed.srqs.service;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
