@@ -1,13 +1,16 @@
 package com.kaicube.snomed.srqs;
 
+import com.kaicube.snomed.srqs.domain.Concept;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
+import java.util.Set;
 
 public class ReleaseWriter implements AutoCloseable {
 
@@ -19,9 +22,14 @@ public class ReleaseWriter implements AutoCloseable {
 	}
 
 
-	public void addConcept(String id) throws IOException {
+	public void addConcept(Concept concept) throws IOException {
 		Document doc = new Document();
-		doc.add(new Field("id", id, TextField.TYPE_STORED));
+		doc.add(new LongField(Concept.ID, concept.getId(), Field.Store.YES));
+		doc.add(new StringField(Concept.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
+		final Set<Long> ancestorIds = concept.getAncestorIds();
+		for (Long ancestorId : ancestorIds) {
+			doc.add(new LongField(Concept.ANCESTOR, ancestorId, Field.Store.YES));
+		}
 		iwriter.addDocument(doc);
 	}
 

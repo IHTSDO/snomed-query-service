@@ -8,7 +8,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>demo</name>
+	<name>Snomed CT Release Query Service</name>
 	<description>Snomed CT Release Query Service</description>
 
 	<parent>
@@ -46,6 +46,11 @@
 			<groupId>org.apache.lucene</groupId>
 			<artifactId>lucene-queryparser</artifactId>
 			<version>4.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>fastutil</groupId>
+			<artifactId>fastutil</artifactId>
+			<version>5.0.9</version>
 		</dependency>
 	</dependencies>
 	
