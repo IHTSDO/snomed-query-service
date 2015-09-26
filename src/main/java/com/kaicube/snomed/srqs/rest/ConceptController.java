@@ -28,6 +28,15 @@ public class ConceptController {
 		return releaseReader.retrieveConcepts(ecQuery, limit);
 	}
 
+	@RequestMapping("/{conceptId}")
+	@ApiOperation(value = "Retrieve concept",
+			notes = "Retrieve a concept by its identifier.",
+			response = ConceptResult.class)
+	@ResponseBody
+	public ConceptResult retrieveConcept(@PathVariable String conceptId) throws IOException, NotFoundException {
+		return releaseReader.retrieveConcept(conceptId);
+	}
+
 	@RequestMapping("/{conceptId}/ancestors")
 	@ApiOperation(value = "List concept ancestors",
 			notes = "List all ancestors of the given concept, including those from multiple parents.",

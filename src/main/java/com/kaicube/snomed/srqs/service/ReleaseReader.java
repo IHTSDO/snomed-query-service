@@ -46,6 +46,10 @@ public class ReleaseReader {
 		return indexSearcher.collectionStatistics(Concept.ID).docCount();
 	}
 
+	public ConceptResult retrieveConcept(String conceptId) throws IOException, NotFoundException {
+		return getConceptResult(getConceptDocByConceptId(conceptId));
+	}
+
 	public List<ConceptResult> retrieveConcepts(String ecQuery, int limit) throws ParseException, IOException, NotFoundException {
 		List<ConceptResult> concepts = new ArrayList<>();
 
