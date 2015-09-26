@@ -8,4 +8,6 @@ Support for simple SNOMED CT Expression Constraint Language queries
 
 Example EC query: [http://srqs.kaicube.com/concepts?ecQuery=<<307824009](http://srqs.kaicube.com/concepts?ecQuery=<<307824009)
 
+[![Build Status](https://travis-ci.org/kaicode/srqs.svg)](https://travis-ci.org/kaicube/srqs)
+
 Apache 2.0 License
