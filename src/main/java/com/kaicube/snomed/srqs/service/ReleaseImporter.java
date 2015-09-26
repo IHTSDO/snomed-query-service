@@ -2,6 +2,8 @@ package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import com.kaicube.snomed.srqs.domain.rf2.ComponentFields;
+import com.kaicube.snomed.srqs.domain.rf2.DescriptionFields;
 import com.kaicube.snomed.srqs.domain.rf2.RelationshipFields;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -34,6 +36,8 @@ public class ReleaseImporter {
 					loadConcepts(zipInputStream);
 				} else if (nextEntry.getName().contains("sct2_Relationship_Snapshot")) {
 					loadRelationships(zipInputStream);
+				} else if (nextEntry.getName().contains("sct2_Description_Snapshot")) {
+					loadDescriptions(zipInputStream);
 				}
 			}
 		}
@@ -44,10 +48,12 @@ public class ReleaseImporter {
 		try (final ReleaseWriter releaseWriter = new ReleaseWriter(releaseStore)) {
 			long conceptsAdded = 0;
 			for (Concept concept : concepts.values()) {
-				releaseWriter.addConcept(concept);
-				conceptsAdded++;
-				if (conceptsAdded % 100000 == 0) {
-					logger.info("{} concepts added to Lucene.", conceptsAdded);
+				if (concept.isActive()) {
+					releaseWriter.addConcept(concept);
+					conceptsAdded++;
+					if (conceptsAdded % 100000 == 0) {
+						logger.info("{} active concepts added to Lucene.", conceptsAdded);
+					}
 				}
 			}
 			logger.info("{} concepts added to Lucene in total.", conceptsAdded);
@@ -61,11 +67,21 @@ public class ReleaseImporter {
 		return releaseStore;
 	}
 
+	private void loadConcepts(ZipInputStream zipInputStream) throws IOException {
+		readLines(zipInputStream, new ValuesHandler() {
+			@Override
+			public void handle(String[] values) {
+				final Concept concept = getCreateConcept(new Long(values[ComponentFields.id]));
+				concept.setActive("1".equals(values[ComponentFields.active]));
+			}
+		}, "concepts");
+	}
+
 	private void loadRelationships(ZipInputStream zipInputStream) throws IOException {
 		readLines(zipInputStream, new ValuesHandler() {
 			@Override
 			public void handle(String[] values) {
-				if (values[RelationshipFields.active].equals("1") && new Long(values[RelationshipFields.typeId]).equals(ConceptConstants.isA)){
+				if (values[RelationshipFields.active].equals("1") && values[RelationshipFields.typeId].equals(ConceptConstants.isA)) {
 					final Concept concept = getCreateConcept(values[RelationshipFields.sourceId]);
 					concept.addParent(getCreateConcept(values[RelationshipFields.destinationId]));
 				}
@@ -73,15 +89,16 @@ public class ReleaseImporter {
 		}, "relationships");
 	}
 
-	private void loadConcepts(ZipInputStream zipInputStream) throws IOException {
+	private void loadDescriptions(ZipInputStream zipInputStream) throws IOException {
 		readLines(zipInputStream, new ValuesHandler() {
 			@Override
 			public void handle(String[] values) {
-				// id	effectiveTime	active	moduleId	definitionStatusId
-				final Concept concept = getCreateConcept(new Long(values[0]));
-				concept.setActive("1".equals(values[2]));
+				if ("1".equals(values[DescriptionFields.active]) && ConceptConstants.FSN.equals(values[DescriptionFields.typeId])) {
+					final Concept concept = getCreateConcept(new Long(values[DescriptionFields.conceptId]));
+					concept.setFsn(values[DescriptionFields.term]);
+				}
 			}
-		}, "concepts");
+		}, "descriptions");
 	}
 
 	private Concept getCreateConcept(String id) {

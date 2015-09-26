@@ -21,11 +21,11 @@ public class ReleaseWriter implements AutoCloseable {
 		iwriter = new IndexWriter(releaseStore.getDirectory(), config);
 	}
 
-
 	public void addConcept(Concept concept) throws IOException {
 		Document doc = new Document();
 		doc.add(new LongField(Concept.ID, concept.getId(), Field.Store.YES));
 		doc.add(new StringField(Concept.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
+		doc.add(new StringField(Concept.FSN, concept.getFsn(), Field.Store.YES));
 		final Set<Long> ancestorIds = concept.getAncestorIds();
 		for (Long ancestorId : ancestorIds) {
 			doc.add(new LongField(Concept.ANCESTOR, ancestorId, Field.Store.YES));
