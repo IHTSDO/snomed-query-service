@@ -2,7 +2,7 @@
 A Spring Boot webapp which loads snomed from the distribution zip into a Lucene index and allows basic queries.
 This is a pet project and is not supported by IHTSDO.
 
-Demo installation here: http://srqs.kaicube.com/concepts
+Demo installation here: http://srqs.kaicube.com/
 
 Support for simple SNOMED CT Expression Constraint Language queries
 
