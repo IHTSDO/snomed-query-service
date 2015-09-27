@@ -6,7 +6,9 @@ Demo installation here: http://srqs.kaicube.com/
 
 Support for simple SNOMED CT Expression Constraint Language queries
 
-Example EC query: [http://srqs.kaicube.com/concepts?ecQuery=<<307824009](http://srqs.kaicube.com/concepts?ecQuery=<<307824009)
+Example EC queries:
+* Descendant of Administrative statuses (finding) [http://srqs.kaicube.com/concepts?ecQuery=<<307824009](http://srqs.kaicube.com/concepts?ecQuery=<307824009)
+* Ancestor or self of Fitting of contact lens (procedure) having attribute Method (attribute) [http://srqs.kaicube.com/concepts?ecQuery=>>448642000:260686004](http://srqs.kaicube.com/concepts?ecQuery=>>448642000:260686004)
 
 [![Build Status](https://travis-ci.org/kaicode/srqs.svg)](https://travis-ci.org/kaicube/srqs)
 
