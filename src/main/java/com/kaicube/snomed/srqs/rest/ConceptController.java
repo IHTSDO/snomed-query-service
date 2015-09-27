@@ -24,8 +24,8 @@ public class ConceptController {
 			"Only constraint operators are supported (<, <<, >, >>). Example: < 39928001",
 			response = ConceptResult.class, responseContainer = "List")
 	@ResponseBody
-	public List<ConceptResult> retrieveConcepts(@RequestParam String ecQuery, @RequestParam(defaultValue = "50") int limit) throws IOException, ParseException, NotFoundException {
-		return releaseReader.retrieveConcepts(ecQuery, limit);
+	public List<ConceptResult> retrieveConcepts(@RequestParam String ecQuery) throws IOException, ParseException, NotFoundException {
+		return releaseReader.retrieveConcepts(ecQuery);
 	}
 
 	@RequestMapping("/{conceptId}")
