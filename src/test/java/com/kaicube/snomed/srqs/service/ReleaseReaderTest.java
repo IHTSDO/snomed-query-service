@@ -15,33 +15,38 @@ public class ReleaseReaderTest {
 
 	@Test
 	public void testParseQuery() throws Exception {
-		final ReleaseReader.ExpressionConstraintListener listener = releaseReader.parseQuery("39928001");
-		Assert.assertEquals("39928001", listener.focusConcept);
-		Assert.assertFalse(listener.descendantOf);
-		Assert.assertFalse(listener.ancestorOf);
-		Assert.assertTrue(listener.includeSelf);
+		final ELQuery query = releaseReader.parseQuery("39928001");
+		Assert.assertEquals("39928001", query.getFocusConcept());
+		Assert.assertFalse(query.isDescendantOf());
+		Assert.assertFalse(query.isAncestorOf());
+		Assert.assertTrue(query.isIncludeSelf());
 	}
 
 	@Test
 	public void testParseDescendantOfQuery() throws Exception {
-		final ReleaseReader.ExpressionConstraintListener listener = releaseReader.parseQuery("< 39928001");
-		Assert.assertEquals("39928001", listener.focusConcept);
-		Assert.assertTrue(listener.descendantOf);
-		Assert.assertFalse(listener.ancestorOf);
-		Assert.assertFalse(listener.includeSelf);
+		final ELQuery query = releaseReader.parseQuery("< 39928001");
+		Assert.assertEquals("39928001", query.getFocusConcept());
+		Assert.assertTrue(query.isDescendantOf());
+		Assert.assertFalse(query.isAncestorOf());
+		Assert.assertFalse(query.isIncludeSelf());
 	}
 
 	@Test
 	public void testParseDescendantOrSelfOfQuery() throws Exception {
-		final ReleaseReader.ExpressionConstraintListener listener = releaseReader.parseQuery("<< 39928001");
-		Assert.assertEquals("39928001", listener.focusConcept);
-		Assert.assertTrue(listener.descendantOf);
-		Assert.assertFalse(listener.ancestorOf);
-		Assert.assertTrue(listener.includeSelf);
+		final ELQuery query = releaseReader.parseQuery("<< 39928001");
+		Assert.assertEquals("39928001", query.getFocusConcept());
+		Assert.assertTrue(query.isDescendantOf());
+		Assert.assertFalse(query.isAncestorOf());
+		Assert.assertTrue(query.isIncludeSelf());
+	}
+
+	@Test
+	public void testParseRefinedExpressionConstraintWithName() throws Exception {
+		releaseReader.parseQuery("<< 39928001 : 116676008");
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
-	public void testParseRefinedExpressionConstraint() throws Exception {
+	public void testParseRefinedExpressionConstraintWithNameAndValue() throws Exception {
 		releaseReader.parseQuery("<< 39928001 : 116676008 = 79654002");
 	}
 }

@@ -81,9 +81,14 @@ public class ReleaseImporter {
 		readLines(zipInputStream, new ValuesHandler() {
 			@Override
 			public void handle(String[] values) {
-				if (values[RelationshipFields.active].equals("1") && values[RelationshipFields.typeId].equals(ConceptConstants.isA)) {
+				if (values[RelationshipFields.active].equals("1")) {
 					final Concept concept = getCreateConcept(values[RelationshipFields.sourceId]);
-					concept.addParent(getCreateConcept(values[RelationshipFields.destinationId]));
+					final String type = values[RelationshipFields.typeId];
+					final String value = values[RelationshipFields.destinationId];
+					concept.addAttribute(type, value);
+					if (type.equals(ConceptConstants.isA)) {
+						concept.addParent(getCreateConcept(value));
+					}
 				}
 			}
 		}, "relationships");

@@ -47,33 +47,28 @@ public class ReleaseReader {
 	}
 
 	public ConceptResult retrieveConcept(String conceptId) throws IOException, NotFoundException {
-		return getConceptResult(getConceptDocByConceptId(conceptId));
+		return getConceptResult(getConceptDocument(conceptId));
 	}
 
-	public List<ConceptResult> retrieveConcepts(String ecQuery, int limit) throws ParseException, IOException, NotFoundException {
+	public List<ConceptResult> retrieveConcepts(String ecQuery) throws ParseException, IOException, NotFoundException {
 		List<ConceptResult> concepts = new ArrayList<>();
 
 		if (ecQuery != null && !ecQuery.isEmpty()) {
-			final ExpressionConstraintListener listener = parseQuery(ecQuery);
-			final String focusConcept = listener.focusConcept;
-			if (listener.includeSelf) {
-				concepts.add(getConceptResult(getConceptDocByConceptId(focusConcept)));
+			final ELQuery query = parseQuery(ecQuery);
+			final String focusConcept = query.getFocusConcept();
+			if (query.isIncludeSelf()) {
+				conditionalAdd(getConceptDocument(focusConcept), concepts, query.getAttributeName());
 			}
-			if (listener.descendantOf) {
-			 	concepts.addAll(retrieveConceptDescendants(focusConcept));
-			} else if (listener.ancestorOf) {
-				concepts.addAll(retrieveConceptAncestors(focusConcept));
-			}
-		} else {
-			final TopDocs topDocs = indexSearcher.search(this.parser.parse("*"), limit);
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				concepts.add(getConceptResult(getConceptDocument(scoreDoc)));
+			if (query.isDescendantOf()) {
+			 	concepts.addAll(retrieveConceptDescendants(focusConcept, query.getAttributeName()));
+			} else if (query.isAncestorOf()) {
+				concepts.addAll(retrieveConceptAncestors(focusConcept, query.getAttributeName()));
 			}
 		}
 		return concepts;
 	}
 
-	protected ExpressionConstraintListener parseQuery(String ecQuery) {
+	protected ELQuery parseQuery(String ecQuery) {
 		final ExpressionConstraintLexer lexer = new ExpressionConstraintLexer(new ANTLRInputStream(ecQuery));
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
 		final ExpressionConstraintParser parser = new ExpressionConstraintParser(tokens);
@@ -82,26 +77,40 @@ public class ReleaseReader {
 		final ParseTreeWalker walker = new ParseTreeWalker();
 		final ExpressionConstraintListener listener = new ExpressionConstraintListener();
 		walker.walk(listener, tree);
-		return listener;
+		return listener.getElQuery();
 	}
 
 	public List<ConceptResult> retrieveConceptAncestors(String conceptId) throws ParseException, IOException, NotFoundException {
+		return retrieveConceptAncestors(conceptId, null);
+	}
+
+	private List<ConceptResult> retrieveConceptAncestors(String conceptId, String attributeName) throws ParseException, IOException, NotFoundException {
 		List<ConceptResult> concepts = new ArrayList<>();
-		final String[] ancestorIds = getConceptDocByConceptId(conceptId).getValues(Concept.ANCESTOR);
+		final String[] ancestorIds = getConceptDocument(conceptId).getValues(Concept.ANCESTOR);
 		for (String ancestorId : ancestorIds) {
-			concepts.add(getConceptResult(getConceptDocByConceptId(ancestorId)));
+			conditionalAdd(getConceptDocument(ancestorId), concepts, attributeName);
 		}
 		return concepts;
 	}
 
 	public List<ConceptResult> retrieveConceptDescendants(String conceptId) throws ParseException, IOException {
+		return retrieveConceptDescendants(conceptId, null);
+	}
+
+	private List<ConceptResult> retrieveConceptDescendants(String conceptId, String attributeName) throws ParseException, IOException {
 		List<ConceptResult> concepts = new ArrayList<>();
 		final Long idLong = new Long(conceptId);
 		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ANCESTOR, idLong, idLong, true, true), Integer.MAX_VALUE);
 		for (ScoreDoc scoreDoc : docs.scoreDocs) {
-			concepts.add(getConceptResult(getConceptDocument(scoreDoc)));
+			conditionalAdd(getConceptDocument(scoreDoc), concepts, attributeName);
 		}
 		return concepts;
+	}
+
+	private void conditionalAdd(Document document, List<ConceptResult> concepts, String attributeName) {
+		if (attributeName == null || document.get(attributeName) != null) {
+			concepts.add(getConceptResult(document));
+		}
 	}
 
 	private Document getConceptDocument(ScoreDoc scoreDoc) throws IOException {
@@ -112,7 +121,7 @@ public class ReleaseReader {
 		return new ConceptResult(document.get(Concept.ID), document.get(Concept.FSN));
 	}
 
-	private Document getConceptDocByConceptId(String conceptId) throws IOException, NotFoundException {
+	private Document getConceptDocument(String conceptId) throws IOException, NotFoundException {
 		final Long idLong = new Long(conceptId);
 		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ID, idLong, idLong, true, true), 1);
 		if (docs.totalHits < 1) {
@@ -123,19 +132,65 @@ public class ReleaseReader {
 
 	protected static final class ExpressionConstraintListener extends ExpressionConstraintBaseListener {
 
-		protected String focusConcept;
-		protected boolean descendantOf;
-		protected boolean ancestorOf;
-		protected boolean includeSelf = true;
+		private ELQuery elQuery;
+
+		public ExpressionConstraintListener() {
+			elQuery = new ELQuery();
+		}
 
 		@Override
-		public void enterRefinedexpressionconstraint(ExpressionConstraintParser.RefinedexpressionconstraintContext ctx) {
-			throwUnsupported();
+		public void enterFocusconcept(ExpressionConstraintParser.FocusconceptContext ctx) {
+			elQuery.setFocusConcept(ctx.conceptreference().conceptid().getPayload().getText());
+		}
+
+		@Override
+		public void enterDescendantof(ExpressionConstraintParser.DescendantofContext ctx) {
+			elQuery.descendantOf();
+		}
+
+		@Override
+		public void enterDescendantorselfof(ExpressionConstraintParser.DescendantorselfofContext ctx) {
+			elQuery.descendantOrSelfOf();
+		}
+
+		@Override
+		public void enterAncestorof(ExpressionConstraintParser.AncestorofContext ctx) {
+			elQuery.ancestorOf();
+		}
+
+		@Override
+		public void enterAncestororselfof(ExpressionConstraintParser.AncestororselfofContext ctx) {
+			elQuery.ancestorOrSelfOf();
+		}
+
+		@Override
+		public void enterAttributename(ExpressionConstraintParser.AttributenameContext ctx) {
+			elQuery.setAttributeName(ctx.conceptreference().conceptid().getPayload().getText());
 		}
 
 		@Override
 		public void enterCompoundexpressionconstraint(ExpressionConstraintParser.CompoundexpressionconstraintContext ctx) {
 			throwUnsupported();
+		}
+
+		@Override
+		public void enterConjunctionrefinementset(ExpressionConstraintParser.ConjunctionrefinementsetContext ctx) {
+			throwUnsupported("conjunctionRefinementSet");
+		}
+
+		@Override
+		public void enterDisjunctionrefinementset(ExpressionConstraintParser.DisjunctionrefinementsetContext ctx) {
+			throwUnsupported("disjunctionRefinementSet");
+		}
+
+		@Override
+		public void enterConjunctionattributeset(ExpressionConstraintParser.ConjunctionattributesetContext ctx) {
+			throwUnsupported("conjunctionAttributeSet");
+		}
+
+		@Override
+		public void enterDisjunctionattributeset(ExpressionConstraintParser.DisjunctionattributesetContext ctx) {
+			throwUnsupported("disjunctionAttributeSet");
 		}
 
 		@Override
@@ -149,30 +204,18 @@ public class ReleaseReader {
 		}
 
 		@Override
-		public void enterFocusconcept(ExpressionConstraintParser.FocusconceptContext ctx) {
-			focusConcept = ctx.conceptreference().conceptid().getPayload().getText();
+		public void enterExpressioncomparisonoperator(ExpressionConstraintParser.ExpressioncomparisonoperatorContext ctx) {
+			throwUnsupported("expressionComparisonOperator");
 		}
 
 		@Override
-		public void enterDescendantof(ExpressionConstraintParser.DescendantofContext ctx) {
-			descendantOf = true;
-			includeSelf = false;
+		public void enterNumericcomparisonoperator(ExpressionConstraintParser.NumericcomparisonoperatorContext ctx) {
+			throwUnsupported("numericComparisonOperator");
 		}
 
 		@Override
-		public void enterDescendantorselfof(ExpressionConstraintParser.DescendantorselfofContext ctx) {
-			descendantOf = true;
-		}
-
-		@Override
-		public void enterAncestorof(ExpressionConstraintParser.AncestorofContext ctx) {
-			ancestorOf = true;
-			includeSelf = false;
-		}
-
-		@Override
-		public void enterAncestororselfof(ExpressionConstraintParser.AncestororselfofContext ctx) {
-			ancestorOf = true;
+		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
+			throwUnsupported("stringComparisonOperator");
 		}
 
 		private void throwUnsupported() {
@@ -181,6 +224,10 @@ public class ReleaseReader {
 
 		private void throwUnsupported(String feature) {
 			throw new UnsupportedOperationException(feature + " is not currently supported.");
+		}
+
+		public ELQuery getElQuery() {
+			return elQuery;
 		}
 	}
 }

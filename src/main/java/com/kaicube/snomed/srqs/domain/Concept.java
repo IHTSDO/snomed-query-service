@@ -1,5 +1,8 @@
 package com.kaicube.snomed.srqs.domain;
 
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,11 +15,13 @@ public class Concept {
 
 	private final Long id;
 	private boolean active;
-	private final Set<Concept> parents;
 	private String fsn;
+	private final MultiValueMap<String, String> attributes;
+	private final Set<Concept> parents;
 
 	public Concept(Long id) {
 		this.id = id;
+		attributes = new LinkedMultiValueMap<>();
 		parents = new HashSet<>();
 	}
 
@@ -42,6 +47,14 @@ public class Concept {
 
 	public String getFsn() {
 		return fsn;
+	}
+
+	public MultiValueMap<String, String> getAttributes() {
+		return attributes;
+	}
+
+	public void addAttribute(String type, String value) {
+		attributes.add(type, value);
 	}
 
 	/**
