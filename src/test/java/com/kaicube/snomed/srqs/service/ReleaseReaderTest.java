@@ -45,8 +45,21 @@ public class ReleaseReaderTest {
 		releaseReader.parseQuery("<< 39928001 : 116676008");
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
-	public void testParseRefinedExpressionConstraintWithNameAndValue() throws Exception {
-		releaseReader.parseQuery("<< 39928001 : 116676008 = 79654002");
+	@Test
+	public void testParseRefinedExpressionConstraintWithNameAndValueUsingEquals() throws Exception {
+		final ELQuery query = releaseReader.parseQuery("* : 116676008 = 79654002");
+		Assert.assertTrue(query.isFocusConceptWildcard());
+		Assert.assertEquals("116676008", query.getAttributeName());
+		Assert.assertEquals(ELQuery.ExpressionComparisonOperator.equals, query.getAttributeOperator());
+		Assert.assertEquals("79654002", query.getAttributeValue());
+	}
+
+	@Test
+	public void testParseRefinedExpressionConstraintWithNameAndValueUsingNotEquals() throws Exception {
+		final ELQuery query = releaseReader.parseQuery("* : 116676008 != 79654002");
+		Assert.assertTrue(query.isFocusConceptWildcard());
+		Assert.assertEquals("116676008", query.getAttributeName());
+		Assert.assertEquals(ELQuery.ExpressionComparisonOperator.notEquals, query.getAttributeOperator());
+		Assert.assertEquals("79654002", query.getAttributeValue());
 	}
 }

@@ -200,7 +200,7 @@ public class ReleaseReader {
 
 		@Override
 		public void enterExpressioncomparisonoperator(ExpressionConstraintParser.ExpressioncomparisonoperatorContext ctx) {
-			elQuery.setAttributeOperator(ctx.EQUALS() != null ? ELQuery.ExpressionComparisonOperator.equals : ELQuery.ExpressionComparisonOperator.notEquals);
+			elQuery.setAttributeOperator(ctx.getText().equals("=") ? ELQuery.ExpressionComparisonOperator.equals : ELQuery.ExpressionComparisonOperator.notEquals);
 		}
 
 		@Override
