@@ -2,18 +2,19 @@ package com.kaicube.snomed.srqs.service;
 
 public class ELQuery {
 
-	private String focusConcept;
+	private boolean focusConceptWildcard;
+	private String focusConceptId;
 	private boolean descendantOf;
 	private boolean ancestorOf;
 	private boolean includeSelf = true;
 	private String attributeName;
 
-	public void setFocusConcept(String focusConcept) {
-		this.focusConcept = focusConcept;
+	public void setFocusConceptId(String focusConceptId) {
+		this.focusConceptId = focusConceptId;
 	}
 
-	public String getFocusConcept() {
-		return focusConcept;
+	public String getFocusConceptId() {
+		return focusConceptId;
 	}
 
 	public void descendantOf() {
@@ -52,5 +53,13 @@ public class ELQuery {
 
 	public boolean isIncludeSelf() {
 		return includeSelf;
+	}
+
+	public void setFocusConceptWildcard() {
+		focusConceptWildcard = true;
+	}
+
+	public boolean isFocusConceptWildcard() {
+		return focusConceptWildcard;
 	}
 }

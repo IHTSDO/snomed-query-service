@@ -1,6 +1,7 @@
 package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
+import com.kaicube.snomed.srqs.domain.ConceptConstants;
 import com.kaicube.snomed.srqs.exceptions.NotFoundException;
 import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintBaseListener;
 import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintLexer;
@@ -55,14 +56,18 @@ public class ReleaseReader {
 
 		if (ecQuery != null && !ecQuery.isEmpty()) {
 			final ELQuery query = parseQuery(ecQuery);
-			final String focusConcept = query.getFocusConcept();
-			if (query.isIncludeSelf()) {
-				conditionalAdd(getConceptDocument(focusConcept), concepts, query.getAttributeName());
-			}
-			if (query.isDescendantOf()) {
-			 	concepts.addAll(retrieveConceptDescendants(focusConcept, query.getAttributeName()));
-			} else if (query.isAncestorOf()) {
-				concepts.addAll(retrieveConceptAncestors(focusConcept, query.getAttributeName()));
+			if (query.isFocusConceptWildcard()) {
+				concepts.addAll(retrieveConceptDescendants(ConceptConstants.rootConcept, query.getAttributeName()));
+			} else {
+				final String focusConcept = query.getFocusConceptId();
+				if (query.isIncludeSelf()) {
+					conditionalAdd(getConceptDocument(focusConcept), concepts, query.getAttributeName());
+				}
+				if (query.isDescendantOf()) {
+					concepts.addAll(retrieveConceptDescendants(focusConcept, query.getAttributeName()));
+				} else if (query.isAncestorOf()) {
+					concepts.addAll(retrieveConceptAncestors(focusConcept, query.getAttributeName()));
+				}
 			}
 		}
 		return concepts;
@@ -140,7 +145,13 @@ public class ReleaseReader {
 
 		@Override
 		public void enterFocusconcept(ExpressionConstraintParser.FocusconceptContext ctx) {
-			elQuery.setFocusConcept(ctx.conceptreference().conceptid().getPayload().getText());
+			if (ctx.memberof() != null) {
+				throwUnsupported("memberOf");
+			} else if (ctx.wildcard() != null) {
+				elQuery.setFocusConceptWildcard();
+			} else {
+				elQuery.setFocusConceptId(ctx.conceptreference().conceptid().getPayload().getText());
+			}
 		}
 
 		@Override
@@ -196,11 +207,6 @@ public class ReleaseReader {
 		@Override
 		public void enterMemberof(ExpressionConstraintParser.MemberofContext ctx) {
 			throwUnsupported("memberOf");
-		}
-
-		@Override
-		public void enterWildcard(ExpressionConstraintParser.WildcardContext ctx) {
-			throwUnsupported("wildcard");
 		}
 
 		@Override

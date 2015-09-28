@@ -16,7 +16,7 @@ public class ReleaseReaderTest {
 	@Test
 	public void testParseQuery() throws Exception {
 		final ELQuery query = releaseReader.parseQuery("39928001");
-		Assert.assertEquals("39928001", query.getFocusConcept());
+		Assert.assertEquals("39928001", query.getFocusConceptId());
 		Assert.assertFalse(query.isDescendantOf());
 		Assert.assertFalse(query.isAncestorOf());
 		Assert.assertTrue(query.isIncludeSelf());
@@ -25,7 +25,7 @@ public class ReleaseReaderTest {
 	@Test
 	public void testParseDescendantOfQuery() throws Exception {
 		final ELQuery query = releaseReader.parseQuery("< 39928001");
-		Assert.assertEquals("39928001", query.getFocusConcept());
+		Assert.assertEquals("39928001", query.getFocusConceptId());
 		Assert.assertTrue(query.isDescendantOf());
 		Assert.assertFalse(query.isAncestorOf());
 		Assert.assertFalse(query.isIncludeSelf());
@@ -34,7 +34,7 @@ public class ReleaseReaderTest {
 	@Test
 	public void testParseDescendantOrSelfOfQuery() throws Exception {
 		final ELQuery query = releaseReader.parseQuery("<< 39928001");
-		Assert.assertEquals("39928001", query.getFocusConcept());
+		Assert.assertEquals("39928001", query.getFocusConceptId());
 		Assert.assertTrue(query.isDescendantOf());
 		Assert.assertFalse(query.isAncestorOf());
 		Assert.assertTrue(query.isIncludeSelf());
