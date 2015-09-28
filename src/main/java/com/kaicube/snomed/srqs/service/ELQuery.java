@@ -8,6 +8,8 @@ public class ELQuery {
 	private boolean ancestorOf;
 	private boolean includeSelf = true;
 	private String attributeName;
+	private ExpressionComparisonOperator attributeOperator;
+	private String attributeValue;
 
 	public void setFocusConceptId(String focusConceptId) {
 		this.focusConceptId = focusConceptId;
@@ -61,5 +63,25 @@ public class ELQuery {
 
 	public boolean isFocusConceptWildcard() {
 		return focusConceptWildcard;
+	}
+
+	public void setAttributeOperator(ExpressionComparisonOperator attributeOperator) {
+		this.attributeOperator = attributeOperator;
+	}
+
+	public ExpressionComparisonOperator getAttributeOperator() {
+		return attributeOperator;
+	}
+
+	public void setAttributeValue(String attributeValue) {
+		this.attributeValue = attributeValue;
+	}
+
+	public String getAttributeValue() {
+		return attributeValue;
+	}
+
+	enum ExpressionComparisonOperator {
+		equals, notEquals
 	}
 }

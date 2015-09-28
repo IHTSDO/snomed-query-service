@@ -57,16 +57,16 @@ public class ReleaseReader {
 		if (ecQuery != null && !ecQuery.isEmpty()) {
 			final ELQuery query = parseQuery(ecQuery);
 			if (query.isFocusConceptWildcard()) {
-				concepts.addAll(retrieveConceptDescendants(ConceptConstants.rootConcept, query.getAttributeName()));
+				concepts.addAll(retrieveConceptDescendants(ConceptConstants.rootConcept, query));
 			} else {
 				final String focusConcept = query.getFocusConceptId();
 				if (query.isIncludeSelf()) {
-					conditionalAdd(getConceptDocument(focusConcept), concepts, query.getAttributeName());
+					conditionalAdd(getConceptDocument(focusConcept), concepts, query);
 				}
 				if (query.isDescendantOf()) {
-					concepts.addAll(retrieveConceptDescendants(focusConcept, query.getAttributeName()));
+					concepts.addAll(retrieveConceptDescendants(focusConcept, query));
 				} else if (query.isAncestorOf()) {
-					concepts.addAll(retrieveConceptAncestors(focusConcept, query.getAttributeName()));
+					concepts.addAll(retrieveConceptAncestors(focusConcept, query));
 				}
 			}
 		}
@@ -89,11 +89,11 @@ public class ReleaseReader {
 		return retrieveConceptAncestors(conceptId, null);
 	}
 
-	private List<ConceptResult> retrieveConceptAncestors(String conceptId, String attributeName) throws ParseException, IOException, NotFoundException {
+	private List<ConceptResult> retrieveConceptAncestors(String conceptId, ELQuery query) throws ParseException, IOException, NotFoundException {
 		List<ConceptResult> concepts = new ArrayList<>();
 		final String[] ancestorIds = getConceptDocument(conceptId).getValues(Concept.ANCESTOR);
 		for (String ancestorId : ancestorIds) {
-			conditionalAdd(getConceptDocument(ancestorId), concepts, attributeName);
+			conditionalAdd(getConceptDocument(ancestorId), concepts, query);
 		}
 		return concepts;
 	}
@@ -102,18 +102,37 @@ public class ReleaseReader {
 		return retrieveConceptDescendants(conceptId, null);
 	}
 
-	private List<ConceptResult> retrieveConceptDescendants(String conceptId, String attributeName) throws ParseException, IOException {
+	private List<ConceptResult> retrieveConceptDescendants(String conceptId, ELQuery query) throws ParseException, IOException {
 		List<ConceptResult> concepts = new ArrayList<>();
 		final Long idLong = new Long(conceptId);
 		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ANCESTOR, idLong, idLong, true, true), Integer.MAX_VALUE);
 		for (ScoreDoc scoreDoc : docs.scoreDocs) {
-			conditionalAdd(getConceptDocument(scoreDoc), concepts, attributeName);
+			conditionalAdd(getConceptDocument(scoreDoc), concepts, query);
 		}
 		return concepts;
 	}
 
-	private void conditionalAdd(Document document, List<ConceptResult> concepts, String attributeName) {
-		if (attributeName == null || document.get(attributeName) != null) {
+	private void conditionalAdd(Document document, List<ConceptResult> concepts, ELQuery query) {
+		final String attributeName = query.getAttributeName();
+		boolean addConcept = false;
+		if (attributeName == null) {
+			addConcept = true;
+		} else {
+			final String[] values = document.getValues(attributeName);
+			if (values.length > 0) {
+				final ELQuery.ExpressionComparisonOperator attributeOperator = query.getAttributeOperator();
+				if (attributeOperator == null) {
+					addConcept = true;
+				} else {
+					final String attributeValue = query.getAttributeValue();
+					for (int i = 0; !addConcept && i < values.length; i++) {
+						final boolean equals = attributeValue.equals(values[0]);
+						addConcept = attributeOperator == ELQuery.ExpressionComparisonOperator.equals ? equals : !equals;
+					}
+				}
+			}
+		}
+		if (addConcept) {
 			concepts.add(getConceptResult(document));
 		}
 	}
@@ -180,6 +199,16 @@ public class ReleaseReader {
 		}
 
 		@Override
+		public void enterExpressioncomparisonoperator(ExpressionConstraintParser.ExpressioncomparisonoperatorContext ctx) {
+			elQuery.setAttributeOperator(ctx.EQUALS() != null ? ELQuery.ExpressionComparisonOperator.equals : ELQuery.ExpressionComparisonOperator.notEquals);
+		}
+
+		@Override
+		public void enterExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
+			elQuery.setAttributeValue(ctx.getPayload().getText());
+		}
+
+		@Override
 		public void enterCompoundexpressionconstraint(ExpressionConstraintParser.CompoundexpressionconstraintContext ctx) {
 			throwUnsupported();
 		}
@@ -210,18 +239,13 @@ public class ReleaseReader {
 		}
 
 		@Override
-		public void enterExpressioncomparisonoperator(ExpressionConstraintParser.ExpressioncomparisonoperatorContext ctx) {
-			throwUnsupported("expressionComparisonOperator");
+		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
+			throwUnsupported("stringComparisonOperator");
 		}
 
 		@Override
 		public void enterNumericcomparisonoperator(ExpressionConstraintParser.NumericcomparisonoperatorContext ctx) {
 			throwUnsupported("numericComparisonOperator");
-		}
-
-		@Override
-		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
-			throwUnsupported("stringComparisonOperator");
 		}
 
 		private void throwUnsupported() {
