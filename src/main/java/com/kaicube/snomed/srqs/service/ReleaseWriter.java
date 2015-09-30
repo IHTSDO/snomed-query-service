@@ -1,6 +1,7 @@
 package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
+import com.kaicube.snomed.srqs.domain.Refset;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.LongField;
@@ -36,6 +37,15 @@ public class ReleaseWriter implements AutoCloseable {
 		final Set<Long> ancestorIds = concept.getAncestorIds();
 		for (Long ancestorId : ancestorIds) {
 			doc.add(new LongField(Concept.ANCESTOR, ancestorId, Field.Store.YES));
+		}
+		iwriter.addDocument(doc);
+	}
+
+	public void addRefset(Long refsetId, Set<Long> referencedComponentIds) throws IOException {
+		Document doc = new Document();
+		doc.add(new LongField(Refset.ID, refsetId, Field.Store.YES));
+		for (Long referencedComponentId : referencedComponentIds) {
+			doc.add(new LongField(Refset.REFERENCED_COMPONENT_ID, referencedComponentId, Field.Store.YES));
 		}
 		iwriter.addDocument(doc);
 	}

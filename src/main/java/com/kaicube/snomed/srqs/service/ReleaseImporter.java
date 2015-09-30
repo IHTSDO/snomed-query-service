@@ -4,6 +4,7 @@ import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
 import com.kaicube.snomed.srqs.domain.rf2.ComponentFields;
 import com.kaicube.snomed.srqs.domain.rf2.DescriptionFields;
+import com.kaicube.snomed.srqs.domain.rf2.RefsetFields;
 import com.kaicube.snomed.srqs.domain.rf2.RelationshipFields;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -12,6 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.text.NumberFormat;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -19,9 +24,11 @@ public class ReleaseImporter {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private Long2ObjectMap<Concept> concepts;
+	private Map<Long, Set<Long>> refsetIdToComponentsMap;
 
 	public ReleaseImporter() {
 		concepts = new Long2ObjectOpenHashMap<>();
+		refsetIdToComponentsMap = new HashMap<>();
 	}
 
 	public ReleaseStore loadReleaseZip(String releaseDirPath) throws IOException {
@@ -30,17 +37,20 @@ public class ReleaseImporter {
 		try (final ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
 			ZipEntry nextEntry;
 			while ((nextEntry = zipInputStream.getNextEntry()) != null) {
-				if (nextEntry.getName().contains("sct2_Concept_Snapshot")) {
+				final String entryName = nextEntry.getName();
+				if (entryName.contains("sct2_Concept_Snapshot")) {
 					loadConcepts(zipInputStream);
-				} else if (nextEntry.getName().contains("sct2_Relationship_Snapshot")) {
+				} else if (entryName.contains("sct2_Relationship_Snapshot")) {
 					loadRelationships(zipInputStream);
-				} else if (nextEntry.getName().contains("sct2_Description_Snapshot")) {
+				} else if (entryName.contains("sct2_Description_Snapshot")) {
 					loadDescriptions(zipInputStream);
+				} else if (entryName.contains("der2_") && entryName.contains("Snapshot")) {
+					loadRefsets(zipInputStream);
 				}
 			}
 		}
 		logger.info("All in memory. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
-		logger.info("Writing to Lucene...");
+		logger.info("Writing to index...");
 
 		final ReleaseStore releaseStore = new ReleaseStore();
 		try (final ReleaseWriter releaseWriter = new ReleaseWriter(releaseStore)) {
@@ -50,17 +60,38 @@ public class ReleaseImporter {
 					releaseWriter.addConcept(concept);
 					conceptsAdded++;
 					if (conceptsAdded % 100000 == 0) {
-						logger.info("{} active concepts added to Lucene.", conceptsAdded);
+						logger.info("{} active concepts added to index...", conceptsAdded);
 					}
 				}
 			}
-			logger.info("{} concepts added to Lucene in total.", conceptsAdded);
-			logger.info("Closing Lucene writer.");
+			logger.info("{} concepts added to index in total.", conceptsAdded);
+
+			final Set<Long> referencedComponentIdsToRemove = new HashSet<>();
+			for (Long refsetId : refsetIdToComponentsMap.keySet()) {
+				logger.info("Validating referenced components in refset {}", refsetId);
+				final Set<Long> referencedComponentIds = refsetIdToComponentsMap.get(refsetId);
+				Concept concept;
+				for (Long referencedComponentId : referencedComponentIds) {
+					concept = concepts.get(referencedComponentId);
+					if (concept == null || !concept.isActive()) {
+						referencedComponentIdsToRemove.add(referencedComponentId);
+					}
+				}
+				if (!referencedComponentIdsToRemove.isEmpty()) {
+					logger.info("{} referenced concepts do not exist or are not active, removing from set. {} will remain.", referencedComponentIdsToRemove.size(), referencedComponentIds.size() - referencedComponentIdsToRemove.size());
+					referencedComponentIds.removeAll(referencedComponentIdsToRemove);
+					referencedComponentIdsToRemove.clear();
+				}
+				logger.info("Adding refset {} to index.", refsetId);
+				releaseWriter.addRefset(refsetId, referencedComponentIds);
+			}
+			logger.info("{} reference sets added to index in total.", refsetIdToComponentsMap.size());
+			logger.info("Closing index writer.");
 		}
 
 		concepts = null;
 		System.gc();
-		logger.info("Written to Lucene. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
+		logger.info("Finished creating index. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 
 		return releaseStore;
 	}
@@ -121,6 +152,20 @@ public class ReleaseImporter {
 		}, "descriptions");
 	}
 
+	private void loadRefsets(ZipInputStream zipInputStream) throws IOException {
+		readLines(zipInputStream, new ValuesHandler() {
+			@Override
+			public void handle(String[] values) {
+				if ("1".equals(values[DescriptionFields.active])) {
+					final String referencedComponentId = values[RefsetFields.referencedComponentId];
+					if (Concept.isConceptId(referencedComponentId)) {
+						getCreateRefset(new Long(values[RefsetFields.refsetId])).add(new Long(referencedComponentId));
+					}
+				}
+			}
+		}, "reference set members");
+	}
+
 	private Concept getCreateConcept(String id) {
 		return getCreateConcept(new Long(id));
 	}
@@ -132,6 +177,15 @@ public class ReleaseImporter {
 			concepts.put(id, concept);
 		}
 		return concept;
+	}
+
+	private Set<Long> getCreateRefset(Long refsetId) {
+		Set<Long> referencedComponentIds = refsetIdToComponentsMap.get(refsetId);
+		if (referencedComponentIds == null) {
+			referencedComponentIds = new HashSet<>();
+			refsetIdToComponentsMap.put(refsetId, referencedComponentIds);
+		}
+		return referencedComponentIds;
 	}
 
 	private void readLines(ZipInputStream conceptsFileStream, ValuesHandler valuesHandler, String componentType) throws IOException {

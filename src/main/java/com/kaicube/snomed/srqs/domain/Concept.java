@@ -75,4 +75,13 @@ public class Concept {
 		}
 		return ancestors;
 	}
+
+	public static boolean isConceptId(String componentId) {
+		if (componentId != null) {
+			final int length = componentId.length();
+			return length > 3 && componentId.substring(length - 2, length - 1).equals("0");
+		}
+		return false;
+	}
+
 }

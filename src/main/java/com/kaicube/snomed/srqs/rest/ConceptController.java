@@ -20,8 +20,8 @@ public class ConceptController {
 	private ReleaseReader releaseReader;
 
 	@RequestMapping
-	@ApiOperation(value = "Query concepts using Expression Constraint Language", notes = "Minimal SNOMED CT Expression Constraint Language queries can be used. " +
-			"Only constraint operators are supported (<, <<, >, >>). Example: < 39928001",
+	@ApiOperation(value = "Query concepts using Expression Constraint Language", notes = "Simple SNOMED CT Expression Constraint Language queries can be used. " +
+			"Supported expressions for the focus concept are: (<, <<, >, >>, *, ^). A singe attribute and value can be used. Conjunction and disjunction are not yet supported.",
 			response = ConceptResult.class, responseContainer = "List")
 	@ResponseBody
 	public List<ConceptResult> retrieveConcepts(@RequestParam String ecQuery) throws IOException, ParseException, NotFoundException {

@@ -4,6 +4,7 @@ public class ELQuery {
 
 	private boolean focusConceptWildcard;
 	private String focusConceptId;
+	private String memberOfRefsetId;
 	private boolean descendantOf;
 	private boolean ancestorOf;
 	private boolean includeSelf = true;
@@ -79,6 +80,14 @@ public class ELQuery {
 
 	public String getAttributeValue() {
 		return attributeValue;
+	}
+
+	public void setMemberOfRefsetId(String memberOfRefsetId) {
+		this.memberOfRefsetId = memberOfRefsetId;
+	}
+
+	public String getMemberOfRefsetId() {
+		return memberOfRefsetId;
 	}
 
 	enum ExpressionComparisonOperator {

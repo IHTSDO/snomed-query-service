@@ -62,4 +62,11 @@ public class ReleaseReaderTest {
 		Assert.assertEquals(ELQuery.ExpressionComparisonOperator.notEquals, query.getAttributeOperator());
 		Assert.assertEquals("79654002", query.getAttributeValue());
 	}
+
+	@Test
+	public void testParseRefsetMemberFocusConcept() throws Exception {
+		final ELQuery query = releaseReader.parseQuery("^447566000");
+		Assert.assertFalse(query.isFocusConceptWildcard());
+		Assert.assertEquals("447566000", query.getMemberOfRefsetId());
+	}
 }

@@ -2,6 +2,7 @@ package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import com.kaicube.snomed.srqs.domain.Refset;
 import com.kaicube.snomed.srqs.exceptions.NotFoundException;
 import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintBaseListener;
 import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintLexer;
@@ -58,7 +59,7 @@ public class ReleaseReader {
 			final ELQuery query = parseQuery(ecQuery);
 			if (query.isFocusConceptWildcard()) {
 				concepts.addAll(retrieveConceptDescendants(ConceptConstants.rootConcept, query));
-			} else {
+			} else if (query.getFocusConceptId() != null) {
 				final String focusConcept = query.getFocusConceptId();
 				if (query.isIncludeSelf()) {
 					conditionalAdd(getConceptDocument(focusConcept), concepts, query);
@@ -68,6 +69,8 @@ public class ReleaseReader {
 				} else if (query.isAncestorOf()) {
 					concepts.addAll(retrieveConceptAncestors(focusConcept, query));
 				}
+			} else if (query.getMemberOfRefsetId() != null) {
+				concepts.addAll(retrieveRefsetReferencedConcepts(query.getMemberOfRefsetId(), query));
 			}
 		}
 		return concepts;
@@ -107,7 +110,30 @@ public class ReleaseReader {
 		final Long idLong = new Long(conceptId);
 		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ANCESTOR, idLong, idLong, true, true), Integer.MAX_VALUE);
 		for (ScoreDoc scoreDoc : docs.scoreDocs) {
-			conditionalAdd(getConceptDocument(scoreDoc), concepts, query);
+			conditionalAdd(getDocument(scoreDoc), concepts, query);
+		}
+		return concepts;
+	}
+
+	private List<ConceptResult> retrieveRefsetReferencedConcepts(String refsetId, ELQuery query) throws IOException, NotFoundException {
+		List<ConceptResult> concepts = new ArrayList<>();
+		final Long idLong = new Long(refsetId);
+		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Refset.ID, idLong, idLong, true, true), 1);
+		if (docs.totalHits < 1) {
+			throw new NotFoundException("Reference set with id " + refsetId + " could not be found.");
+		}
+		final Document doc = indexSearcher.doc(docs.scoreDocs[0].doc);
+		for (String referencedConceptId : doc.getValues(Refset.REFERENCED_COMPONENT_ID)) {
+			conditionalAdd(getConceptDocument(referencedConceptId), concepts, query);
+		}
+		return concepts;
+	}
+
+	public List<ConceptResult> retrieveReferenceSets() throws ParseException, IOException, NotFoundException {
+		List<ConceptResult> concepts = new ArrayList<>();
+		final TopDocs docs = indexSearcher.search(parser.parse(Refset.ID), Integer.MAX_VALUE);
+		for (ScoreDoc scoreDoc : docs.scoreDocs) {
+			concepts.add(getConceptResult(getConceptDocument(getDocument(scoreDoc).get(Refset.ID))));
 		}
 		return concepts;
 	}
@@ -137,7 +163,7 @@ public class ReleaseReader {
 		}
 	}
 
-	private Document getConceptDocument(ScoreDoc scoreDoc) throws IOException {
+	private Document getDocument(ScoreDoc scoreDoc) throws IOException {
 		return indexSearcher.doc(scoreDoc.doc);
 	}
 
@@ -165,11 +191,11 @@ public class ReleaseReader {
 		@Override
 		public void enterFocusconcept(ExpressionConstraintParser.FocusconceptContext ctx) {
 			if (ctx.memberof() != null) {
-				throwUnsupported("memberOf");
+				elQuery.setMemberOfRefsetId(ctx.conceptreference().conceptid().getText());
 			} else if (ctx.wildcard() != null) {
 				elQuery.setFocusConceptWildcard();
 			} else {
-				elQuery.setFocusConceptId(ctx.conceptreference().conceptid().getPayload().getText());
+				elQuery.setFocusConceptId(ctx.conceptreference().conceptid().getText());
 			}
 		}
 
@@ -195,7 +221,7 @@ public class ReleaseReader {
 
 		@Override
 		public void enterAttributename(ExpressionConstraintParser.AttributenameContext ctx) {
-			elQuery.setAttributeName(ctx.conceptreference().conceptid().getPayload().getText());
+			elQuery.setAttributeName(ctx.conceptreference().conceptid().getText());
 		}
 
 		@Override
@@ -207,6 +233,8 @@ public class ReleaseReader {
 		public void enterExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
 			elQuery.setAttributeValue(ctx.getPayload().getText());
 		}
+
+		// Unsupported enter methods below this line
 
 		@Override
 		public void enterCompoundexpressionconstraint(ExpressionConstraintParser.CompoundexpressionconstraintContext ctx) {
@@ -231,11 +259,6 @@ public class ReleaseReader {
 		@Override
 		public void enterDisjunctionattributeset(ExpressionConstraintParser.DisjunctionattributesetContext ctx) {
 			throwUnsupported("disjunctionAttributeSet");
-		}
-
-		@Override
-		public void enterMemberof(ExpressionConstraintParser.MemberofContext ctx) {
-			throwUnsupported("memberOf");
 		}
 
 		@Override
