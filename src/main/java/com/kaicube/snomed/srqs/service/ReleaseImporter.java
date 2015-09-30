@@ -10,10 +10,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.text.NumberFormat;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -27,9 +24,10 @@ public class ReleaseImporter {
 		concepts = new Long2ObjectOpenHashMap<>();
 	}
 
-	public ReleaseStore loadReleaseZip(String zipFilePath) throws IOException {
-		logger.info("Loading release archive {}", zipFilePath);
-		try (final ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFilePath))) {
+	public ReleaseStore loadReleaseZip(String releaseDirPath) throws IOException {
+		File zipFile = findZipFilePath(releaseDirPath);
+		logger.info("Loading release archive {}", zipFile.getAbsolutePath());
+		try (final ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
 			ZipEntry nextEntry;
 			while ((nextEntry = zipInputStream.getNextEntry()) != null) {
 				if (nextEntry.getName().contains("sct2_Concept_Snapshot")) {
@@ -65,6 +63,23 @@ public class ReleaseImporter {
 		logger.info("Written to Lucene. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 
 		return releaseStore;
+	}
+
+	private File findZipFilePath(String releaseDirPath) throws FileNotFoundException {
+		final File releaseDir = new File(releaseDirPath);
+		if (!releaseDir.isDirectory()) {
+			throw new FileNotFoundException("Could not find release directory.");
+		}
+		final File[] zips = releaseDir.listFiles(new FilenameFilter() {
+			@Override
+			public boolean accept(File dir, String name) {
+				return name.endsWith(".zip");
+			}
+		});
+		if (zips.length == 0) {
+			throw new FileNotFoundException("Please place a SNOMED-CT RF2 release zip file in the release directory. Content will be loaded from there.");
+		}
+		return zips[0];
 	}
 
 	private void loadConcepts(ZipInputStream zipInputStream) throws IOException {

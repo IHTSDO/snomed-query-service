@@ -29,9 +29,11 @@ public class Application {
 	@Autowired
 	private SpringSwaggerConfig springSwaggerConfig;
 
+	private static final String RELEASE_DIR_PATH = "release";
+
 	@Bean
 	public ReleaseReader getReleaseReader() throws IOException {
-		ReleaseStore releaseStore = new ReleaseImporter().loadReleaseZip("SnomedCT_RF2Release_INT_20150131.zip");
+		ReleaseStore releaseStore = new ReleaseImporter().loadReleaseZip(RELEASE_DIR_PATH);
 		return new ReleaseReader(releaseStore);
 	}
 
