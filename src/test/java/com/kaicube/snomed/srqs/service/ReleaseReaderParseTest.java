@@ -4,7 +4,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class ReleaseReaderTest {
+public class ReleaseReaderParseTest {
 
 	private ReleaseReader releaseReader;
 

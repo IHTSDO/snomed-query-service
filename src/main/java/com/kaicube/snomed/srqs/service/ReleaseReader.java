@@ -24,8 +24,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ReleaseReader {
 
@@ -52,7 +51,7 @@ public class ReleaseReader {
 		return getConceptResult(getConceptDocument(conceptId));
 	}
 
-	public List<ConceptResult> retrieveConcepts(String ecQuery) throws ParseException, IOException, NotFoundException {
+	public List<ConceptResult> expressionConstraintQuery(String ecQuery) throws ParseException, IOException, NotFoundException {
 		List<ConceptResult> concepts = new ArrayList<>();
 
 		if (ecQuery != null && !ecQuery.isEmpty()) {
@@ -88,12 +87,12 @@ public class ReleaseReader {
 		return listener.getElQuery();
 	}
 
-	public List<ConceptResult> retrieveConceptAncestors(String conceptId) throws ParseException, IOException, NotFoundException {
+	public Set<ConceptResult> retrieveConceptAncestors(String conceptId) throws ParseException, IOException, NotFoundException {
 		return retrieveConceptAncestors(conceptId, null);
 	}
 
-	private List<ConceptResult> retrieveConceptAncestors(String conceptId, ELQuery query) throws ParseException, IOException, NotFoundException {
-		List<ConceptResult> concepts = new ArrayList<>();
+	private Set<ConceptResult> retrieveConceptAncestors(String conceptId, ELQuery query) throws ParseException, IOException, NotFoundException {
+		Set<ConceptResult> concepts = new HashSet<>();
 		final String[] ancestorIds = getConceptDocument(conceptId).getValues(Concept.ANCESTOR);
 		for (String ancestorId : ancestorIds) {
 			conditionalAdd(getConceptDocument(ancestorId), concepts, query);
@@ -101,12 +100,12 @@ public class ReleaseReader {
 		return concepts;
 	}
 
-	public List<ConceptResult> retrieveConceptDescendants(String conceptId) throws ParseException, IOException {
+	public Set<ConceptResult> retrieveConceptDescendants(String conceptId) throws ParseException, IOException {
 		return retrieveConceptDescendants(conceptId, null);
 	}
 
-	private List<ConceptResult> retrieveConceptDescendants(String conceptId, ELQuery query) throws ParseException, IOException {
-		List<ConceptResult> concepts = new ArrayList<>();
+	private Set<ConceptResult> retrieveConceptDescendants(String conceptId, ELQuery query) throws ParseException, IOException {
+		Set<ConceptResult> concepts = new HashSet<>();
 		final Long idLong = new Long(conceptId);
 		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ANCESTOR, idLong, idLong, true, true), Integer.MAX_VALUE);
 		for (ScoreDoc scoreDoc : docs.scoreDocs) {
@@ -138,13 +137,12 @@ public class ReleaseReader {
 		return concepts;
 	}
 
-	private void conditionalAdd(Document document, List<ConceptResult> concepts, ELQuery query) {
-		final String attributeName = query.getAttributeName();
+	private void conditionalAdd(Document document, Collection<ConceptResult> concepts, ELQuery query) {
 		boolean addConcept = false;
-		if (attributeName == null) {
+		if (query == null || query.getAttributeName() == null) {
 			addConcept = true;
 		} else {
-			final String[] values = document.getValues(attributeName);
+			final String[] values = document.getValues(query.getAttributeName());
 			if (values.length > 0) {
 				final ELQuery.ExpressionComparisonOperator attributeOperator = query.getAttributeOperator();
 				if (attributeOperator == null) {

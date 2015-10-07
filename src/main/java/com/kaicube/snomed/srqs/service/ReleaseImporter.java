@@ -49,6 +49,11 @@ public class ReleaseImporter {
 				}
 			}
 		}
+
+		return writeToIndex();
+	}
+
+	protected ReleaseStore writeToIndex() throws IOException {
 		logger.info("All in memory. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 		logger.info("Writing to index...");
 
@@ -210,5 +215,9 @@ public class ReleaseImporter {
 
 	private interface ValuesHandler {
 		void handle(String[] values);
+	}
+
+	protected Long2ObjectMap<Concept> getConcepts() {
+		return concepts;
 	}
 }

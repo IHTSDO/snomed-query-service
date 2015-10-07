@@ -1,7 +1,7 @@
 package com.kaicube.snomed.srqs.rest;
 
-import com.kaicube.snomed.srqs.service.ReleaseReader;
 import com.kaicube.snomed.srqs.exceptions.NotFoundException;
+import com.kaicube.snomed.srqs.service.ReleaseReader;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
 import com.wordnik.swagger.annotations.ApiOperation;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping(value = "/concepts", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -25,7 +26,7 @@ public class ConceptController {
 			response = ConceptResult.class, responseContainer = "List")
 	@ResponseBody
 	public List<ConceptResult> retrieveConcepts(@RequestParam String ecQuery) throws IOException, ParseException, NotFoundException {
-		return releaseReader.retrieveConcepts(ecQuery);
+		return releaseReader.expressionConstraintQuery(ecQuery);
 	}
 
 	@RequestMapping("/{conceptId}")
@@ -38,19 +39,19 @@ public class ConceptController {
 	}
 
 	@RequestMapping("/{conceptId}/ancestors")
-	@ApiOperation(value = "List concept ancestors",
-			notes = "List all ancestors of the given concept, including those from multiple parents.",
-			response = ConceptResult.class, responseContainer = "List")
+	@ApiOperation(value = "Retrieve concept ancestors",
+			notes = "Retrieve all ancestors of the given concept, including those from multiple parents.",
+			response = ConceptResult.class, responseContainer = "Set")
 	@ResponseBody
-	public List<ConceptResult> retrieveConceptAncestors(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
+	public Set<ConceptResult> retrieveConceptAncestors(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
 		return releaseReader.retrieveConceptAncestors(conceptId);
 	}
 
 	@RequestMapping("/{conceptId}/descendants")
-	@ApiOperation(value = "List concept descendants", notes = "List all descendants of the given concept.",
-			response = ConceptResult.class, responseContainer = "List")
+	@ApiOperation(value = "Retrieve concept descendants", notes = "Retrieve all descendants of the given concept.",
+			response = ConceptResult.class, responseContainer = "Set")
 	@ResponseBody
-	public List<ConceptResult> retrieveConceptDescendants(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
+	public Set<ConceptResult> retrieveConceptDescendants(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
 		return releaseReader.retrieveConceptDescendants(conceptId);
 	}
 
