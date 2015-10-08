@@ -161,6 +161,11 @@ public class ExpressionConstraintToLuceneConverter {
 		}
 
 		@Override
+		public void enterRefinement(ExpressionConstraintParser.RefinementContext ctx) {
+			luceneQuery += " AND ";
+		}
+
+		@Override
 		public void enterAttribute(ExpressionConstraintParser.AttributeContext ctx) {
 			inAttribute = true;
 		}
@@ -174,7 +179,7 @@ public class ExpressionConstraintToLuceneConverter {
 		public void enterAttributename(ExpressionConstraintParser.AttributenameContext ctx) {
 			final ExpressionConstraintParser.ConceptreferenceContext conceptreference = ctx.conceptreference();
 			if (conceptreference != null) {
-				luceneQuery += " AND " + conceptreference.conceptid().getText();
+				luceneQuery += conceptreference.conceptid().getText();
 			} else {
 				throwUnsupported("wildcard attributeName");
 			}
@@ -220,11 +225,6 @@ public class ExpressionConstraintToLuceneConverter {
 		@Override
 		public void enterDisjunctionrefinementset(ExpressionConstraintParser.DisjunctionrefinementsetContext ctx) {
 			throwUnsupported("disjunctionRefinementSet");
-		}
-
-		@Override
-		public void enterConjunctionattributeset(ExpressionConstraintParser.ConjunctionattributesetContext ctx) {
-			throwUnsupported("conjunctionAttributeSet");
 		}
 
 		@Override

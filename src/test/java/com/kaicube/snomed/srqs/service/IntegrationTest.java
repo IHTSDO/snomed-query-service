@@ -23,7 +23,7 @@ public class IntegrationTest {
 	@Test
 	public void testExpressionConstraintQuery_wildcardFocusConcept() throws Exception {
 		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*");
-		Assert.assertEquals(14, conceptResults.size());
+		Assert.assertEquals(16, conceptResults.size());
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class IntegrationTest {
 	@Test
 	public void testExpressionConstraintQuery_descendantOfDisjunction() throws Exception {
 		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("<123037004 OR <71388002");
-		assertResultSet(conceptResults, 442083009, 362961001, 128927009, 8367003);
+		assertResultSet(conceptResults, 442083009, 362961001, 128927009, 8367003, 72651009);
 	}
 
 	@Test
@@ -90,6 +90,12 @@ public class IntegrationTest {
 	public void testExpressionConstraintQuery_refinement_attributeValueAncestorOrSelfOf() throws Exception {
 		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=>>360314001");
 		assertResultSet(conceptResults, 8367003, 128927009);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_conjunctionAttributeSet() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=* AND 405813007=*");
+		assertResultSet(conceptResults, 128927009);
 	}
 
 	@Test(expected = NotFoundException.class)

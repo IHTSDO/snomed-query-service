@@ -9,7 +9,7 @@ public class TestReleaseImporter extends ReleaseImporter {
 
 	public ReleaseStore buildTestTaxonomy() throws IOException {
 
-		// Build a taxonomy, purely for testing expression constraint queries
+		// Build a taxonomy, this is not the correct structure, it's purely for testing expression constraint queries
 
 		final ConceptBuilder hasIntentAttribute = addConcept(363703001, "Has intent (attribute)");
 		final ConceptBuilder intentsQualifierValue = addConcept(363675004, "Intents (nature of procedure values) (qualifier value)");
@@ -17,14 +17,20 @@ public class TestReleaseImporter extends ReleaseImporter {
 		final ConceptBuilder cuttingAction = addConcept(360314001, "Cutting - action (qualifier value)");
 		final ConceptBuilder actionQualifierValue = addConcept(129264002, "Action (qualifier value)")
 				.addChildren(cuttingAction);
+		final ConceptBuilder procedureSiteDirectAttribute = addConcept(405813007, "Procedure site - Direct (attribute)");
 		final ConceptBuilder modelConcept = addConcept(ConceptConstants.MODEL_CONCEPT, "SNOMED CT Model Component (metadata)")
-				.addChildren(hasIntentAttribute, intentsQualifierValue, methodAttribute, actionQualifierValue, cuttingAction);
+				.addChildren(hasIntentAttribute, intentsQualifierValue, methodAttribute, actionQualifierValue, cuttingAction, procedureSiteDirectAttribute);
+
+		final ConceptBuilder nailStructure = addConcept(72651009, "Nail structure (body structure)");
 
 		addConcept(ConceptConstants.ROOT_CONCEPT, "SNOMED CT Concept (SNOMED RT+CTV3)")
 				.addChildren(
 						modelConcept,
 						addConcept(123037004, "Body structure (body structure)")
-								.addChildren(addConcept(442083009, "Anatomical or acquired body structure (body structure)")),
+								.addChildren(
+										addConcept(442083009, "Anatomical or acquired body structure (body structure)")
+											.addChildren(nailStructure)
+								),
 						addConcept(404684003, "Clinical finding (finding)"),
 						addConcept(71388002, "Procedure (procedure)")
 								.addChildren(
@@ -32,6 +38,7 @@ public class TestReleaseImporter extends ReleaseImporter {
 												.addAttribute(hasIntentAttribute, intentsQualifierValue),
 										addConcept(128927009, "Procedure by method (procedure)")
 												.addAttribute(methodAttribute, actionQualifierValue)
+												.addAttribute(procedureSiteDirectAttribute, nailStructure)
 												.addChildren(
 														addConcept(8367003, "Clipping nails of patient (procedure)")
 																.addAttribute(methodAttribute, cuttingAction)
