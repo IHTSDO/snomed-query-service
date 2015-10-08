@@ -212,11 +212,6 @@ public class ExpressionConstraintToLuceneConverter {
 
 		// Unsupported enter methods below this line
 
-//		@Override
-//		public void enterCompoundexpressionconstraint(ExpressionConstraintParser.CompoundexpressionconstraintContext ctx) {
-//			luceneQuery += " AND ";
-//		}
-
 		@Override
 		public void enterConjunctionrefinementset(ExpressionConstraintParser.ConjunctionrefinementsetContext ctx) {
 			throwUnsupported("conjunctionRefinementSet");
@@ -228,11 +223,6 @@ public class ExpressionConstraintToLuceneConverter {
 		}
 
 		@Override
-		public void enterDisjunctionattributeset(ExpressionConstraintParser.DisjunctionattributesetContext ctx) {
-			throwUnsupported("disjunctionAttributeSet");
-		}
-
-		@Override
 		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
 			throwUnsupported("stringComparisonOperator");
 		}
@@ -240,10 +230,6 @@ public class ExpressionConstraintToLuceneConverter {
 		@Override
 		public void enterNumericcomparisonoperator(ExpressionConstraintParser.NumericcomparisonoperatorContext ctx) {
 			throwUnsupported("numericComparisonOperator");
-		}
-
-		private void throwUnsupported() {
-			throw new UnsupportedOperationException("This expression is not currently supported, please use a simpleExpressionConstraint.");
 		}
 
 		private void throwUnsupported(String feature) {

@@ -98,6 +98,12 @@ public class IntegrationTest {
 		assertResultSet(conceptResults, 128927009);
 	}
 
+	@Test
+	public void testExpressionConstraintQuery_disjunctionAttributeSet() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=* OR 405813007=*");
+		assertResultSet(conceptResults, 128927009, 8367003);
+	}
+
 	@Test(expected = NotFoundException.class)
 	public void testRetrieveConceptNotFound() throws Exception {
 		releaseReader.retrieveConcept("121111004");
