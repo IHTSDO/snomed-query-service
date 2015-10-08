@@ -7,7 +7,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 public class IntegrationTest {
@@ -20,20 +20,68 @@ public class IntegrationTest {
 		releaseReader = new ReleaseReader(releaseStore);
 	}
 
+	@Test
+	public void testExpressionConstraintQuery_wildcardFocusConcept() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*");
+		Assert.assertEquals(14, conceptResults.size());
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_ancestorOfConjunctionOnlyRootOverlap() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery(">442083009 AND >8367003");
+		assertResultSet(conceptResults, 138875005);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_ancestorOfConjunctionSomeOverlap() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery(">>128927009 AND >8367003");
+		assertResultSet(conceptResults, 138875005, 71388002, 128927009);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_descendantOfConjunction() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("<71388002 AND <128927009");
+		assertResultSet(conceptResults, 8367003);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_descendantOfDisjunction() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("<123037004 OR <71388002");
+		assertResultSet(conceptResults, 442083009, 362961001, 128927009, 8367003);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_descendantOfExclusion() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("<71388002 MINUS <<362961001");
+		assertResultSet(conceptResults, 128927009, 8367003);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_refinement_attributeName() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=*");
+		assertResultSet(conceptResults, 128927009, 8367003);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_refinement_attributeValue() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=129264002");
+		assertResultSet(conceptResults, 128927009);
+	}
+
+//	@Test TODO
+//	public void testExpressionConstraintQuery_refinement_attributeValueDescendantOrSelf() throws Exception {
+//		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=<<129264002");
+//		assertResultSet(conceptResults, 128927009);
+//	}
+
 	@Test(expected = NotFoundException.class)
 	public void testRetrieveConceptNotFound() throws Exception {
-		releaseReader.retrieveConcept("123");
+		releaseReader.retrieveConcept("121111004");
 	}
 
 	@Test
 	public void testRetrieveConcept() throws Exception {
 		Assert.assertEquals("Body structure (body structure)", releaseReader.retrieveConcept("123037004").getFsn());
-	}
-
-	@Test
-	public void testExpressionConstraintQuery() throws Exception {
-		final List<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*");
-		Assert.assertEquals(10, conceptResults.size());
 	}
 
 	@Test
@@ -52,4 +100,21 @@ public class IntegrationTest {
 		Assert.assertTrue(descendants.contains(new ConceptResult("128927009", null)));
 		Assert.assertTrue(descendants.contains(new ConceptResult("8367003", null)));
 	}
+
+	private void assertResultSet(Set<ConceptResult> conceptResults, int... conceptIds) {
+		Set<ConceptResult> notFound = new HashSet<>();
+		Set<ConceptResult> remaining = new HashSet<>(conceptResults);
+		for (int conceptId : conceptIds) {
+			final ConceptResult testConcept = new ConceptResult(conceptId + "", null);
+			if (conceptResults.contains(testConcept)) {
+				remaining.remove(testConcept);
+			} else {
+				notFound.add(testConcept);
+			}
+		}
+		if (!notFound.isEmpty() || !remaining.isEmpty()) {
+			Assert.fail("Results set did not match expected concept ids." + (notFound.isEmpty() ? "" : "\nConcepts not found are: " + notFound) + (!remaining.isEmpty() ? "\nConcept found but not expected found are: " + remaining : ""));
+		}
+	}
+
 }

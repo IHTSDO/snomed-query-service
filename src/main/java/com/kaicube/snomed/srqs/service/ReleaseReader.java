@@ -1,164 +1,136 @@
 package com.kaicube.snomed.srqs.service;
 
+import com.google.common.collect.Lists;
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
-import com.kaicube.snomed.srqs.domain.Refset;
+import com.kaicube.snomed.srqs.exceptions.ConceptNotFoundException;
 import com.kaicube.snomed.srqs.exceptions.NotFoundException;
-import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintBaseListener;
-import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintLexer;
-import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintParser;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ReleaseReader {
 
+	private ExpressionConstraintToLuceneConverter elToLucene;
 	private final IndexSearcher indexSearcher;
-	private final QueryParser parser;
+	private final QueryParser luceneQueryParser;
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+	public static final Pattern ANCESTOR_OF_PATTERN = Pattern.compile(".*(ancestorOf\\(([^\\)]+)\\)).*");
+	public static final Pattern ANCESTOR_OR_SELF_OF_PATTERN = Pattern.compile(".*(ancestorOrSelfOf\\(([^\\)]+)\\)).*");
 
 	public ReleaseReader(ReleaseStore releaseStore) throws IOException {
+		elToLucene = new ExpressionConstraintToLuceneConverter();
 		indexSearcher = new IndexSearcher(DirectoryReader.open(releaseStore.getDirectory()));
 		final Analyzer analyzer = releaseStore.createAnalyzer();
-		parser = new QueryParser(Version.LUCENE_40, Concept.ID, analyzer);
-		parser.setAllowLeadingWildcard(true);
-	}
-
-	protected ReleaseReader() {
-		indexSearcher = null;
-		parser = null;
+		luceneQueryParser = new QueryParser(Version.LUCENE_40, Concept.ID, analyzer);
+		luceneQueryParser.setAllowLeadingWildcard(true);
 	}
 
 	public long getConceptCount() throws IOException {
 		return indexSearcher.collectionStatistics(Concept.ID).docCount();
 	}
 
-	public ConceptResult retrieveConcept(String conceptId) throws IOException, NotFoundException {
-		return getConceptResult(getConceptDocument(conceptId));
+	public ConceptResult retrieveConcept(String conceptId) throws IOException, ParseException, NotFoundException {
+		final Set<ConceptResult> results = expressionConstraintQuery(conceptId);
+		if (!results.isEmpty()) {
+			return results.iterator().next();
+		} else {
+			throw new ConceptNotFoundException(conceptId);
+		}
 	}
 
-	public List<ConceptResult> expressionConstraintQuery(String ecQuery) throws ParseException, IOException, NotFoundException {
-		List<ConceptResult> concepts = new ArrayList<>();
+	public Set<ConceptResult> expressionConstraintQuery(String ecQuery) throws ParseException, IOException, NotFoundException {
+		Set<ConceptResult> concepts = new HashSet<>();
 
 		if (ecQuery != null && !ecQuery.isEmpty()) {
-			final ELQuery query = parseQuery(ecQuery);
-			if (query.isFocusConceptWildcard()) {
-				concepts.addAll(retrieveConceptDescendants(ConceptConstants.rootConcept, query));
-			} else if (query.getFocusConceptId() != null) {
-				final String focusConcept = query.getFocusConceptId();
-				if (query.isIncludeSelf()) {
-					conditionalAdd(getConceptDocument(focusConcept), concepts, query);
-				}
-				if (query.isDescendantOf()) {
-					concepts.addAll(retrieveConceptDescendants(focusConcept, query));
-				} else if (query.isAncestorOf()) {
-					concepts.addAll(retrieveConceptAncestors(focusConcept, query));
-				}
-			} else if (query.getMemberOfRefsetId() != null) {
-				concepts.addAll(retrieveRefsetReferencedConcepts(query.getMemberOfRefsetId(), query));
+			String luceneQuery = elToLucene.parse(ecQuery);
+			while (luceneQuery.contains("ancestorOf")) {
+				luceneQuery = processAncestorOf(luceneQuery);
+			}
+			while (luceneQuery.contains("ancestorOrSelfOf")) {
+				luceneQuery = processAncestorOrSelfOf(luceneQuery);
+			}
+			final TopDocs topDocs = indexSearcher.search(luceneQueryParser.parse(luceneQuery), Integer.MAX_VALUE);
+			logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
+			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+				concepts.add(getConceptResult(getDocument(scoreDoc)));
 			}
 		}
 		return concepts;
 	}
 
-	protected ELQuery parseQuery(String ecQuery) {
-		final ExpressionConstraintLexer lexer = new ExpressionConstraintLexer(new ANTLRInputStream(ecQuery));
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		final ExpressionConstraintParser parser = new ExpressionConstraintParser(tokens);
-		ParserRuleContext tree = parser.expressionconstraint();
+	private String processAncestorOf(String luceneQuery) throws IOException, NotFoundException {
+		return processAncestorStatement(luceneQuery, ANCESTOR_OF_PATTERN, false);
+	}
 
-		final ParseTreeWalker walker = new ParseTreeWalker();
-		final ExpressionConstraintListener listener = new ExpressionConstraintListener();
-		walker.walk(listener, tree);
-		return listener.getElQuery();
+	private String processAncestorOrSelfOf(String luceneQuery) throws IOException, NotFoundException {
+		return processAncestorStatement(luceneQuery, ANCESTOR_OR_SELF_OF_PATTERN, true);
+	}
+
+	private String processAncestorStatement(String luceneQuery, Pattern pattern, boolean includeSelf) throws IOException, NotFoundException {
+		logger.info("Processing internal query '{}'" + luceneQuery);
+		final Matcher matcher = pattern.matcher(luceneQuery);
+		if (!matcher.matches()) {
+			final String message = "Failed to extract the ancestor id from the internal query syntax '" + luceneQuery + "'";
+			logger.error(message);
+			throw new IllegalStateException(message);
+		}
+		final String conceptId = matcher.group(2);
+		final Document conceptDocument = getConceptDocument(conceptId);
+		final List<String> ancestors = Lists.newArrayList(conceptDocument.getValues(Concept.ANCESTOR));
+		if (includeSelf) {
+			ancestors.add(conceptId);
+		}
+
+		StringBuilder ancestorIdBuilder = new StringBuilder();
+		if (!ancestors.isEmpty()) {
+			ancestorIdBuilder.append("(");
+			boolean first = true;
+			for (String ancestor : ancestors) {
+				if (first) {
+					first = false;
+				} else {
+					ancestorIdBuilder.append(" OR ");
+				}
+				ancestorIdBuilder.append(Concept.ID).append(":").append(ancestor);
+			}
+			ancestorIdBuilder.append(")");
+		}
+		String newLuceneQuery = luceneQuery.replace(matcher.group(1), ancestorIdBuilder.toString());
+		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", luceneQuery, newLuceneQuery);
+		return newLuceneQuery;
+	}
+
+	private Document getConceptDocument(String conceptId) throws IOException, NotFoundException {
+		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(Concept.ID, conceptId)), Integer.MAX_VALUE);
+		if (docs.totalHits < 1) {
+			throw new ConceptNotFoundException(conceptId);
+		}
+		return indexSearcher.doc(docs.scoreDocs[0].doc);
 	}
 
 	public Set<ConceptResult> retrieveConceptAncestors(String conceptId) throws ParseException, IOException, NotFoundException {
-		return retrieveConceptAncestors(conceptId, null);
+		return expressionConstraintQuery(">" + conceptId);
 	}
 
-	private Set<ConceptResult> retrieveConceptAncestors(String conceptId, ELQuery query) throws ParseException, IOException, NotFoundException {
-		Set<ConceptResult> concepts = new HashSet<>();
-		final String[] ancestorIds = getConceptDocument(conceptId).getValues(Concept.ANCESTOR);
-		for (String ancestorId : ancestorIds) {
-			conditionalAdd(getConceptDocument(ancestorId), concepts, query);
-		}
-		return concepts;
-	}
-
-	public Set<ConceptResult> retrieveConceptDescendants(String conceptId) throws ParseException, IOException {
-		return retrieveConceptDescendants(conceptId, null);
-	}
-
-	private Set<ConceptResult> retrieveConceptDescendants(String conceptId, ELQuery query) throws ParseException, IOException {
-		Set<ConceptResult> concepts = new HashSet<>();
-		final Long idLong = new Long(conceptId);
-		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ANCESTOR, idLong, idLong, true, true), Integer.MAX_VALUE);
-		for (ScoreDoc scoreDoc : docs.scoreDocs) {
-			conditionalAdd(getDocument(scoreDoc), concepts, query);
-		}
-		return concepts;
-	}
-
-	private List<ConceptResult> retrieveRefsetReferencedConcepts(String refsetId, ELQuery query) throws IOException, NotFoundException {
-		List<ConceptResult> concepts = new ArrayList<>();
-		final Long idLong = new Long(refsetId);
-		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Refset.ID, idLong, idLong, true, true), 1);
-		if (docs.totalHits < 1) {
-			throw new NotFoundException("Reference set with id " + refsetId + " could not be found.");
-		}
-		final Document doc = indexSearcher.doc(docs.scoreDocs[0].doc);
-		for (String referencedConceptId : doc.getValues(Refset.REFERENCED_COMPONENT_ID)) {
-			conditionalAdd(getConceptDocument(referencedConceptId), concepts, query);
-		}
-		return concepts;
-	}
-
-	public List<ConceptResult> retrieveReferenceSets() throws ParseException, IOException, NotFoundException {
-		List<ConceptResult> concepts = new ArrayList<>();
-		final TopDocs docs = indexSearcher.search(parser.parse(Refset.ID), Integer.MAX_VALUE);
-		for (ScoreDoc scoreDoc : docs.scoreDocs) {
-			concepts.add(getConceptResult(getConceptDocument(getDocument(scoreDoc).get(Refset.ID))));
-		}
-		return concepts;
-	}
-
-	private void conditionalAdd(Document document, Collection<ConceptResult> concepts, ELQuery query) {
-		boolean addConcept = false;
-		if (query == null || query.getAttributeName() == null) {
-			addConcept = true;
-		} else {
-			final String[] values = document.getValues(query.getAttributeName());
-			if (values.length > 0) {
-				final ELQuery.ExpressionComparisonOperator attributeOperator = query.getAttributeOperator();
-				if (attributeOperator == null) {
-					addConcept = true;
-				} else {
-					final String attributeValue = query.getAttributeValue();
-					for (int i = 0; !addConcept && i < values.length; i++) {
-						final boolean equals = attributeValue.equals(values[0]);
-						addConcept = attributeOperator == ELQuery.ExpressionComparisonOperator.equals ? equals : !equals;
-					}
-				}
-			}
-		}
-		if (addConcept) {
-			concepts.add(getConceptResult(document));
-		}
+	public Set<ConceptResult> retrieveConceptDescendants(String conceptId) throws ParseException, IOException, NotFoundException {
+		return expressionConstraintQuery("<" + conceptId);
 	}
 
 	private Document getDocument(ScoreDoc scoreDoc) throws IOException {
@@ -169,116 +141,8 @@ public class ReleaseReader {
 		return new ConceptResult(document.get(Concept.ID), document.get(Concept.FSN));
 	}
 
-	private Document getConceptDocument(String conceptId) throws IOException, NotFoundException {
-		final Long idLong = new Long(conceptId);
-		final TopDocs docs = indexSearcher.search(NumericRangeQuery.newLongRange(Concept.ID, idLong, idLong, true, true), 1);
-		if (docs.totalHits < 1) {
-			throw new NotFoundException("Concept with id " + conceptId + " could not be found.");
-		}
-		return indexSearcher.doc(docs.scoreDocs[0].doc);
-	}
-
-	protected static final class ExpressionConstraintListener extends ExpressionConstraintBaseListener {
-
-		private ELQuery elQuery;
-
-		public ExpressionConstraintListener() {
-			elQuery = new ELQuery();
-		}
-
-		@Override
-		public void enterFocusconcept(ExpressionConstraintParser.FocusconceptContext ctx) {
-			if (ctx.memberof() != null) {
-				elQuery.setMemberOfRefsetId(ctx.conceptreference().conceptid().getText());
-			} else if (ctx.wildcard() != null) {
-				elQuery.setFocusConceptWildcard();
-			} else {
-				elQuery.setFocusConceptId(ctx.conceptreference().conceptid().getText());
-			}
-		}
-
-		@Override
-		public void enterDescendantof(ExpressionConstraintParser.DescendantofContext ctx) {
-			elQuery.descendantOf();
-		}
-
-		@Override
-		public void enterDescendantorselfof(ExpressionConstraintParser.DescendantorselfofContext ctx) {
-			elQuery.descendantOrSelfOf();
-		}
-
-		@Override
-		public void enterAncestorof(ExpressionConstraintParser.AncestorofContext ctx) {
-			elQuery.ancestorOf();
-		}
-
-		@Override
-		public void enterAncestororselfof(ExpressionConstraintParser.AncestororselfofContext ctx) {
-			elQuery.ancestorOrSelfOf();
-		}
-
-		@Override
-		public void enterAttributename(ExpressionConstraintParser.AttributenameContext ctx) {
-			elQuery.setAttributeName(ctx.conceptreference().conceptid().getText());
-		}
-
-		@Override
-		public void enterExpressioncomparisonoperator(ExpressionConstraintParser.ExpressioncomparisonoperatorContext ctx) {
-			elQuery.setAttributeOperator(ctx.getText().equals("=") ? ELQuery.ExpressionComparisonOperator.equals : ELQuery.ExpressionComparisonOperator.notEquals);
-		}
-
-		@Override
-		public void enterExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
-			elQuery.setAttributeValue(ctx.getPayload().getText());
-		}
-
-		// Unsupported enter methods below this line
-
-		@Override
-		public void enterCompoundexpressionconstraint(ExpressionConstraintParser.CompoundexpressionconstraintContext ctx) {
-			throwUnsupported();
-		}
-
-		@Override
-		public void enterConjunctionrefinementset(ExpressionConstraintParser.ConjunctionrefinementsetContext ctx) {
-			throwUnsupported("conjunctionRefinementSet");
-		}
-
-		@Override
-		public void enterDisjunctionrefinementset(ExpressionConstraintParser.DisjunctionrefinementsetContext ctx) {
-			throwUnsupported("disjunctionRefinementSet");
-		}
-
-		@Override
-		public void enterConjunctionattributeset(ExpressionConstraintParser.ConjunctionattributesetContext ctx) {
-			throwUnsupported("conjunctionAttributeSet");
-		}
-
-		@Override
-		public void enterDisjunctionattributeset(ExpressionConstraintParser.DisjunctionattributesetContext ctx) {
-			throwUnsupported("disjunctionAttributeSet");
-		}
-
-		@Override
-		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
-			throwUnsupported("stringComparisonOperator");
-		}
-
-		@Override
-		public void enterNumericcomparisonoperator(ExpressionConstraintParser.NumericcomparisonoperatorContext ctx) {
-			throwUnsupported("numericComparisonOperator");
-		}
-
-		private void throwUnsupported() {
-			throw new UnsupportedOperationException("This expression is not currently supported, please use a simpleExpressionConstraint.");
-		}
-
-		private void throwUnsupported(String feature) {
-			throw new UnsupportedOperationException(feature + " is not currently supported.");
-		}
-
-		public ELQuery getElQuery() {
-			return elQuery;
-		}
+	public Set<ConceptResult> retrieveReferenceSets() throws ParseException, NotFoundException, IOException {
+		// TODO: harden this
+		return expressionConstraintQuery("<" + ConceptConstants.REFSET_CONCEPT);
 	}
 }

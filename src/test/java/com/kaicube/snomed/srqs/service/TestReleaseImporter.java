@@ -1,6 +1,7 @@
 package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
+import com.kaicube.snomed.srqs.domain.ConceptConstants;
 
 import java.io.IOException;
 
@@ -9,20 +10,21 @@ public class TestReleaseImporter extends ReleaseImporter {
 	public ReleaseStore buildTestTaxonomy() throws IOException {
 
 		// Build a taxonomy, purely for testing expression constraint queries
-		
-		final ConceptBuilder hasIntentAttribute = addConcept(363703001, "Has intent (attribute)");
-		final ConceptBuilder intentsQualifierValue = addConcept(363703001, "Intents (nature of procedure values) (qualifier value)");
-		final ConceptBuilder methodAttribute = addConcept(260686004, "Method (attribute)");
-		final ConceptBuilder actionQualifierValue = addConcept(129264002, "Action (qualifier value)");
-		final ConceptBuilder cuttingAction = addConcept(360314001, "Cutting - action (qualifier value)");
 
-		addConcept(138875005, "SNOMED CT Concept (SNOMED RT+CTV3)")
+		final ConceptBuilder hasIntentAttribute = addConcept(363703001, "Has intent (attribute)");
+		final ConceptBuilder intentsQualifierValue = addConcept(363675004, "Intents (nature of procedure values) (qualifier value)");
+		final ConceptBuilder methodAttribute = addConcept(260686004, "Method (attribute)");
+		final ConceptBuilder cuttingAction = addConcept(360314001, "Cutting - action (qualifier value)");
+		final ConceptBuilder actionQualifierValue = addConcept(129264002, "Action (qualifier value)")
+				.addChildren(cuttingAction);
+		final ConceptBuilder modelConcept = addConcept(ConceptConstants.MODEL_CONCEPT, "SNOMED CT Model Component (metadata)")
+				.addChildren(hasIntentAttribute, intentsQualifierValue, methodAttribute, actionQualifierValue, cuttingAction);
+
+		addConcept(ConceptConstants.ROOT_CONCEPT, "SNOMED CT Concept (SNOMED RT+CTV3)")
 				.addChildren(
-						hasIntentAttribute,
-						intentsQualifierValue,
-						methodAttribute,
-						actionQualifierValue.addChildren(cuttingAction),
-						addConcept(123037004, "Body structure (body structure)"),
+						modelConcept,
+						addConcept(123037004, "Body structure (body structure)")
+								.addChildren(addConcept(442083009, "Anatomical or acquired body structure (body structure)")),
 						addConcept(404684003, "Clinical finding (finding)"),
 						addConcept(71388002, "Procedure (procedure)")
 								.addChildren(
@@ -37,6 +39,10 @@ public class TestReleaseImporter extends ReleaseImporter {
 								)
 				);
 		return writeToIndex();
+	}
+
+	private ConceptBuilder addConcept(String id, String fsn) {
+		return addConcept(new Long(id), fsn);
 	}
 
 	private ConceptBuilder addConcept(long id, String fsn) {

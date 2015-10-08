@@ -13,10 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.text.NumberFormat;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -24,11 +20,9 @@ public class ReleaseImporter {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private Long2ObjectMap<Concept> concepts;
-	private Map<Long, Set<Long>> refsetIdToComponentsMap;
 
 	public ReleaseImporter() {
 		concepts = new Long2ObjectOpenHashMap<>();
-		refsetIdToComponentsMap = new HashMap<>();
 	}
 
 	public ReleaseStore loadReleaseZip(String releaseDirPath) throws IOException {
@@ -70,27 +64,6 @@ public class ReleaseImporter {
 				}
 			}
 			logger.info("{} concepts added to index in total.", conceptsAdded);
-
-			final Set<Long> referencedComponentIdsToRemove = new HashSet<>();
-			for (Long refsetId : refsetIdToComponentsMap.keySet()) {
-				logger.info("Validating referenced components in refset {}", refsetId);
-				final Set<Long> referencedComponentIds = refsetIdToComponentsMap.get(refsetId);
-				Concept concept;
-				for (Long referencedComponentId : referencedComponentIds) {
-					concept = concepts.get(referencedComponentId);
-					if (concept == null || !concept.isActive()) {
-						referencedComponentIdsToRemove.add(referencedComponentId);
-					}
-				}
-				if (!referencedComponentIdsToRemove.isEmpty()) {
-					logger.info("{} referenced concepts do not exist or are not active, removing from set. {} will remain.", referencedComponentIdsToRemove.size(), referencedComponentIds.size() - referencedComponentIdsToRemove.size());
-					referencedComponentIds.removeAll(referencedComponentIdsToRemove);
-					referencedComponentIdsToRemove.clear();
-				}
-				logger.info("Adding refset {} to index.", refsetId);
-				releaseWriter.addRefset(refsetId, referencedComponentIds);
-			}
-			logger.info("{} reference sets added to index in total.", refsetIdToComponentsMap.size());
 			logger.info("Closing index writer.");
 		}
 
@@ -164,7 +137,7 @@ public class ReleaseImporter {
 				if ("1".equals(values[DescriptionFields.active])) {
 					final String referencedComponentId = values[RefsetFields.referencedComponentId];
 					if (Concept.isConceptId(referencedComponentId)) {
-						getCreateRefset(new Long(values[RefsetFields.refsetId])).add(new Long(referencedComponentId));
+						getCreateConcept(new Long(referencedComponentId)).addMemberOfRefsetId(new Long(values[RefsetFields.refsetId]));
 					}
 				}
 			}
@@ -182,15 +155,6 @@ public class ReleaseImporter {
 			concepts.put(id, concept);
 		}
 		return concept;
-	}
-
-	private Set<Long> getCreateRefset(Long refsetId) {
-		Set<Long> referencedComponentIds = refsetIdToComponentsMap.get(refsetId);
-		if (referencedComponentIds == null) {
-			referencedComponentIds = new HashSet<>();
-			refsetIdToComponentsMap.put(refsetId, referencedComponentIds);
-		}
-		return referencedComponentIds;
 	}
 
 	private void readLines(ZipInputStream conceptsFileStream, ValuesHandler valuesHandler, String componentType) throws IOException {

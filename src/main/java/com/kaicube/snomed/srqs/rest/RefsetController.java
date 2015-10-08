@@ -7,10 +7,13 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping(value = "/refsets", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -20,10 +23,10 @@ public class RefsetController {
 	private ReleaseReader releaseReader;
 
 	@RequestMapping
-	@ApiOperation(value = "List reference sets", notes = "List all reference sets.",
-			response = ConceptResult.class, responseContainer = "List")
+	@ApiOperation(value = "Retrieve reference sets", notes = "Retrieve all reference sets.",
+			response = ConceptResult.class, responseContainer = "Set")
 	@ResponseBody
-	public List<ConceptResult> retrieveReferenceSets() throws IOException, ParseException, NotFoundException {
+	public Set<ConceptResult> retrieveReferenceSets() throws IOException, ParseException, NotFoundException {
 		return releaseReader.retrieveReferenceSets();
 	}
 

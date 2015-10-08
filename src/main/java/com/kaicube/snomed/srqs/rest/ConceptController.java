@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Set;
 
 @RestController
@@ -25,7 +24,7 @@ public class ConceptController {
 			"Supported expressions for the focus concept are: (<, <<, >, >>, *, ^). A singe attribute and value can be used. Conjunction and disjunction are not yet supported.",
 			response = ConceptResult.class, responseContainer = "List")
 	@ResponseBody
-	public List<ConceptResult> retrieveConcepts(@RequestParam String ecQuery) throws IOException, ParseException, NotFoundException {
+	public Set<ConceptResult> retrieveConcepts(@RequestParam String ecQuery) throws IOException, ParseException, NotFoundException {
 		return releaseReader.expressionConstraintQuery(ecQuery);
 	}
 
@@ -34,7 +33,7 @@ public class ConceptController {
 			notes = "Retrieve a concept by its identifier.",
 			response = ConceptResult.class)
 	@ResponseBody
-	public ConceptResult retrieveConcept(@PathVariable String conceptId) throws IOException, NotFoundException {
+	public ConceptResult retrieveConcept(@PathVariable String conceptId) throws IOException, NotFoundException, ParseException {
 		return releaseReader.retrieveConcept(conceptId);
 	}
 

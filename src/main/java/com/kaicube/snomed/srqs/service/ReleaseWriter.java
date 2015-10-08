@@ -1,10 +1,8 @@
 package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
-import com.kaicube.snomed.srqs.domain.Refset;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -25,7 +23,7 @@ public class ReleaseWriter implements AutoCloseable {
 
 	public void addConcept(Concept concept) throws IOException {
 		Document doc = new Document();
-		doc.add(new LongField(Concept.ID, concept.getId(), Field.Store.YES));
+		doc.add(new StringField(Concept.ID, concept.getId().toString(), Field.Store.YES));
 		doc.add(new StringField(Concept.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
 		doc.add(new StringField(Concept.FSN, concept.getFsn(), Field.Store.YES));
 		final MultiValueMap<String, String> attributes = concept.getAttributes();
@@ -36,16 +34,10 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 		final Set<Long> ancestorIds = concept.getAncestorIds();
 		for (Long ancestorId : ancestorIds) {
-			doc.add(new LongField(Concept.ANCESTOR, ancestorId, Field.Store.YES));
+			doc.add(new StringField(Concept.ANCESTOR, ancestorId.toString(), Field.Store.YES));
 		}
-		iwriter.addDocument(doc);
-	}
-
-	public void addRefset(Long refsetId, Set<Long> referencedComponentIds) throws IOException {
-		Document doc = new Document();
-		doc.add(new LongField(Refset.ID, refsetId, Field.Store.YES));
-		for (Long referencedComponentId : referencedComponentIds) {
-			doc.add(new LongField(Refset.REFERENCED_COMPONENT_ID, referencedComponentId, Field.Store.YES));
+		for (Long memberRefsetId : concept.getMemberOfRefsetIds()) {
+			doc.add(new StringField(Concept.MEMBER_OF, memberRefsetId.toString(), Field.Store.YES));
 		}
 		iwriter.addDocument(doc);
 	}

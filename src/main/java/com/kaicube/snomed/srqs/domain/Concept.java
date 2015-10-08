@@ -11,18 +11,21 @@ public class Concept {
 	public static final String ID = "id";
 	public static final String ACTIVE = "active";
 	public static final String FSN = "fsn";
-	public static final String ANCESTOR = "ancestors";
+	public static final String ANCESTOR = "ancestor";
+	public static final String MEMBER_OF = "memberOf";
 
 	private final Long id;
 	private boolean active;
 	private String fsn;
 	private final MultiValueMap<String, String> attributes;
 	private final Set<Concept> parents;
+	private final Set<Long> memberOfRefsetIds;
 
 	public Concept(Long id) {
 		this.id = id;
 		attributes = new LinkedMultiValueMap<>();
 		parents = new HashSet<>();
+		memberOfRefsetIds = new HashSet<>();
 	}
 
 	public void setActive(boolean active) {
@@ -65,6 +68,14 @@ public class Concept {
 		return collectParentIds(this, new HashSet<Long>());
 	}
 
+	public void addMemberOfRefsetId(Long refsetId) {
+		memberOfRefsetIds.add(refsetId);
+	}
+
+	public Set<Long> getMemberOfRefsetIds() {
+		return memberOfRefsetIds;
+	}
+
 	private Set<Long> collectParentIds(Concept concept, Set<Long> ancestors) throws IllegalStateException{
 		for (Concept parent : concept.parents) {
 			if (!parent.isActive()) {
@@ -83,5 +94,4 @@ public class Concept {
 		}
 		return false;
 	}
-
 }
