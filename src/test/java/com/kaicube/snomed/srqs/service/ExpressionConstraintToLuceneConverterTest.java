@@ -31,12 +31,12 @@ public class ExpressionConstraintToLuceneConverterTest {
 
 	@Test
 	public void test_simpleExpressionConstraint_ancestorOrSelfOf() throws Exception {
-		Assert.assertEquals("ancestorOrSelfOf(307824009)", parser.parse(">>307824009"));
+		Assert.assertEquals("ANCESTOR_OR_SELF_OF(307824009)", parser.parse(">>307824009"));
 	}
 
 	@Test
 	public void test_simpleExpressionConstraint_ancestorOf() throws Exception {
-		Assert.assertEquals("ancestorOf(307824009)", parser.parse(">307824009"));
+		Assert.assertEquals("ANCESTOR_OF(307824009)", parser.parse(">307824009"));
 	}
 
 	@Test
@@ -66,12 +66,12 @@ public class ExpressionConstraintToLuceneConverterTest {
 
 	@Test
 	public void test_refinedExpressionConstraint_wildcardConcept_attributeValueDescendantOf() {
-		Assert.assertEquals("id:* AND 260686004:attributeDescendantOf(129264002)", parser.parse("*:260686004=<129264002"));
+		Assert.assertEquals("id:* AND 260686004:ATTRIBUTE_DESCENDANT_OF(129264002)", parser.parse("*:260686004=<129264002"));
 	}
 
 	@Test
 	public void test_refinedExpressionConstraint_wildcardConcept_attributeValueDescendantOrSelf() {
-		Assert.assertEquals("id:* AND 260686004:attributeDescendantOrSelfOf(129264002)", parser.parse("*:260686004=<<129264002"));
+		Assert.assertEquals("id:* AND 260686004:ATTRIBUTE_DESCENDANT_OR_SELF_OF(129264002)", parser.parse("*:260686004=<<129264002"));
 	}
 
 	@Test(expected = UnsupportedOperationException.class)

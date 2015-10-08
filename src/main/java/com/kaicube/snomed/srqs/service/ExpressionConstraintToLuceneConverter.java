@@ -13,11 +13,37 @@ import java.util.List;
 
 public class ExpressionConstraintToLuceneConverter {
 
-	public interface InternalFunction {
-		String ANCESTOR_OR_SELF_OF = "ancestorOrSelfOf";
-		String ANCESTOR_OF = "ancestorOf";
-		String ATTRIBUTE_DESCENDANT_OF = "attributeDescendantOf";
-		String ATTRIBUTE_DESCENDANT_OR_SELF_OF = "attributeDescendantOrSelfOf";
+	enum InternalFunction {
+		ATTRIBUTE_DESCENDANT_OF(true, false, false),
+		ATTRIBUTE_DESCENDANT_OR_SELF_OF(true, false, true),
+		ATTRIBUTE_ANCESTOR_OF(true, true, false),
+		ATTRIBUTE_ANCESTOR_OR_SELF_OF(true, true, true),
+
+		ANCESTOR_OR_SELF_OF(false, true, true),
+		ANCESTOR_OF(false, true, false);
+
+		private boolean attributeType;
+		private boolean ancestorType;
+		private boolean includeSelf;
+
+		InternalFunction(boolean attributeType, boolean ancestorType, boolean includeSelf) {
+			this.attributeType = attributeType;
+			this.ancestorType = ancestorType;
+			this.includeSelf = includeSelf;
+		}
+
+		public boolean isAttributeType() {
+			return attributeType;
+		}
+
+		public boolean isAncestorType() {
+			return ancestorType;
+		}
+
+		public boolean isIncludeSelf() {
+			return includeSelf;
+		}
+
 	}
 
 	public String parse(String ecQuery) throws RecognitionException {
@@ -118,15 +144,17 @@ public class ExpressionConstraintToLuceneConverter {
 							luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF + "(" + conceptId + ")";
 						}
 					} else if (constraintoperator.ancestororselfof() != null) {
-						if (inAttribute) {
-							throwUnsupported("ancestorOrSelfOf attribute value");
+						if (!inAttribute) {
+							luceneQuery += InternalFunction.ANCESTOR_OR_SELF_OF + "(" + conceptId + ")";
+						} else {
+							luceneQuery += InternalFunction.ATTRIBUTE_ANCESTOR_OR_SELF_OF + "(" + conceptId + ")";
 						}
-						luceneQuery += InternalFunction.ANCESTOR_OR_SELF_OF + "(" + conceptId + ")";
 					} else if (constraintoperator.ancestorof() != null) {
-						if (inAttribute) {
-							throwUnsupported("ancestorOrSelfOf attribute value");
+						if (!inAttribute) {
+							luceneQuery += InternalFunction.ANCESTOR_OF + "(" + conceptId + ")";
+						} else {
+							luceneQuery += InternalFunction.ATTRIBUTE_ANCESTOR_OF + "(" + conceptId + ")";
 						}
-						luceneQuery += InternalFunction.ANCESTOR_OF + "(" + conceptId + ")";
 					}
 				}
 			}

@@ -80,11 +80,17 @@ public class IntegrationTest {
 		assertResultSet(conceptResults, 8367003);
 	}
 
-//	@Test TODO
-//	public void testExpressionConstraintQuery_refinement_attributeValueAncestorOf() throws Exception {
-//		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=>129264002");
-//		assertResultSet(conceptResults, 128927009);
-//	}
+	@Test
+	public void testExpressionConstraintQuery_refinement_attributeValueAncestorOf() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=>360314001");
+		assertResultSet(conceptResults, 128927009);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_refinement_attributeValueAncestorOrSelfOf() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=>>360314001");
+		assertResultSet(conceptResults, 8367003, 128927009);
+	}
 
 	@Test(expected = NotFoundException.class)
 	public void testRetrieveConceptNotFound() throws Exception {

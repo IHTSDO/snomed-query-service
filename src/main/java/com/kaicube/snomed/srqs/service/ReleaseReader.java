@@ -31,10 +31,13 @@ public class ReleaseReader {
 	private final IndexSearcher indexSearcher;
 	private final QueryParser luceneQueryParser;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
-	public static final Pattern ANCESTOR_OF_PATTERN = Pattern.compile(".*(" + ExpressionConstraintToLuceneConverter.InternalFunction.ANCESTOR_OF + "\\(([^\\)]+)\\)).*");
-	public static final Pattern ANCESTOR_OR_SELF_OF_PATTERN = Pattern.compile(".*(" + ExpressionConstraintToLuceneConverter.InternalFunction.ANCESTOR_OR_SELF_OF + "\\(([^\\)]+)\\)).*");
-	public static final Pattern ATTRIBUTE_DESCENDANT_OF_PATTERN = Pattern.compile(".*(" + ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OF + "\\(([^\\)]+)\\)).*");
-	public static final Pattern ATTRIBUTE_DESCENDANT_OR_SELF_OF_PATTERN = Pattern.compile(".*(" + ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF + "\\(([^\\)]+)\\)).*");
+
+	public static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
+	static {
+		for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : ExpressionConstraintToLuceneConverter.InternalFunction.values()) {
+			internalFunctionPatternMap.put(internalFunction, Pattern.compile(".*(" + internalFunction + "\\(([^\\)]+)\\)).*"));
+		}
+	}
 
 	public ReleaseReader(ReleaseStore releaseStore) throws IOException {
 		elToLucene = new ExpressionConstraintToLuceneConverter();
@@ -75,17 +78,10 @@ public class ReleaseReader {
 
 		if (ecQuery != null && !ecQuery.isEmpty()) {
 			String luceneQuery = elToLucene.parse(ecQuery);
-			while (luceneQuery.contains(ExpressionConstraintToLuceneConverter.InternalFunction.ANCESTOR_OF)) {
-				luceneQuery = processAncestorOf(luceneQuery);
-			}
-			while (luceneQuery.contains(ExpressionConstraintToLuceneConverter.InternalFunction.ANCESTOR_OR_SELF_OF)) {
-				luceneQuery = processAncestorOrSelfOf(luceneQuery);
-			}
-			while (luceneQuery.contains(ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OF)) {
-				luceneQuery = processAttributeDescendantOf(luceneQuery);
-			}
-			while (luceneQuery.contains(ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF)) {
-				luceneQuery = processAttributeDescendantOrSelfOf(luceneQuery);
+			for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
+				while (luceneQuery.contains(internalFunction.name())) {
+					luceneQuery = processInternalFunction(luceneQuery, internalFunction);
+				}
 			}
 			final TopDocs topDocs = indexSearcher.search(luceneQueryParser.parse(luceneQuery), Integer.MAX_VALUE);
 			logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
@@ -96,32 +92,16 @@ public class ReleaseReader {
 		return concepts;
 	}
 
-	private String processAncestorOf(String luceneQuery) throws IOException, NotFoundException {
-		return processStatement(luceneQuery, ANCESTOR_OF_PATTERN, true, false);
-	}
-
-	private String processAncestorOrSelfOf(String luceneQuery) throws IOException, NotFoundException {
-		return processStatement(luceneQuery, ANCESTOR_OR_SELF_OF_PATTERN, true, true);
-	}
-
-	private String processAttributeDescendantOf(String luceneQuery) throws IOException, NotFoundException {
-		return processStatement(luceneQuery, ATTRIBUTE_DESCENDANT_OF_PATTERN, false, false);
-	}
-
-	private String processAttributeDescendantOrSelfOf(String luceneQuery) throws IOException, NotFoundException {
-		return processStatement(luceneQuery, ATTRIBUTE_DESCENDANT_OR_SELF_OF_PATTERN, false, true);
-	}
-
-	private String processStatement(String luceneQuery, Pattern pattern, boolean ancestorNotAttribute, boolean includeSelf) throws IOException, NotFoundException {
-		final Matcher matcher = pattern.matcher(luceneQuery);
+	private String processInternalFunction(String luceneQuery, ExpressionConstraintToLuceneConverter.InternalFunction internalFunction) throws IOException, NotFoundException {
+		final Matcher matcher = internalFunctionPatternMap.get(internalFunction).matcher(luceneQuery);
 		if (!matcher.matches() || matcher.groupCount() != 2) {
-			final String message = "Failed to extract the " + (ancestorNotAttribute ? "ancestor" : "descendant" ) + " id from the internal query syntax '" + luceneQuery + "'";
+			final String message = "Failed to extract the id from the function " + internalFunction + " in internal query '" + luceneQuery + "'";
 			logger.error(message);
 			throw new IllegalStateException(message);
 		}
 		final String conceptId = matcher.group(2);
-		List<String> conceptRelatives = null;
-		if (ancestorNotAttribute) {
+		List<String> conceptRelatives;
+		if (internalFunction.isAncestorType()) {
 			conceptRelatives = Lists.newArrayList(getConceptDocument(conceptId).getValues(Concept.ANCESTOR));
 		} else {
 			final TopDocs topDocs = indexSearcher.search(new TermQuery(new Term(Concept.ANCESTOR, conceptId)), Integer.MAX_VALUE);
@@ -130,11 +110,11 @@ public class ReleaseReader {
 				conceptRelatives.add(getDocument(scoreDoc).get(Concept.ID));
 			}
 		}
-		if (includeSelf) {
+		if (internalFunction.isIncludeSelf()) {
 			conceptRelatives.add(conceptId);
 		}
 
-		String newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, ancestorNotAttribute));
+		String newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
 		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", luceneQuery, newLuceneQuery);
 		return newLuceneQuery;
 	}
