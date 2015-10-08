@@ -64,6 +64,16 @@ public class ExpressionConstraintToLuceneConverterTest {
 		Assert.assertEquals("id:* AND 363699004:34164001", parser.parse("*:363699004=34164001"));
 	}
 
+	@Test
+	public void test_refinedExpressionConstraint_wildcardConcept_attributeValueDescendantOf() {
+		Assert.assertEquals("id:* AND 260686004:attributeDescendantOf(129264002)", parser.parse("*:260686004=<129264002"));
+	}
+
+	@Test
+	public void test_refinedExpressionConstraint_wildcardConcept_attributeValueDescendantOrSelf() {
+		Assert.assertEquals("id:* AND 260686004:attributeDescendantOrSelfOf(129264002)", parser.parse("*:260686004=<<129264002"));
+	}
+
 	@Test(expected = UnsupportedOperationException.class)
 	public void test_refinedExpressionConstraint_wildcardAttributeNameAndConceptValue() {
 		parser.parse("307824009:*=34164001");

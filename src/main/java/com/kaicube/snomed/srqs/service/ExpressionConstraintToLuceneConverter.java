@@ -13,6 +13,13 @@ import java.util.List;
 
 public class ExpressionConstraintToLuceneConverter {
 
+	public interface InternalFunction {
+		String ANCESTOR_OR_SELF_OF = "ancestorOrSelfOf";
+		String ANCESTOR_OF = "ancestorOf";
+		String ATTRIBUTE_DESCENDANT_OF = "attributeDescendantOf";
+		String ATTRIBUTE_DESCENDANT_OR_SELF_OF = "attributeDescendantOrSelfOf";
+	}
+
 	public String parse(String ecQuery) throws RecognitionException {
 		final ExpressionConstraintLexer lexer = new ExpressionConstraintLexer(new ANTLRInputStream(ecQuery));
 		CommonTokenStream tokens = new CommonTokenStream(lexer);
@@ -98,17 +105,28 @@ public class ExpressionConstraintToLuceneConverter {
 					}
 					luceneQuery += conceptId;
 				} else {
-					if (inAttribute) {
-						throwUnsupported("constraintOperator of attribute value");
-					}
 					if (constraintoperator.descendantof() != null) {
-						luceneQuery += Concept.ANCESTOR + ":" + conceptId;
+						if (!inAttribute) {
+							luceneQuery += Concept.ANCESTOR + ":" + conceptId;
+						} else {
+							luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OF + "(" + conceptId + ")";
+						}
 					} else if (constraintoperator.descendantorselfof() != null) {
-						luceneQuery += "(" + Concept.ID + ":" + conceptId + " OR " + Concept.ANCESTOR + ":" + conceptId + ")";
+						if (!inAttribute) {
+							luceneQuery += "(" + Concept.ID + ":" + conceptId + " OR " + Concept.ANCESTOR + ":" + conceptId + ")";
+						} else {
+							luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF + "(" + conceptId + ")";
+						}
 					} else if (constraintoperator.ancestororselfof() != null) {
-						luceneQuery += "ancestorOrSelfOf(" + conceptId + ")";
+						if (inAttribute) {
+							throwUnsupported("ancestorOrSelfOf attribute value");
+						}
+						luceneQuery += InternalFunction.ANCESTOR_OR_SELF_OF + "(" + conceptId + ")";
 					} else if (constraintoperator.ancestorof() != null) {
-						luceneQuery += "ancestorOf(" + conceptId + ")";
+						if (inAttribute) {
+							throwUnsupported("ancestorOrSelfOf attribute value");
+						}
+						luceneQuery += InternalFunction.ANCESTOR_OF + "(" + conceptId + ")";
 					}
 				}
 			}

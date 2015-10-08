@@ -68,9 +68,21 @@ public class IntegrationTest {
 		assertResultSet(conceptResults, 128927009);
 	}
 
+	@Test
+	public void testExpressionConstraintQuery_refinement_attributeValueDescendantOrSelfOf() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=<<129264002");
+		assertResultSet(conceptResults, 128927009, 8367003);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery_refinement_attributeValueDescendantOf() throws Exception {
+		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=<129264002");
+		assertResultSet(conceptResults, 8367003);
+	}
+
 //	@Test TODO
-//	public void testExpressionConstraintQuery_refinement_attributeValueDescendantOrSelf() throws Exception {
-//		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=<<129264002");
+//	public void testExpressionConstraintQuery_refinement_attributeValueAncestorOf() throws Exception {
+//		final Set<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=>129264002");
 //		assertResultSet(conceptResults, 128927009);
 //	}
 
