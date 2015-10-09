@@ -2,12 +2,22 @@ package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class TestReleaseImporter extends ReleaseImporter {
 
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	@Override
+	public ReleaseStore loadReleaseZip(String releaseDirPath) throws IOException {
+		return buildTestTaxonomy();
+	}
+
 	public ReleaseStore buildTestTaxonomy() throws IOException {
+		logger.info("-- LOADING TEST DATA --");
 
 		// Build a taxonomy, this is not the correct structure, it's purely for testing expression constraint queries
 

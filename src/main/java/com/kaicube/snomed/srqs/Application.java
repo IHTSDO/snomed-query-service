@@ -3,11 +3,13 @@ package com.kaicube.snomed.srqs;
 import com.kaicube.snomed.srqs.service.ReleaseImporter;
 import com.kaicube.snomed.srqs.service.ReleaseReader;
 import com.kaicube.snomed.srqs.service.ReleaseStore;
+import com.kaicube.snomed.srqs.service.TestReleaseImporter;
 import com.mangofactory.swagger.configuration.SpringSwaggerConfig;
 import com.mangofactory.swagger.models.dto.ApiInfo;
 import com.mangofactory.swagger.plugin.EnableSwagger;
 import com.mangofactory.swagger.plugin.SwaggerSpringMvcPlugin;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -29,11 +31,15 @@ public class Application {
 	@Autowired
 	private SpringSwaggerConfig springSwaggerConfig;
 
+	@Value("${load.test.data}")
+	private boolean loadTestData;
+
 	private static final String RELEASE_DIR_PATH = "release";
 
 	@Bean
 	public ReleaseReader getReleaseReader() throws IOException {
-		ReleaseStore releaseStore = new ReleaseImporter().loadReleaseZip(RELEASE_DIR_PATH);
+		final ReleaseImporter releaseImporter = loadTestData ? new TestReleaseImporter() : new ReleaseImporter();
+		ReleaseStore releaseStore = releaseImporter.loadReleaseZip(RELEASE_DIR_PATH);
 		return new ReleaseReader(releaseStore);
 	}
 
