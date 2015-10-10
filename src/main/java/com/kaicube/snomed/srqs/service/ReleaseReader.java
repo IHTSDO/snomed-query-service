@@ -3,9 +3,10 @@ package com.kaicube.snomed.srqs.service;
 import com.google.common.collect.Lists;
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
-import com.kaicube.snomed.srqs.exceptions.ConceptNotFoundException;
-import com.kaicube.snomed.srqs.exceptions.NotFoundException;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
+import com.kaicube.snomed.srqs.service.exception.*;
+import com.kaicube.snomed.srqs.service.exception.InternalError;
+import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -51,7 +52,7 @@ public class ReleaseReader {
 		return indexSearcher.collectionStatistics(Concept.ID).docCount();
 	}
 
-	public ConceptResult retrieveConcept(String conceptId) throws IOException, ParseException, NotFoundException {
+	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
 		final Set<ConceptResult> results = expressionConstraintQuery(conceptId);
 		if (!results.isEmpty()) {
 			return results.iterator().next();
@@ -60,33 +61,48 @@ public class ReleaseReader {
 		}
 	}
 
-	public Set<ConceptResult> retrieveConceptAncestors(String conceptId) throws ParseException, IOException, NotFoundException {
+	public Set<ConceptResult> retrieveConceptAncestors(String conceptId) throws ServiceException {
 		return expressionConstraintQuery(">" + conceptId);
 	}
 
-	public Set<ConceptResult> retrieveConceptDescendants(String conceptId) throws ParseException, IOException, NotFoundException {
+	public Set<ConceptResult> retrieveConceptDescendants(String conceptId) throws ServiceException {
 		return expressionConstraintQuery("<" + conceptId);
 	}
 
-	public Set<ConceptResult> retrieveReferenceSets() throws ParseException, NotFoundException, IOException {
+	public Set<ConceptResult> retrieveReferenceSets() throws ServiceException {
 		// TODO: harden this
 		return expressionConstraintQuery("<" + ConceptConstants.REFSET_CONCEPT);
 	}
 
-	public Set<ConceptResult> expressionConstraintQuery(String ecQuery) throws ParseException, IOException, NotFoundException {
+	public Set<ConceptResult> expressionConstraintQuery(String ecQuery) throws ServiceException {
 		Set<ConceptResult> concepts = new HashSet<>();
 
 		if (ecQuery != null && !ecQuery.isEmpty()) {
-			String luceneQuery = elToLucene.parse(ecQuery);
-			for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
-				while (luceneQuery.contains(internalFunction.name())) {
-					luceneQuery = processInternalFunction(luceneQuery, internalFunction);
-				}
+			String luceneQuery;
+			try {
+				luceneQuery = elToLucene.parse(ecQuery);
+			} catch (RecognitionException e) {
+				throw new InvalidECLSyntaxException(ecQuery, e);
 			}
-			final TopDocs topDocs = indexSearcher.search(luceneQueryParser.parse(luceneQuery), Integer.MAX_VALUE);
-			logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
-			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				concepts.add(getConceptResult(getDocument(scoreDoc)));
+			try {
+				for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
+					while (luceneQuery.contains(internalFunction.name())) {
+						luceneQuery = processInternalFunction(luceneQuery, internalFunction);
+					}
+				}
+			} catch (IOException e) {
+				throw new InternalError("Error preparing internal search query.", e);
+			}
+			try {
+				final TopDocs topDocs = indexSearcher.search(luceneQueryParser.parse(luceneQuery), Integer.MAX_VALUE);
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
+				for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+					concepts.add(getConceptResult(getDocument(scoreDoc)));
+				}
+			} catch (ParseException e) {
+				throw new InternalError("Error parsing internal search query.", e);
+			} catch (IOException e) {
+				throw new InternalError("Error performing search.", e);
 			}
 		}
 		return concepts;

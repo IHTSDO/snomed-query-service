@@ -1,6 +1,6 @@
 package com.kaicube.snomed.srqs.service;
 
-import com.kaicube.snomed.srqs.exceptions.NotFoundException;
+import com.kaicube.snomed.srqs.service.exception.NotFoundException;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
 import org.junit.Assert;
 import org.junit.Before;

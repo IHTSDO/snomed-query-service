@@ -1,15 +1,13 @@
 package com.kaicube.snomed.srqs.rest;
 
-import com.kaicube.snomed.srqs.exceptions.NotFoundException;
 import com.kaicube.snomed.srqs.service.ReleaseReader;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
+import com.kaicube.snomed.srqs.service.exception.ServiceException;
 import com.wordnik.swagger.annotations.ApiOperation;
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.Set;
 
 @RestController
@@ -24,7 +22,7 @@ public class ConceptController {
 			"Supported expressions for the focus concept are: (<, <<, >, >>, *, ^). A singe attribute and value can be used. Conjunction and disjunction are not yet supported.",
 			response = ConceptResult.class, responseContainer = "List")
 	@ResponseBody
-	public Set<ConceptResult> retrieveConcepts(@RequestParam String ecQuery) throws IOException, ParseException, NotFoundException {
+	public Set<ConceptResult> retrieveConcepts(@RequestParam String ecQuery) throws ServiceException {
 		return releaseReader.expressionConstraintQuery(ecQuery);
 	}
 
@@ -33,7 +31,7 @@ public class ConceptController {
 			notes = "Retrieve a concept by its identifier.",
 			response = ConceptResult.class)
 	@ResponseBody
-	public ConceptResult retrieveConcept(@PathVariable String conceptId) throws IOException, NotFoundException, ParseException {
+	public ConceptResult retrieveConcept(@PathVariable String conceptId) throws ServiceException {
 		return releaseReader.retrieveConcept(conceptId);
 	}
 
@@ -42,7 +40,7 @@ public class ConceptController {
 			notes = "Retrieve all ancestors of the given concept, including those from multiple parents.",
 			response = ConceptResult.class, responseContainer = "Set")
 	@ResponseBody
-	public Set<ConceptResult> retrieveConceptAncestors(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
+	public Set<ConceptResult> retrieveConceptAncestors(@PathVariable String conceptId) throws ServiceException {
 		return releaseReader.retrieveConceptAncestors(conceptId);
 	}
 
@@ -50,7 +48,7 @@ public class ConceptController {
 	@ApiOperation(value = "Retrieve concept descendants", notes = "Retrieve all descendants of the given concept.",
 			response = ConceptResult.class, responseContainer = "Set")
 	@ResponseBody
-	public Set<ConceptResult> retrieveConceptDescendants(@PathVariable String conceptId) throws IOException, ParseException, NotFoundException {
+	public Set<ConceptResult> retrieveConceptDescendants(@PathVariable String conceptId) throws ServiceException {
 		return releaseReader.retrieveConceptDescendants(conceptId);
 	}
 

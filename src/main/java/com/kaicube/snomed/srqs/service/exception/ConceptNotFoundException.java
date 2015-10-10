@@ -1,4 +1,4 @@
-package com.kaicube.snomed.srqs.exceptions;
+package com.kaicube.snomed.srqs.service.exception;
 
 public class ConceptNotFoundException extends NotFoundException {
 	public ConceptNotFoundException(String conceptId) {
