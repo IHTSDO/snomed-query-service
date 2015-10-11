@@ -6,6 +6,10 @@ import java.util.List;
 public class ConceptResult {
 
 	private String id;
+	private String effectiveTime;
+	private String active;
+	private String moduleId;
+	private String definitionStatusId;
 	private String fsn;
 	private List<RelationshipResult> relationships;
 
@@ -13,14 +17,34 @@ public class ConceptResult {
 		this.id = id;
 	}
 
-	public ConceptResult(String id, String fsn) {
+	public ConceptResult(String id, String effectiveTime, String active, String moduleId, String definitionStatusId, String fsn) {
 		this.id = id;
+		this.effectiveTime = effectiveTime;
+		this.active = active;
+		this.moduleId = moduleId;
+		this.definitionStatusId = definitionStatusId;
 		this.fsn = fsn;
 		relationships = new ArrayList<>();
 	}
 
 	public String getId() {
 		return id;
+	}
+
+	public String getEffectiveTime() {
+		return effectiveTime;
+	}
+
+	public boolean isActive() {
+		return active.equals("1");
+	}
+
+	public String getModuleId() {
+		return moduleId;
+	}
+
+	public String getDefinitionStatusId() {
+		return definitionStatusId;
 	}
 
 	public String getFsn() {

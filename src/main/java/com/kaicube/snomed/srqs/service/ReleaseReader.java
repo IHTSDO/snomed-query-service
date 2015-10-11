@@ -181,14 +181,26 @@ public class ReleaseReader {
 	}
 
 	private ConceptResult getConceptResult(Document document) {
-		return new ConceptResult(document.get(Concept.ID), document.get(Concept.FSN));
+		return new ConceptResult(
+				document.get(Concept.ID),
+				document.get(Concept.EFFECTIVE_TIME),
+				document.get(Concept.ACTIVE),
+				document.get(Concept.MODULE_ID),
+				document.get(Concept.DEFINITION_STATUS_ID),
+				document.get(Concept.FSN));
 	}
 
 	private RelationshipResult getRelationshipResult(Document document) {
-		return new RelationshipResult(document.get(Relationship.ID), document.get(Relationship.EFFECTIVE_TIME),
-				document.get(Relationship.ACTIVE), document.get(Relationship.MODULE_ID), document.get(Relationship.SOURCE_ID),
-				document.get(Relationship.DESTINATION_ID), document.get(Relationship.RELATIONSHIP_GROUP),
-				document.get(Relationship.TYPE_ID), document.get(Relationship.CHARACTERISTIC_TYPE_ID),
+		return new RelationshipResult(
+				document.get(Relationship.ID),
+				document.get(Relationship.EFFECTIVE_TIME),
+				document.get(Relationship.ACTIVE),
+				document.get(Relationship.MODULE_ID),
+				document.get(Relationship.SOURCE_ID),
+				document.get(Relationship.DESTINATION_ID),
+				document.get(Relationship.RELATIONSHIP_GROUP),
+				document.get(Relationship.TYPE_ID),
+				document.get(Relationship.CHARACTERISTIC_TYPE_ID),
 				document.get(Relationship.MODIFIER_ID));
 	}
 

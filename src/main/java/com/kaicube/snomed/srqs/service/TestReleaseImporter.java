@@ -71,7 +71,8 @@ public class TestReleaseImporter extends ReleaseImporter {
 
 	private Concept getConcept(long id, String fsn) {
 		final Concept concept = new Concept(id);
-		concept.setActive(true);
+		// id	effectiveTime	active	moduleId	definitionStatusId
+		concept.update(new String[] {id + "", "20150731", "1", "900000000000207008", "900000000000074008"});
 		concept.setFsn(fsn);
 		return concept;
 	}

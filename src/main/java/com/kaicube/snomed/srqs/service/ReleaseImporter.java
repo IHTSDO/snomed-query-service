@@ -97,7 +97,7 @@ public class ReleaseImporter {
 			@Override
 			public void handle(String[] values) {
 				final Concept concept = getCreateConcept(new Long(values[ComponentFields.id]));
-				concept.setActive("1".equals(values[ComponentFields.active]));
+				concept.update(values);
 			}
 		}, "concepts");
 	}

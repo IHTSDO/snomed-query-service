@@ -37,8 +37,10 @@ public class ReleaseWriter implements AutoCloseable {
 		Document conceptDoc = new Document();
 		conceptDoc.add(new StringField("type", "concept", Field.Store.YES));
 		conceptDoc.add(new StringField(Concept.ID, concept.getId().toString(), Field.Store.YES));
-		conceptDoc.add(new StringField(Concept.ID, concept.getId().toString(), Field.Store.YES));
+		conceptDoc.add(new StringField(Concept.EFFECTIVE_TIME, concept.getEffectiveTime(), Field.Store.YES));
 		conceptDoc.add(new StringField(Concept.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
+		conceptDoc.add(new StringField(Concept.MODULE_ID, concept.getModuleId(), Field.Store.YES));
+		conceptDoc.add(new StringField(Concept.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
 		conceptDoc.add(new StringField(Concept.FSN, concept.getFsn(), Field.Store.YES));
 		final MultiValueMap<String, String> attributes = concept.getAttributes();
 		for (String type : attributes.keySet()) {

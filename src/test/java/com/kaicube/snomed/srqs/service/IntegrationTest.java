@@ -111,7 +111,12 @@ public class IntegrationTest {
 
 	@Test
 	public void testRetrieveConcept() throws Exception {
-		Assert.assertEquals("Body structure (body structure)", releaseReader.retrieveConcept("123037004").getFsn());
+		final ConceptResult conceptResult = releaseReader.retrieveConcept("123037004");
+		Assert.assertEquals("Body structure (body structure)", conceptResult.getFsn());
+		Assert.assertEquals("20150731", conceptResult.getEffectiveTime());
+		Assert.assertEquals(true, conceptResult.isActive());
+		Assert.assertEquals("900000000000207008", conceptResult.getModuleId());
+		Assert.assertEquals("900000000000074008", conceptResult.getDefinitionStatusId());
 	}
 
 	@Test
