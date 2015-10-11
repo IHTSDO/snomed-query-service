@@ -3,7 +3,9 @@ package com.kaicube.snomed.srqs.domain;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class Concept {
@@ -20,12 +22,14 @@ public class Concept {
 	private final MultiValueMap<String, String> attributes;
 	private final Set<Concept> parents;
 	private final Set<Long> memberOfRefsetIds;
+	private final List<Relationship> relationships;
 
 	public Concept(Long id) {
 		this.id = id;
 		attributes = new LinkedMultiValueMap<>();
 		parents = new HashSet<>();
 		memberOfRefsetIds = new HashSet<>();
+		relationships = new ArrayList<>();
 	}
 
 	public void setActive(boolean active) {
@@ -58,6 +62,14 @@ public class Concept {
 
 	public void addAttribute(String type, String value) {
 		attributes.add(type, value);
+	}
+
+	public void addRelationship(Relationship relationship) {
+		relationships.add(relationship);
+	}
+
+	public List<Relationship> getRelationships() {
+		return relationships;
 	}
 
 	/**

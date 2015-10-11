@@ -2,6 +2,7 @@ package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import com.kaicube.snomed.srqs.domain.Relationship;
 import com.kaicube.snomed.srqs.domain.rf2.ComponentFields;
 import com.kaicube.snomed.srqs.domain.rf2.DescriptionFields;
 import com.kaicube.snomed.srqs.domain.rf2.RefsetFields;
@@ -113,6 +114,7 @@ public class ReleaseImporter {
 					if (type.equals(ConceptConstants.isA)) {
 						concept.addParent(getCreateConcept(value));
 					}
+					concept.addRelationship(new Relationship(values));
 				}
 			}
 		}, "relationships");

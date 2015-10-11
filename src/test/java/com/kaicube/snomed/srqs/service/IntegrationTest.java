@@ -118,24 +118,24 @@ public class IntegrationTest {
 	public void testRetrieveConceptAncestors() throws Exception {
 		final Set<ConceptResult> ancestors = releaseReader.retrieveConceptAncestors("128927009");
 		Assert.assertEquals(2, ancestors.size());
-		Assert.assertTrue(ancestors.contains(new ConceptResult("138875005", null)));
-		Assert.assertTrue(ancestors.contains(new ConceptResult("71388002", null)));
+		Assert.assertTrue(ancestors.contains(new ConceptResult("138875005")));
+		Assert.assertTrue(ancestors.contains(new ConceptResult("71388002")));
 	}
 
 	@Test
 	public void testRetrieveConceptDescendants() throws Exception {
 		final Set<ConceptResult> descendants = releaseReader.retrieveConceptDescendants("71388002");
 		Assert.assertEquals(3, descendants.size());
-		Assert.assertTrue(descendants.contains(new ConceptResult("362961001", null)));
-		Assert.assertTrue(descendants.contains(new ConceptResult("128927009", null)));
-		Assert.assertTrue(descendants.contains(new ConceptResult("8367003", null)));
+		Assert.assertTrue(descendants.contains(new ConceptResult("362961001")));
+		Assert.assertTrue(descendants.contains(new ConceptResult("128927009")));
+		Assert.assertTrue(descendants.contains(new ConceptResult("8367003")));
 	}
 
 	private void assertResultSet(Set<ConceptResult> conceptResults, int... conceptIds) {
 		Set<ConceptResult> notFound = new HashSet<>();
 		Set<ConceptResult> remaining = new HashSet<>(conceptResults);
 		for (int conceptId : conceptIds) {
-			final ConceptResult testConcept = new ConceptResult(conceptId + "", null);
+			final ConceptResult testConcept = new ConceptResult(conceptId + "");
 			if (conceptResults.contains(testConcept)) {
 				remaining.remove(testConcept);
 			} else {

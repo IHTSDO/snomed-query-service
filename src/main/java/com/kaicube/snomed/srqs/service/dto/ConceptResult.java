@@ -1,13 +1,22 @@
 package com.kaicube.snomed.srqs.service.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ConceptResult {
 
 	private String id;
 	private String fsn;
+	private List<RelationshipResult> relationships;
+
+	public ConceptResult(String id) {
+		this.id = id;
+	}
 
 	public ConceptResult(String id, String fsn) {
 		this.id = id;
 		this.fsn = fsn;
+		relationships = new ArrayList<>();
 	}
 
 	public String getId() {
@@ -16,6 +25,14 @@ public class ConceptResult {
 
 	public String getFsn() {
 		return fsn;
+	}
+
+	public List<RelationshipResult> getRelationships() {
+		return relationships;
+	}
+
+	public void addRelationship(RelationshipResult relationshipResult) {
+		relationships.add(relationshipResult);
 	}
 
 	@Override

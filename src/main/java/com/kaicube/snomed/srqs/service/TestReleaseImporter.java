@@ -2,6 +2,7 @@ package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import com.kaicube.snomed.srqs.domain.Relationship;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,6 +87,7 @@ public class TestReleaseImporter extends ReleaseImporter {
 		public ConceptBuilder addChildren(ConceptBuilder... conceptBuilder) {
 			for (ConceptBuilder builder : conceptBuilder) {
 				builder.concept.addParent(concept);
+				builder.concept.addRelationship(new Relationship(builder.concept.getId().toString(), concept.getId().toString()));
 			}
 			return this;
 		}

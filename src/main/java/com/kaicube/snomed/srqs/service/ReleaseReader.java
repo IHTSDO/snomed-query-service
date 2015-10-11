@@ -3,7 +3,9 @@ package com.kaicube.snomed.srqs.service;
 import com.google.common.collect.Lists;
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import com.kaicube.snomed.srqs.domain.Relationship;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
+import com.kaicube.snomed.srqs.service.dto.RelationshipResult;
 import com.kaicube.snomed.srqs.service.exception.*;
 import com.kaicube.snomed.srqs.service.exception.InternalError;
 import org.antlr.v4.runtime.RecognitionException;
@@ -13,10 +15,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.*;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +75,7 @@ public class ReleaseReader {
 	}
 
 	public Set<ConceptResult> expressionConstraintQuery(String ecQuery) throws ServiceException {
-		Set<ConceptResult> concepts = new HashSet<>();
+		Map<String, ConceptResult> concepts = new HashMap<>();
 
 		if (ecQuery != null && !ecQuery.isEmpty()) {
 			String luceneQuery;
@@ -94,10 +94,22 @@ public class ReleaseReader {
 				throw new InternalError("Error preparing internal search query.", e);
 			}
 			try {
-				final TopDocs topDocs = indexSearcher.search(luceneQueryParser.parse(luceneQuery), Integer.MAX_VALUE);
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
+				final Query query = luceneQueryParser.parse(luceneQuery);
+
+				// Fetch Concepts
+				final TopDocs topDocs = indexSearcher.search(query, Integer.MAX_VALUE);
 				for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-					concepts.add(getConceptResult(getDocument(scoreDoc)));
+					final ConceptResult conceptResult = getConceptResult(getDocument(scoreDoc));
+					concepts.put(conceptResult.getId(), conceptResult);
+				}
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
+
+				// Fetch Join Relationships
+				final ToChildBlockJoinQuery joinQuery = new ToChildBlockJoinQuery(query, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("type", "concept")))), false);
+				final TopDocs relTopDocs = indexSearcher.search(joinQuery, Integer.MAX_VALUE);
+				for (ScoreDoc scoreDoc : relTopDocs.scoreDocs) {
+					final RelationshipResult relationshipResult = getRelationshipResult(getDocument(scoreDoc));
+					concepts.get(relationshipResult.getSourceId()).addRelationship(relationshipResult);
 				}
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
@@ -105,7 +117,7 @@ public class ReleaseReader {
 				throw new InternalError("Error performing search.", e);
 			}
 		}
-		return concepts;
+		return new HashSet<>(concepts.values());
 	}
 
 	private String processInternalFunction(String luceneQuery, ExpressionConstraintToLuceneConverter.InternalFunction internalFunction) throws IOException, NotFoundException {
@@ -170,6 +182,14 @@ public class ReleaseReader {
 
 	private ConceptResult getConceptResult(Document document) {
 		return new ConceptResult(document.get(Concept.ID), document.get(Concept.FSN));
+	}
+
+	private RelationshipResult getRelationshipResult(Document document) {
+		return new RelationshipResult(document.get(Relationship.ID), document.get(Relationship.EFFECTIVE_TIME),
+				document.get(Relationship.ACTIVE), document.get(Relationship.MODULE_ID), document.get(Relationship.SOURCE_ID),
+				document.get(Relationship.DESTINATION_ID), document.get(Relationship.RELATIONSHIP_GROUP),
+				document.get(Relationship.TYPE_ID), document.get(Relationship.CHARACTERISTIC_TYPE_ID),
+				document.get(Relationship.MODIFIER_ID));
 	}
 
 }
