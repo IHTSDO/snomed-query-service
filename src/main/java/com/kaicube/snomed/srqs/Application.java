@@ -1,9 +1,6 @@
 package com.kaicube.snomed.srqs;
 
-import com.kaicube.snomed.srqs.service.ReleaseImporter;
-import com.kaicube.snomed.srqs.service.ReleaseReader;
-import com.kaicube.snomed.srqs.service.ReleaseStore;
-import com.kaicube.snomed.srqs.service.TestReleaseImporter;
+import com.kaicube.snomed.srqs.service.*;
 import com.mangofactory.swagger.configuration.SpringSwaggerConfig;
 import com.mangofactory.swagger.models.dto.ApiInfo;
 import com.mangofactory.swagger.plugin.EnableSwagger;
@@ -34,12 +31,15 @@ public class Application {
 	@Value("${load.test.data}")
 	private boolean loadTestData;
 
+	@Value("${load.mode}")
+	private LoadingMode loadingMode;
+
 	private static final String RELEASE_DIR_PATH = "release";
 
 	@Bean
 	public ReleaseReader getReleaseReader() throws IOException {
 		final ReleaseImporter releaseImporter = loadTestData ? new TestReleaseImporter() : new ReleaseImporter();
-		ReleaseStore releaseStore = releaseImporter.loadReleaseZip(RELEASE_DIR_PATH);
+		ReleaseStore releaseStore = releaseImporter.loadReleaseZip(RELEASE_DIR_PATH, loadingMode);
 		return new ReleaseReader(releaseStore);
 	}
 

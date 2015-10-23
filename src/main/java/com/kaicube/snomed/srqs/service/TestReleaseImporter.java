@@ -13,7 +13,7 @@ public class TestReleaseImporter extends ReleaseImporter {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Override
-	public ReleaseStore loadReleaseZip(String releaseDirPath) throws IOException {
+	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode) throws IOException {
 		return buildTestTaxonomy();
 	}
 

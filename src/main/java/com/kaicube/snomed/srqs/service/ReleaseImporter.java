@@ -26,7 +26,7 @@ public class ReleaseImporter {
 		concepts = new Long2ObjectOpenHashMap<>();
 	}
 
-	public ReleaseStore loadReleaseZip(String releaseDirPath) throws IOException {
+	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode) throws IOException {
 		File zipFile = findZipFilePath(releaseDirPath);
 		logger.info("Loading release archive {}", zipFile.getAbsolutePath());
 		try (final ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
@@ -36,7 +36,7 @@ public class ReleaseImporter {
 				if (entryName.contains("sct2_Concept_Snapshot")) {
 					loadConcepts(zipInputStream);
 				} else if (entryName.contains("sct2_Relationship_Snapshot")) {
-					loadRelationships(zipInputStream);
+					loadRelationships(zipInputStream, loadingMode);
 				} else if (entryName.contains("sct2_Description_Snapshot")) {
 					loadDescriptions(zipInputStream);
 				} else if (entryName.contains("der2_") && entryName.contains("Snapshot")) {
@@ -102,7 +102,7 @@ public class ReleaseImporter {
 		}, "concepts");
 	}
 
-	private void loadRelationships(ZipInputStream zipInputStream) throws IOException {
+	private void loadRelationships(ZipInputStream zipInputStream, final LoadingMode loadingMode) throws IOException {
 		readLines(zipInputStream, new ValuesHandler() {
 			@Override
 			public void handle(String[] values) {
@@ -114,7 +114,9 @@ public class ReleaseImporter {
 					if (type.equals(ConceptConstants.isA)) {
 						concept.addParent(getCreateConcept(value));
 					}
-					concept.addRelationship(new Relationship(values));
+					if (loadingMode == LoadingMode.full) {
+						concept.addRelationship(new Relationship(values));
+					}
 				}
 			}
 		}, "relationships");
