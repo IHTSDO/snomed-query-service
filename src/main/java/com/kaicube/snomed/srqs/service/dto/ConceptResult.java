@@ -1,8 +1,12 @@
 package com.kaicube.snomed.srqs.service.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("unused")
+@JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
 public class ConceptResult {
 
 	private String id;
@@ -24,7 +28,6 @@ public class ConceptResult {
 		this.moduleId = moduleId;
 		this.definitionStatusId = definitionStatusId;
 		this.fsn = fsn;
-		relationships = new ArrayList<>();
 	}
 
 	public String getId() {
@@ -56,6 +59,7 @@ public class ConceptResult {
 	}
 
 	public void addRelationship(RelationshipResult relationshipResult) {
+		if (relationships == null) relationships = new ArrayList<>();
 		relationships.add(relationshipResult);
 	}
 
