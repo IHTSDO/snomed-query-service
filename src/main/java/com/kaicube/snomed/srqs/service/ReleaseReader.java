@@ -5,6 +5,7 @@ import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
 import com.kaicube.snomed.srqs.domain.Relationship;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
+import com.kaicube.snomed.srqs.service.dto.ConceptResults;
 import com.kaicube.snomed.srqs.service.dto.RelationshipResult;
 import com.kaicube.snomed.srqs.service.exception.*;
 import com.kaicube.snomed.srqs.service.exception.InternalError;
@@ -28,6 +29,7 @@ import java.util.regex.Pattern;
 
 public class ReleaseReader {
 
+	public static final int DEFAULT_LIMIT = 1000;
 	private ExpressionConstraintToLuceneConverter elToLucene;
 	private final IndexSearcher indexSearcher;
 	private final QueryParser luceneQueryParser;
@@ -53,30 +55,43 @@ public class ReleaseReader {
 	}
 
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
-		final Set<ConceptResult> results = expressionConstraintQuery(conceptId);
+		final List<ConceptResult> results = expressionConstraintQuery(conceptId).getItems();
 		if (!results.isEmpty()) {
-			return results.iterator().next();
+			return results.get(0);
 		} else {
 			throw new ConceptNotFoundException(conceptId);
 		}
 	}
 
-	public Set<ConceptResult> retrieveConceptAncestors(String conceptId) throws ServiceException {
-		return expressionConstraintQuery(">" + conceptId);
+	public ConceptResults retrieveConceptAncestors(String conceptId) throws ServiceException {
+		return retrieveConceptAncestors(conceptId, 0, DEFAULT_LIMIT);
 	}
 
-	public Set<ConceptResult> retrieveConceptDescendants(String conceptId) throws ServiceException {
-		return expressionConstraintQuery("<" + conceptId);
+	public ConceptResults retrieveConceptAncestors(String conceptId, int offset, int limit) throws ServiceException {
+		return expressionConstraintQuery(">" + conceptId, offset, limit);
 	}
 
-	public Set<ConceptResult> retrieveReferenceSets() throws ServiceException {
+	public ConceptResults retrieveConceptDescendants(String conceptId) throws ServiceException {
+		return retrieveConceptDescendants(conceptId, 0, DEFAULT_LIMIT);
+	}
+
+	public ConceptResults retrieveConceptDescendants(String conceptId, int offset, int limit) throws ServiceException {
+		return expressionConstraintQuery("<" + conceptId, offset, limit);
+	}
+
+	public ConceptResults retrieveReferenceSets(int offset, int limit) throws ServiceException {
 		// TODO: harden this
-		return expressionConstraintQuery("<" + ConceptConstants.REFSET_CONCEPT);
+		return expressionConstraintQuery("<" + ConceptConstants.REFSET_CONCEPT, offset, limit);
 	}
 
-	public Set<ConceptResult> expressionConstraintQuery(String ecQuery) throws ServiceException {
-		Map<String, ConceptResult> concepts = new HashMap<>();
+	public ConceptResults expressionConstraintQuery(String ecQuery) throws ServiceException {
+		return expressionConstraintQuery(ecQuery, 0, DEFAULT_LIMIT);
+	}
 
+	public ConceptResults expressionConstraintQuery(String ecQuery, int offset, int limit) throws ServiceException {
+		Map<String, ConceptResult> conceptsMap = new HashMap<>();
+		List<ConceptResult> concepts = new ArrayList<>();
+		int total = 0;
 		if (ecQuery != null && !ecQuery.isEmpty()) {
 			String luceneQuery;
 			try {
@@ -97,19 +112,27 @@ public class ReleaseReader {
 				final Query query = luceneQueryParser.parse(luceneQuery);
 
 				// Fetch Concepts
-				final TopDocs topDocs = indexSearcher.search(query, Integer.MAX_VALUE);
-				for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+				if (offset < 0) offset = 0;
+				final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
+				final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.INDEXORDER);
+				final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+				total = topDocs.totalHits;
+				for (int a = offset; a < scoreDocs.length; a++) {
+					ScoreDoc scoreDoc = scoreDocs[a];
 					final ConceptResult conceptResult = getConceptResult(getDocument(scoreDoc));
-					concepts.put(conceptResult.getId(), conceptResult);
+					conceptsMap.put(conceptResult.getId(), conceptResult);
+					concepts.add(conceptResult);
 				}
 				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
 
 				// Fetch Join Relationships
 				final ToChildBlockJoinQuery joinQuery = new ToChildBlockJoinQuery(query, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("type", "concept")))), false);
-				final TopDocs relTopDocs = indexSearcher.search(joinQuery, Integer.MAX_VALUE);
-				for (ScoreDoc scoreDoc : relTopDocs.scoreDocs) {
+				final TopDocs relTopDocs = indexSearcher.search(joinQuery, fetchLimit, Sort.INDEXORDER);
+				final ScoreDoc[] relScoreDocs = relTopDocs.scoreDocs;
+				for (int a = offset; a < relScoreDocs.length; a++) {
+					ScoreDoc scoreDoc = relScoreDocs[a];
 					final RelationshipResult relationshipResult = getRelationshipResult(getDocument(scoreDoc));
-					concepts.get(relationshipResult.getSourceId()).addRelationship(relationshipResult);
+					conceptsMap.get(relationshipResult.getSourceId()).addRelationship(relationshipResult);
 				}
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
@@ -117,7 +140,7 @@ public class ReleaseReader {
 				throw new InternalError("Error performing search.", e);
 			}
 		}
-		return new HashSet<>(concepts.values());
+		return new ConceptResults(concepts, offset, total, limit);
 	}
 
 	private String processInternalFunction(String luceneQuery, ExpressionConstraintToLuceneConverter.InternalFunction internalFunction) throws IOException, NotFoundException {

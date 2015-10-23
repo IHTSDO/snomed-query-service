@@ -28,10 +28,10 @@ public class Application {
 	@Autowired
 	private SpringSwaggerConfig springSwaggerConfig;
 
-	@Value("${load.test.data}")
+	@Value("${load.test.data:false}")
 	private boolean loadTestData;
 
-	@Value("${load.mode}")
+	@Value("${load.mode:light}")
 	private LoadingMode loadingMode;
 
 	private static final String RELEASE_DIR_PATH = "release";

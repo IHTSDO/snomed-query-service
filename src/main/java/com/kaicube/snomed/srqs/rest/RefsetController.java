@@ -1,17 +1,12 @@
 package com.kaicube.snomed.srqs.rest;
 
 import com.kaicube.snomed.srqs.service.ReleaseReader;
-import com.kaicube.snomed.srqs.service.dto.ConceptResult;
+import com.kaicube.snomed.srqs.service.dto.ConceptResults;
 import com.kaicube.snomed.srqs.service.exception.ServiceException;
 import com.wordnik.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.Set;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(value = "/refsets", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -22,10 +17,11 @@ public class RefsetController {
 
 	@RequestMapping
 	@ApiOperation(value = "Retrieve reference sets", notes = "Retrieve all reference sets.",
-			response = ConceptResult.class, responseContainer = "Set")
+			response = ConceptResults.class)
 	@ResponseBody
-	public Set<ConceptResult> retrieveReferenceSets() throws ServiceException {
-		return releaseReader.retrieveReferenceSets();
+	public ConceptResults retrieveReferenceSets(@RequestParam(required = false, defaultValue = "0") int offset,
+			@RequestParam(required = false, defaultValue = ReleaseReader.DEFAULT_LIMIT + "") int limit) throws ServiceException {
+		return releaseReader.retrieveReferenceSets(offset, limit);
 	}
 
 }
