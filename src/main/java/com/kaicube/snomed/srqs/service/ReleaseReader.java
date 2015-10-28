@@ -26,10 +26,12 @@ import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.annotation.PreDestroy;
 
 public class ReleaseReader {
 
 	public static final int DEFAULT_LIMIT = 1000;
+	private final ReleaseStore releaseStore;
 	private ExpressionConstraintToLuceneConverter elToLucene;
 	private final IndexSearcher indexSearcher;
 	private final QueryParser luceneQueryParser;
@@ -44,7 +46,8 @@ public class ReleaseReader {
 
 	public ReleaseReader(ReleaseStore releaseStore) throws IOException {
 		elToLucene = new ExpressionConstraintToLuceneConverter();
-		indexSearcher = new IndexSearcher(DirectoryReader.open(releaseStore.getDirectory()));
+		this.releaseStore = releaseStore;
+		indexSearcher = new IndexSearcher(DirectoryReader.open(this.releaseStore.getDirectory()));
 		final Analyzer analyzer = releaseStore.createAnalyzer();
 		luceneQueryParser = new QueryParser(Version.LUCENE_40, Concept.ID, analyzer);
 		luceneQueryParser.setAllowLeadingWildcard(true);
@@ -225,6 +228,11 @@ public class ReleaseReader {
 				document.get(Relationship.TYPE_ID),
 				document.get(Relationship.CHARACTERISTIC_TYPE_ID),
 				document.get(Relationship.MODIFIER_ID));
+	}
+
+	@PreDestroy
+	public void destroy() throws IOException {
+		releaseStore.destroy();
 	}
 
 }
