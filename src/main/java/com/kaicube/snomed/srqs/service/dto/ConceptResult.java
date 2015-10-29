@@ -16,6 +16,7 @@ public class ConceptResult {
 	private String definitionStatusId;
 	private String fsn;
 	private List<RelationshipResult> relationships;
+	private List<DescriptionResult> descriptions;
 
 	public ConceptResult(String id) {
 		this.id = id;
@@ -61,6 +62,15 @@ public class ConceptResult {
 	public void addRelationship(RelationshipResult relationshipResult) {
 		if (relationships == null) relationships = new ArrayList<>();
 		relationships.add(relationshipResult);
+	}
+
+	public List<DescriptionResult> getDescriptions() {
+		return descriptions;
+	}
+
+	public void addDescription(DescriptionResult descriptionResult) {
+		if (descriptions == null) descriptions = new ArrayList<>();
+		descriptions.add(descriptionResult);
 	}
 
 	@Override

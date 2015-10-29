@@ -1,6 +1,7 @@
 package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
+import com.kaicube.snomed.srqs.domain.Description;
 import com.kaicube.snomed.srqs.domain.Relationship;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,6 +29,9 @@ public class ReleaseWriter implements AutoCloseable {
 		List<Document> documents = new ArrayList<>();
 		for (Relationship relationship : concept.getRelationships()) {
 			documents.add(getRelationshipDocument(relationship));
+		}
+		for (Description description : concept.getDescriptions()) {
+			documents.add(getDescriptionDocument(description));
 		}
 		documents.add(getConceptDocument(concept));
 		iwriter.addDocuments(documents);
@@ -70,6 +74,14 @@ public class ReleaseWriter implements AutoCloseable {
 		doc.add(new StringField(Relationship.TYPE_ID, relationship.getTypeId(), Field.Store.YES));
 		doc.add(new StringField(Relationship.CHARACTERISTIC_TYPE_ID, relationship.getCharacteristicTypeId(), Field.Store.YES));
 		doc.add(new StringField(Relationship.MODIFIER_ID, relationship.getModifierId(), Field.Store.YES));
+		return doc;
+	}
+
+	private Document getDescriptionDocument(Description description) {
+		Document doc = new Document();
+		doc.add(new StringField(Description.ID, description.getId(), Field.Store.YES));
+		doc.add(new StringField(Description.TERM, description.getTerm(), Field.Store.YES));
+		doc.add(new StringField(Description.CONCEPT_ID, description.getConceptId(), Field.Store.YES));
 		return doc;
 	}
 

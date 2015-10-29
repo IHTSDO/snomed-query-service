@@ -30,6 +30,7 @@ public class Concept {
 	private final Set<Concept> parents;
 	private final Set<Long> memberOfRefsetIds;
 	private final List<Relationship> relationships;
+	private final List<Description> descriptions;
 
 	public Concept(Long id) {
 		this.id = id;
@@ -37,6 +38,7 @@ public class Concept {
 		parents = new HashSet<>();
 		memberOfRefsetIds = new HashSet<>();
 		relationships = new ArrayList<>();
+		descriptions = new ArrayList<>();
 	}
 
 	public void update(String[] values) {
@@ -129,4 +131,11 @@ public class Concept {
 		return relationships;
 	}
 
+	public void addDescription(Description description) {
+		descriptions.add(description);
+	}
+
+	public List<Description> getDescriptions() {
+		return descriptions;
+	}
 }

@@ -3,9 +3,11 @@ package com.kaicube.snomed.srqs.service;
 import com.google.common.collect.Lists;
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import com.kaicube.snomed.srqs.domain.Description;
 import com.kaicube.snomed.srqs.domain.Relationship;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
 import com.kaicube.snomed.srqs.service.dto.ConceptResults;
+import com.kaicube.snomed.srqs.service.dto.DescriptionResult;
 import com.kaicube.snomed.srqs.service.dto.RelationshipResult;
 import com.kaicube.snomed.srqs.service.exception.*;
 import com.kaicube.snomed.srqs.service.exception.InternalError;
@@ -130,12 +132,24 @@ public class ReleaseReader {
 
 				// Fetch Join Relationships
 				final ToChildBlockJoinQuery joinQuery = new ToChildBlockJoinQuery(query, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("type", "concept")))), false);
-				final TopDocs relTopDocs = indexSearcher.search(joinQuery, fetchLimit, Sort.INDEXORDER);
-				final ScoreDoc[] relScoreDocs = relTopDocs.scoreDocs;
-				for (int a = offset; a < relScoreDocs.length; a++) {
-					ScoreDoc scoreDoc = relScoreDocs[a];
-					final RelationshipResult relationshipResult = getRelationshipResult(getDocument(scoreDoc));
-					conceptsMap.get(relationshipResult.getSourceId()).addRelationship(relationshipResult);
+				final TopDocs joinTopDocs = indexSearcher.search(joinQuery, Integer.MAX_VALUE);
+				final ScoreDoc[] joinScoreDoc = joinTopDocs.scoreDocs;
+				for (int a = offset; a < joinScoreDoc.length; a++) {
+					ScoreDoc scoreDoc = joinScoreDoc[a];
+					final Document document = getDocument(scoreDoc);
+					if (document.get(Relationship.ID) != null) {
+						final RelationshipResult relationshipResult = getRelationshipResult(document);
+						final ConceptResult conceptResult = conceptsMap.get(relationshipResult.getSourceId());
+						if (conceptResult != null) {
+							conceptResult.addRelationship(relationshipResult);
+						}
+					} else {
+						final DescriptionResult descriptionResult = getDescriptionResult(document);
+						final ConceptResult conceptResult = conceptsMap.get(document.get(Description.CONCEPT_ID));
+						if (conceptResult != null) {
+							conceptResult.addDescription(descriptionResult);
+						}
+					}
 				}
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
@@ -228,6 +242,12 @@ public class ReleaseReader {
 				document.get(Relationship.TYPE_ID),
 				document.get(Relationship.CHARACTERISTIC_TYPE_ID),
 				document.get(Relationship.MODIFIER_ID));
+	}
+
+	private DescriptionResult getDescriptionResult(Document document) {
+		return new DescriptionResult(
+				document.get(Description.ID),
+				document.get(Description.TERM));
 	}
 
 	@PreDestroy

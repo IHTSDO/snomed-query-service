@@ -2,6 +2,7 @@ package com.kaicube.snomed.srqs.service;
 
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
+import com.kaicube.snomed.srqs.domain.Description;
 import com.kaicube.snomed.srqs.domain.Relationship;
 import com.kaicube.snomed.srqs.domain.rf2.ComponentFields;
 import com.kaicube.snomed.srqs.domain.rf2.DescriptionFields;
@@ -38,7 +39,7 @@ public class ReleaseImporter {
 				} else if (entryName.contains("sct2_Relationship_Snapshot")) {
 					loadRelationships(zipInputStream, loadingMode);
 				} else if (entryName.contains("sct2_Description_Snapshot")) {
-					loadDescriptions(zipInputStream);
+					loadDescriptions(zipInputStream, loadingMode);
 				} else if (entryName.contains("der2_") && entryName.contains("Snapshot")) {
 					loadRefsets(zipInputStream);
 				}
@@ -122,13 +123,18 @@ public class ReleaseImporter {
 		}, "relationships");
 	}
 
-	private void loadDescriptions(ZipInputStream zipInputStream) throws IOException {
+	private void loadDescriptions(ZipInputStream zipInputStream, final LoadingMode loadingMode) throws IOException {
 		readLines(zipInputStream, new ValuesHandler() {
 			@Override
 			public void handle(String[] values) {
-				if ("1".equals(values[DescriptionFields.active]) && ConceptConstants.FSN.equals(values[DescriptionFields.typeId])) {
+				if ("1".equals(values[DescriptionFields.active])) {
 					final Concept concept = getCreateConcept(new Long(values[DescriptionFields.conceptId]));
-					concept.setFsn(values[DescriptionFields.term]);
+					if (ConceptConstants.FSN.equals(values[DescriptionFields.typeId])) {
+						concept.setFsn(values[DescriptionFields.term]);
+					}
+					if (loadingMode == LoadingMode.full) {
+						concept.addDescription(new Description(values));
+					}
 				}
 			}
 		}, "descriptions");
