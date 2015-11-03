@@ -17,18 +17,20 @@ public class ConceptResult {
 	private String fsn;
 	private List<RelationshipResult> relationships;
 	private List<DescriptionResult> descriptions;
+	private List<RefsetMembershipResult> refsetMemberships;
 
 	public ConceptResult(String id) {
 		this.id = id;
 	}
 
-	public ConceptResult(String id, String effectiveTime, String active, String moduleId, String definitionStatusId, String fsn) {
+	public ConceptResult(String id, String effectiveTime, String active, String moduleId, String definitionStatusId, String fsn, List<RefsetMembershipResult> memberOfRefsets) {
 		this.id = id;
 		this.effectiveTime = effectiveTime;
 		this.active = active;
 		this.moduleId = moduleId;
 		this.definitionStatusId = definitionStatusId;
 		this.fsn = fsn;
+		this.refsetMemberships = memberOfRefsets;
 	}
 
 	public String getId() {
@@ -71,6 +73,15 @@ public class ConceptResult {
 	public void addDescription(DescriptionResult descriptionResult) {
 		if (descriptions == null) descriptions = new ArrayList<>();
 		descriptions.add(descriptionResult);
+	}
+
+	public List<RefsetMembershipResult> getRefsetMemberships() {
+		return refsetMemberships;
+	}
+
+	public void addRefsetMembership(RefsetMembershipResult result) {
+		if (refsetMemberships == null) refsetMemberships = new ArrayList<>();
+		refsetMemberships.add(result);
 	}
 
 	@Override

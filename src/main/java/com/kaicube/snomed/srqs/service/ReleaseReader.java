@@ -5,10 +5,7 @@ import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
 import com.kaicube.snomed.srqs.domain.Description;
 import com.kaicube.snomed.srqs.domain.Relationship;
-import com.kaicube.snomed.srqs.service.dto.ConceptResult;
-import com.kaicube.snomed.srqs.service.dto.ConceptResults;
-import com.kaicube.snomed.srqs.service.dto.DescriptionResult;
-import com.kaicube.snomed.srqs.service.dto.RelationshipResult;
+import com.kaicube.snomed.srqs.service.dto.*;
 import com.kaicube.snomed.srqs.service.exception.*;
 import com.kaicube.snomed.srqs.service.exception.InternalError;
 import org.antlr.v4.runtime.RecognitionException;
@@ -26,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.PreDestroy;
@@ -38,6 +36,7 @@ public class ReleaseReader {
 	private final IndexSearcher indexSearcher;
 	private final QueryParser luceneQueryParser;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Map<String, RefsetMembershipResult> refsetResultMap = new ConcurrentHashMap<>();
 
 	public static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
 	static {
@@ -220,14 +219,21 @@ public class ReleaseReader {
 		return indexSearcher.doc(scoreDoc.doc);
 	}
 
-	private ConceptResult getConceptResult(Document document) {
+	private ConceptResult getConceptResult(Document document) throws IOException, NotFoundException {
+		final String[] memberOfRefsetIds = document.getValues(Concept.MEMBER_OF);
+		List<RefsetMembershipResult> memberOfRefsets = new ArrayList<>();
+		for (String memberOfRefsetId : memberOfRefsetIds) {
+			memberOfRefsets.add(getRefsetMembershipResult(memberOfRefsetId));
+		}
+
 		return new ConceptResult(
 				document.get(Concept.ID),
 				document.get(Concept.EFFECTIVE_TIME),
 				document.get(Concept.ACTIVE),
 				document.get(Concept.MODULE_ID),
 				document.get(Concept.DEFINITION_STATUS_ID),
-				document.get(Concept.FSN));
+				document.get(Concept.FSN),
+				memberOfRefsets);
 	}
 
 	private RelationshipResult getRelationshipResult(Document document) {
@@ -248,6 +254,17 @@ public class ReleaseReader {
 		return new DescriptionResult(
 				document.get(Description.ID),
 				document.get(Description.TERM));
+	}
+
+	private RefsetMembershipResult getRefsetMembershipResult(String memberOfRefsetId) throws IOException, NotFoundException {
+		final RefsetMembershipResult refsetMembershipResult = refsetResultMap.get(memberOfRefsetId);
+		if (refsetMembershipResult != null) {
+			return refsetMembershipResult;
+		}
+		final Document conceptDocument = getConceptDocument(memberOfRefsetId);
+		final RefsetMembershipResult membershipResult = new RefsetMembershipResult(memberOfRefsetId, conceptDocument.get(Concept.FSN));
+		refsetResultMap.put(memberOfRefsetId, membershipResult);
+		return membershipResult;
 	}
 
 	@PreDestroy
