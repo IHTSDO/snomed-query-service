@@ -1,32 +1,22 @@
-package com.kaicube.snomed.srqs.service;
+package com.kaicube.snomed.srqs.service.store;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 
-public class ReleaseStore {
+public class RamReleaseStore implements ReleaseStore {
 
 	private final Directory directory;
-	private final File directoryFile;
 
-	public ReleaseStore() {
-		try {
-			directoryFile = Files.createTempDirectory(getClass().getCanonicalName()).toFile();
-			directory = new NIOFSDirectory(directoryFile);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public void addConcept(String id) {
-
+	public RamReleaseStore() {
+		directory = new RAMDirectory();
 	}
 
 	public Analyzer createAnalyzer() {
@@ -37,7 +27,10 @@ public class ReleaseStore {
 		return directory;
 	}
 
+	public boolean isIndexExisting() {
+		return false;
+	}
+
 	public void destroy() throws IOException {
-		FileUtils.deleteDirectory(directoryFile);
 	}
 }

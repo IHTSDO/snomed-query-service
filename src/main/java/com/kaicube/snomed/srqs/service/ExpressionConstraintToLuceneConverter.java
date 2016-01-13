@@ -7,9 +7,12 @@ import com.kaicube.snomed.srqs.parser.secl.ExpressionConstraintParser;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class ExpressionConstraintToLuceneConverter {
 
@@ -105,6 +108,7 @@ public class ExpressionConstraintToLuceneConverter {
 
 		private String luceneQuery = "";
 		private boolean inAttribute;
+		private Set<ParserRuleContext> bracesToClose = new HashSet<>();
 
 		@Override
 		public void visitErrorNode(ErrorNode node) {
@@ -187,7 +191,11 @@ public class ExpressionConstraintToLuceneConverter {
 
 		@Override
 		public void enterExpressioncomparisonoperator(ExpressionConstraintParser.ExpressioncomparisonoperatorContext ctx) {
-			luceneQuery += ctx.getText().equals("=") ? ":" : ":-";
+			if (ctx.getText().equals("=")) {
+				luceneQuery += ":";
+			} else {
+				throwUnsupported("not-equal expressionComparisonOperator");
+			}
 		}
 
 		@Override
@@ -206,20 +214,70 @@ public class ExpressionConstraintToLuceneConverter {
 		}
 
 		@Override
+		public void enterSubexpressionconstraint(ExpressionConstraintParser.SubexpressionconstraintContext ctx) {
+			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
+		}
+
+		@Override
+		public void exitSubexpressionconstraint(ExpressionConstraintParser.SubexpressionconstraintContext ctx) {
+			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
+		}
+
+		@Override
+		public void enterSubrefinement(ExpressionConstraintParser.SubrefinementContext ctx) {
+			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
+		}
+
+		@Override
+		public void exitSubrefinement(ExpressionConstraintParser.SubrefinementContext ctx) {
+			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
+		}
+
+		@Override
+		public void enterSubattributeset(ExpressionConstraintParser.SubattributesetContext ctx) {
+			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
+		}
+
+		@Override
 		public void enterExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
-//			elQuery.setAttributeValue(ctx.getPayload().getText());
+			if (ctx.refinedexpressionconstraint() != null || (ctx.compoundexpressionconstraint() != null && ctx.compoundexpressionconstraint().getText().contains(":"))) {
+				throw new UnsupportedOperationException("Within an expressionConstraintValue refinedExpressionConstraint is not currently supported.");
+			}
+			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
+		}
+
+		@Override
+		public void exitExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
+			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
+		}
+
+		@Override
+		public void exitSubattributeset(ExpressionConstraintParser.SubattributesetContext ctx) {
+			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
+		}
+
+		private void addLeftParenthesisIfNotNull(TerminalNode terminalNode) {
+			if (terminalNode != null) {
+				luceneQuery += " ( ";
+			}
+		}
+
+		private void addRightParenthesisIfNotNull(TerminalNode terminalNode) {
+			if (terminalNode != null) {
+				luceneQuery += " ) ";
+			}
 		}
 
 		// Unsupported enter methods below this line
 
 		@Override
-		public void enterConjunctionrefinementset(ExpressionConstraintParser.ConjunctionrefinementsetContext ctx) {
-			throwUnsupported("conjunctionRefinementSet");
+		public void enterCardinality(ExpressionConstraintParser.CardinalityContext ctx) {
+			throwUnsupported("cardinality");
 		}
 
 		@Override
-		public void enterDisjunctionrefinementset(ExpressionConstraintParser.DisjunctionrefinementsetContext ctx) {
-			throwUnsupported("disjunctionRefinementSet");
+		public void enterAttributegroup(ExpressionConstraintParser.AttributegroupContext ctx) {
+			throwUnsupported("attributeGroup");
 		}
 
 		@Override
@@ -230,6 +288,11 @@ public class ExpressionConstraintToLuceneConverter {
 		@Override
 		public void enterNumericcomparisonoperator(ExpressionConstraintParser.NumericcomparisonoperatorContext ctx) {
 			throwUnsupported("numericComparisonOperator");
+		}
+
+		@Override
+		public void enterReverseflag(ExpressionConstraintParser.ReverseflagContext ctx) {
+			throwUnsupported("reverseFlag");
 		}
 
 		private void throwUnsupported(String feature) {

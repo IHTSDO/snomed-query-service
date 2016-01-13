@@ -3,6 +3,7 @@ package com.kaicube.snomed.srqs.service;
 import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.Description;
 import com.kaicube.snomed.srqs.domain.Relationship;
+import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;

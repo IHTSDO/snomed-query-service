@@ -17,4 +17,12 @@ public class RefsetMembershipResult {
 	public String getRefsetFsn() {
 		return refsetFsn;
 	}
+
+	@Override
+	public String toString() {
+		return "RefsetMembershipResult{" +
+				"refsetId='" + refsetId + '\'' +
+				", refsetFsn='" + refsetFsn + '\'' +
+				'}';
+	}
 }

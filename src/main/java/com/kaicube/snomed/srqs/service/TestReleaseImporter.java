@@ -4,6 +4,8 @@ import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
 import com.kaicube.snomed.srqs.domain.Description;
 import com.kaicube.snomed.srqs.domain.Relationship;
+import com.kaicube.snomed.srqs.service.store.RamReleaseStore;
+import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +59,7 @@ public class TestReleaseImporter extends ReleaseImporter {
 												)
 								)
 				);
-		return writeToIndex();
+		return writeToIndex(new RamReleaseStore());
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {

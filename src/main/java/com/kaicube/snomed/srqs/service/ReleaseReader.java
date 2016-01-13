@@ -8,6 +8,8 @@ import com.kaicube.snomed.srqs.domain.Relationship;
 import com.kaicube.snomed.srqs.service.dto.*;
 import com.kaicube.snomed.srqs.service.exception.*;
 import com.kaicube.snomed.srqs.service.exception.InternalError;
+import com.kaicube.snomed.srqs.service.store.DiskReleaseStore;
+import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -52,6 +54,7 @@ public class ReleaseReader {
 		final Analyzer analyzer = releaseStore.createAnalyzer();
 		luceneQueryParser = new QueryParser(Version.LUCENE_40, Concept.ID, analyzer);
 		luceneQueryParser.setAllowLeadingWildcard(true);
+		BooleanQuery.setMaxClauseCount(4 * 100 * 1000);
 	}
 
 	public long getConceptCount() throws IOException {
@@ -100,6 +103,7 @@ public class ReleaseReader {
 			String luceneQuery;
 			try {
 				luceneQuery = elToLucene.parse(ecQuery);
+				logger.info("ec:'{}', unprocessed-lucene:'{}'", ecQuery, luceneQuery);
 			} catch (RecognitionException e) {
 				throw new InvalidECLSyntaxException(ecQuery, e);
 			}
@@ -127,7 +131,7 @@ public class ReleaseReader {
 					conceptsMap.put(conceptResult.getId(), conceptResult);
 					concepts.add(conceptResult);
 				}
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, luceneQuery, topDocs.totalHits);
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), topDocs.totalHits);
 
 				// Fetch Join Relationships
 				final ToChildBlockJoinQuery joinQuery = new ToChildBlockJoinQuery(query, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("type", "concept")))), false);
@@ -182,7 +186,7 @@ public class ReleaseReader {
 		}
 
 		String newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
-		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", luceneQuery, newLuceneQuery);
+		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 100), newLuceneQuery);
 		return newLuceneQuery;
 	}
 
@@ -270,6 +274,11 @@ public class ReleaseReader {
 	@PreDestroy
 	public void destroy() throws IOException {
 		releaseStore.destroy();
+	}
+
+	private String limitStringLength(String string, int limit) {
+		Pattern.compile("\\(.*\\)(\\d+ OR)[10:]");
+		return string.length() > limit ? string.substring(0, limit) : string;
 	}
 
 }

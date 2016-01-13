@@ -3,6 +3,7 @@ package com.kaicube.snomed.srqs.service;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
 import com.kaicube.snomed.srqs.service.dto.ConceptResults;
 import com.kaicube.snomed.srqs.service.exception.NotFoundException;
+import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -130,6 +131,11 @@ public class IntegrationTest {
 	public void testExpressionConstraintQuery_disjunctionAttributeSet() throws Exception {
 		final List<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*:260686004=* OR 405813007=*").getItems();
 		assertResultSet(conceptResults, 128927009, 8367003);
+	}
+
+	@Test
+	public void testExpressionConstraintQuery() throws Exception {
+		releaseReader.expressionConstraintQuery("< 404684003 |clinical finding|: 116676008 |associated morphology| = ((<< 56208002 |ulcer| AND << 50960005 |hemorrhage|) MINUS << 26036001 |obstruction|)");
 	}
 
 	@Test(expected = NotFoundException.class)

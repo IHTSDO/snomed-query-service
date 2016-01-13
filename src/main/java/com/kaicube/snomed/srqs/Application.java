@@ -1,6 +1,10 @@
 package com.kaicube.snomed.srqs;
 
-import com.kaicube.snomed.srqs.service.*;
+import com.kaicube.snomed.srqs.service.LoadingMode;
+import com.kaicube.snomed.srqs.service.ReleaseImporter;
+import com.kaicube.snomed.srqs.service.ReleaseReader;
+import com.kaicube.snomed.srqs.service.TestReleaseImporter;
+import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import com.mangofactory.swagger.configuration.SpringSwaggerConfig;
 import com.mangofactory.swagger.models.dto.ApiInfo;
 import com.mangofactory.swagger.plugin.EnableSwagger;
@@ -34,7 +38,7 @@ public class Application {
 	@Value("${load.mode:light}")
 	private LoadingMode loadingMode;
 
-	private static final String RELEASE_DIR_PATH = "release";
+	public static final String RELEASE_DIR_PATH = "release";
 
 	@Bean
 	public ReleaseReader getReleaseReader() throws IOException {
@@ -54,9 +58,9 @@ public class Application {
 						"Apache 2.0",
 						null
 				))
-				//Here we disable auto generating of responses for REST-endpoints
+				// Disable auto generating of responses for REST-endpoints
 				.useDefaultResponseMessages(false)
-				//Here we specify URI patterns which will be included in Swagger docs. Use regex for this purpose.
+				// Specify URI patterns which will be included in Swagger docs using regex
 				.includePatterns("/stats.*", "/concepts.*", "/refsets.*");
 	}
 

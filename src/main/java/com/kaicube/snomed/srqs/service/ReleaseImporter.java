@@ -8,6 +8,9 @@ import com.kaicube.snomed.srqs.domain.rf2.ComponentFields;
 import com.kaicube.snomed.srqs.domain.rf2.DescriptionFields;
 import com.kaicube.snomed.srqs.domain.rf2.RefsetFields;
 import com.kaicube.snomed.srqs.domain.rf2.RelationshipFields;
+import com.kaicube.snomed.srqs.service.store.DiskReleaseStore;
+import com.kaicube.snomed.srqs.service.store.RamReleaseStore;
+import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.slf4j.Logger;
@@ -28,6 +31,18 @@ public class ReleaseImporter {
 	}
 
 	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode) throws IOException {
+		return loadReleaseZip(releaseDirPath, loadingMode, false);
+	}
+
+	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode, boolean useExisting) throws IOException {
+
+		if (useExisting) {
+			final ReleaseStore releaseStore = new DiskReleaseStore();
+			if (releaseStore.isIndexExisting()) {
+				return releaseStore;
+			}
+		}
+
 		File zipFile = findZipFilePath(releaseDirPath);
 		logger.info("Loading release archive {}", zipFile.getAbsolutePath());
 		try (final ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
@@ -46,14 +61,13 @@ public class ReleaseImporter {
 			}
 		}
 
-		return writeToIndex();
+		return writeToIndex(new DiskReleaseStore());
 	}
 
-	protected ReleaseStore writeToIndex() throws IOException {
+	protected ReleaseStore writeToIndex(ReleaseStore releaseStore) throws IOException {
 		logger.info("All in memory. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 		logger.info("Writing to index...");
 
-		final ReleaseStore releaseStore = new ReleaseStore();
 		try (final ReleaseWriter releaseWriter = new ReleaseWriter(releaseStore)) {
 			long conceptsAdded = 0;
 			for (Concept concept : concepts.values()) {
