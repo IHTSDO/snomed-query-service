@@ -33,7 +33,7 @@ Concrete Values | < 373873005 \|pharmaceutical / biologic product\|: 111115 \|tr
 Concrete Values | < 27658006 \|amoxicillin\|: 411116001 \|has dose form\| = << 385049006 \|capsule\|, { 111115 \|has basis of strength\| = ( 111115 \|amoxicillin only\|: 111115 \|strength magnitude\| >= #500, 111115 \|strength unit\| = 258684004 \|mg\|)} | No
 Reverse Of | < 105590001 \|substance\|: R 127489000 \|has active ingredient\| = 111115 \|TRIPHASIL tablet\| | No
 Any Attribute Type | < 404684003 \|clinical finding\|: * = 79654002 \|edema\| | No
-Any Attribute Value | < 404684003 \|clinical finding\|: 116676008 |associated morphology| = * | Yes
+Any Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = * | Yes
 Attribute Cardinality | < 373873005 \|pharmaceutical / biologic product\|: [1..3] 127489000 \|has active ingredient\| = < 105590001 \|substance\| | No
 Attribute Group Cardinality | < 373873005 \|pharmaceutical / biologic product\|: [1..3] { [1..*] 127489000 \|has active ingredient\| = < 105590001 \|substance\|} | No
 Attribute Conjunction Disjunction | < 404684003 \|clinical finding\|: 363698007 \|finding site\| = << 39057004 \|pulmonary valve structure\| AND 116676008 \|associated morphology\| = << 415582006 \|stenosis\| | No
