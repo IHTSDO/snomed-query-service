@@ -36,14 +36,14 @@ Any Attribute Type | < 404684003 \|clinical finding\|: * = 79654002 \|edema\| | 
 Any Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = * | Yes
 Attribute Cardinality | < 373873005 \|pharmaceutical / biologic product\|: [1..3] 127489000 \|has active ingredient\| = < 105590001 \|substance\| | No
 Attribute Group Cardinality | < 373873005 \|pharmaceutical / biologic product\|: [1..3] { [1..*] 127489000 \|has active ingredient\| = < 105590001 \|substance\|} | No
-Attribute Conjunction Disjunction | < 404684003 \|clinical finding\|: 363698007 \|finding site\| = << 39057004 \|pulmonary valve structure\| AND 116676008 \|associated morphology\| = << 415582006 \|stenosis\| | No
-Attribute Conjunction Disjunction | < 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = << 55641003 \|infarct\| OR 42752001 \|due to\| = << 22298006 \|myocardial infarction\| | No
+Attribute Conjunction | < 404684003 \|clinical finding\|: 363698007 \|finding site\| = << 39057004 \|pulmonary valve structure\| AND 116676008 \|associated morphology\| = << 415582006 \|stenosis\| | No
+Attribute Disjunction | < 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = << 55641003 \|infarct\| OR 42752001 \|due to\| = << 22298006 \|myocardial infarction\| | No
 Simple Conjunction | < 19829001 \|disorder of lung\| AND < 301867009 \|edema of trunk\| | Yes
 Simple Disjunction | < 19829001 \|disorder of lung\| OR < 301867009 \|edema of trunk\| | Yes
 Simple Conjunction With Refset | < 19829001 \|disorder of lung\| AND ^ 700043003 \|example problem list concepts reference set\| | Yes
 Attribute Group Conjunction Disjunction | < 404684003 \|clinical finding\|: { 363698007 \|finding site\| = << 39057004 \|pulmonary valve structure\|, 116676008 \|associated morphology\| = << 415582006 \|stenosis\|} OR { 363698007 \|finding site\| = << 53085002 \|right ventricular structure\|, 116676008 \|associated morphology\| = << 56246009 \|hypertrophy\|} | No
-Attribute Value Conjunction Disjunction | ^ 447563008 \|ICD-9-CM equivalence complex map reference set\|: 246075003 \|causative agent\| = (< 373873005 \|pharmaceutical / biologic product\| OR < 105590001 \|substance\|) | Yes
-Attribute Value Conjunction Disjunction | < 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = (<< 56208002 \|ulcer\| AND << 50960005 \|hemorrhage\|) | Yes
+Attribute Value Disjunction | ^ 447563008 \|ICD-9-CM equivalence complex map reference set\|: 246075003 \|causative agent\| = (< 373873005 \|pharmaceutical / biologic product\| OR < 105590001 \|substance\|) | Yes
+Attribute Value Conjunction | < 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = (<< 56208002 \|ulcer\| AND << 50960005 \|hemorrhage\|) | Yes
 Exclusion Simple Expressions | << 19829001 \|disorder of lung\| MINUS << 301867009 \|edema of trunk\| | Yes
 Exclusion Simple Expressions | << 19829001 \|disorder of lung\| MINUS ^ 700043003 \|example problem list concepts reference set\| | Yes
 Exclusion Attribute Values | < 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = ((<< 56208002 \|ulcer\| AND << 50960005 \|hemorrhage\|) MINUS << 26036001 \|obstruction\|) | Yes
