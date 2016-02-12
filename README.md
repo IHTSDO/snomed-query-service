@@ -51,11 +51,12 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 
 
 ## Quick Start
-Clone the project, copy your snomed release into the release directory, use maven to build and run.
+Clone the project, unzip your Snomed CT RF2 release archive into the release directory, use maven to build and run.
 ```
 git clone https://github.com/kaicode/srqs.git
-cp my-documents/SnomedCT_RF2Release_INT_20150731.zip srqs/release
-cd srqs
+cd srqs/release/
+unzip /my-documents/SnomedCT_RF2Release_INT_20150731.zip
+cd ..
 mvn spring-boot:run
 ```
 
