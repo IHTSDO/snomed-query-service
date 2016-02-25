@@ -17,14 +17,20 @@ public class ConceptController {
 	private ReleaseReader releaseReader;
 
 	@RequestMapping
-	@ApiOperation(value = "Query concepts using Expression Constraint Language", notes = "Simple SNOMED CT Expression Constraint Language queries can be used. " +
-			"Supported expressions for the focus concept are: (<, <<, >, >>, *, ^). A singe attribute and value can be used. Conjunction and disjunction are not yet supported.",
+	@ApiOperation(value = "Query concepts using Expression Constraint Language or search term", notes = "SNOMED CT Expression Constraint Language queries can be used. " +
+			"For list of ECL syntax supported see https://github.com/kaicode/srqs",
 			response = ConceptResults.class)
 	@ResponseBody
-	public ConceptResults retrieveConcepts(@RequestParam String ecQuery,
+	public ConceptResults retrieveConcepts(@RequestParam(required = false) String ecQuery,
+			@RequestParam(required = false) String term,
 			@RequestParam(required = false, defaultValue = "0") int offset,
 			@RequestParam(required = false, defaultValue = ReleaseReader.DEFAULT_LIMIT + "") int limit) throws ServiceException {
-		return releaseReader.expressionConstraintQuery(ecQuery, offset, limit);
+
+		if (term != null && !term.isEmpty()) {
+			return releaseReader.search(term, offset, limit);
+		} else {
+			return releaseReader.expressionConstraintQuery(ecQuery, offset, limit);
+		}
 	}
 
 	@RequestMapping("/{conceptId}")

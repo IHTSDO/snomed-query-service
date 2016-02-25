@@ -8,7 +8,6 @@ import com.kaicube.snomed.srqs.domain.Relationship;
 import com.kaicube.snomed.srqs.service.dto.*;
 import com.kaicube.snomed.srqs.service.exception.*;
 import com.kaicube.snomed.srqs.service.exception.InternalError;
-import com.kaicube.snomed.srqs.service.store.DiskReleaseStore;
 import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
@@ -61,6 +60,10 @@ public class ReleaseReader {
 		return indexSearcher.collectionStatistics(Concept.ID).docCount();
 	}
 
+	public ConceptResults search(String term, int offset, int limit) throws ServiceException {
+		return getConceptResults(new WildcardQuery(new Term(Concept.FSN, term)), offset, limit);
+	}
+
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
 		final List<ConceptResult> results = expressionConstraintQuery(conceptId).getItems();
 		if (!results.isEmpty()) {
@@ -96,8 +99,6 @@ public class ReleaseReader {
 	}
 
 	public ConceptResults expressionConstraintQuery(String ecQuery, int offset, int limit) throws ServiceException {
-		Map<String, ConceptResult> conceptsMap = new HashMap<>();
-		List<ConceptResult> concepts = new ArrayList<>();
 		int total = 0;
 		if (ecQuery != null && !ecQuery.isEmpty()) {
 			String luceneQuery;
@@ -118,49 +119,58 @@ public class ReleaseReader {
 			}
 			try {
 				final Query query = luceneQueryParser.parse(luceneQuery);
+				final ConceptResults conceptResults = getConceptResults(query, offset, limit);
 
-				// Fetch Concepts
-				if (offset < 0) offset = 0;
-				final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
-				final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.INDEXORDER);
-				final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-				total = topDocs.totalHits;
-				for (int a = offset; a < scoreDocs.length; a++) {
-					ScoreDoc scoreDoc = scoreDocs[a];
-					final ConceptResult conceptResult = getConceptResult(getDocument(scoreDoc));
-					conceptsMap.put(conceptResult.getId(), conceptResult);
-					concepts.add(conceptResult);
-				}
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), topDocs.totalHits);
-
-				// Fetch Join Relationships
-				final ToChildBlockJoinQuery joinQuery = new ToChildBlockJoinQuery(query, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("type", "concept")))), false);
-				final TopDocs joinTopDocs = indexSearcher.search(joinQuery, Integer.MAX_VALUE);
-				final ScoreDoc[] joinScoreDoc = joinTopDocs.scoreDocs;
-				for (int a = offset; a < joinScoreDoc.length; a++) {
-					ScoreDoc scoreDoc = joinScoreDoc[a];
-					final Document document = getDocument(scoreDoc);
-					if (document.get(Relationship.ID) != null) {
-						final RelationshipResult relationshipResult = getRelationshipResult(document);
-						final ConceptResult conceptResult = conceptsMap.get(relationshipResult.getSourceId());
-						if (conceptResult != null) {
-							conceptResult.addRelationship(relationshipResult);
-						}
-					} else {
-						final DescriptionResult descriptionResult = getDescriptionResult(document);
-						final ConceptResult conceptResult = conceptsMap.get(document.get(Description.CONCEPT_ID));
-						if (conceptResult != null) {
-							conceptResult.addDescription(descriptionResult);
-						}
-					}
-				}
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), conceptResults.getTotal());
+				return conceptResults;
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
-			} catch (IOException e) {
-				throw new InternalError("Error performing search.", e);
 			}
 		}
-		return new ConceptResults(concepts, offset, total, limit);
+		return new ConceptResults(new ArrayList<ConceptResult>(), offset, total, limit);
+	}
+
+	private ConceptResults getConceptResults(Query query, int offset, int limit) throws ServiceException {
+		try {
+			if (offset < 0) offset = 0;
+			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
+			final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.INDEXORDER);
+			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+			int total = topDocs.totalHits;
+			List<ConceptResult> concepts = new ArrayList<>();
+			Map<String, ConceptResult> conceptsMap = new HashMap<>();
+			for (int a = offset; a < scoreDocs.length; a++) {
+				ScoreDoc scoreDoc = scoreDocs[a];
+				final ConceptResult conceptResult = getConceptResult(getDocument(scoreDoc));
+				conceptsMap.put(conceptResult.getId(), conceptResult);
+				concepts.add(conceptResult);
+			}
+
+			// Fetch Join Relationships
+			final ToChildBlockJoinQuery joinQuery = new ToChildBlockJoinQuery(query, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("type", "concept")))), false);
+			final TopDocs joinTopDocs = indexSearcher.search(joinQuery, Integer.MAX_VALUE);
+			final ScoreDoc[] joinScoreDoc = joinTopDocs.scoreDocs;
+			for (int a = offset; a < joinScoreDoc.length; a++) {
+				ScoreDoc scoreDoc = joinScoreDoc[a];
+				final Document document = getDocument(scoreDoc);
+				if (document.get(Relationship.ID) != null) {
+					final RelationshipResult relationshipResult = getRelationshipResult(document);
+					final ConceptResult conceptResult = conceptsMap.get(relationshipResult.getSourceId());
+					if (conceptResult != null) {
+						conceptResult.addRelationship(relationshipResult);
+					}
+				} else {
+					final DescriptionResult descriptionResult = getDescriptionResult(document);
+					final ConceptResult conceptResult = conceptsMap.get(document.get(Description.CONCEPT_ID));
+					if (conceptResult != null) {
+						conceptResult.addDescription(descriptionResult);
+					}
+				}
+			}
+			return new ConceptResults(concepts, offset, total, limit);
+		} catch (IOException e) {
+			throw new InternalError("Error performing search.", e);
+		}
 	}
 
 	private String processInternalFunction(String luceneQuery, ExpressionConstraintToLuceneConverter.InternalFunction internalFunction) throws IOException, NotFoundException {
@@ -186,7 +196,7 @@ public class ReleaseReader {
 		}
 
 		String newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
-		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 100), newLuceneQuery);
+		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 100), limitStringLength(newLuceneQuery, 100));
 		return newLuceneQuery;
 	}
 

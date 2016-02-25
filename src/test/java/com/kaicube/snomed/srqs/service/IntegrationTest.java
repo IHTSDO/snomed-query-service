@@ -3,6 +3,7 @@ package com.kaicube.snomed.srqs.service;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
 import com.kaicube.snomed.srqs.service.dto.ConceptResults;
 import com.kaicube.snomed.srqs.service.exception.NotFoundException;
+import com.kaicube.snomed.srqs.service.exception.ServiceException;
 import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.junit.Assert;
 import org.junit.Before;
@@ -21,6 +22,23 @@ public class IntegrationTest {
 	public void setup() throws IOException {
 		final ReleaseStore releaseStore = new TestReleaseImporter().buildTestTaxonomy();
 		releaseReader = new ReleaseReader(releaseStore);
+	}
+
+	@Test
+	public void testWordSearch() throws ServiceException {
+		final List<ConceptResult> conceptResults = releaseReader.search("action", 0, 10).getItems();
+		Assert.assertEquals(2, conceptResults.size());
+		Assert.assertTrue(conceptResults.contains(releaseReader.retrieveConcept("360314001")));
+		Assert.assertTrue(conceptResults.contains(releaseReader.retrieveConcept("129264002")));
+	}
+
+	@Test
+	public void testWordWildcardSearch() throws ServiceException {
+		final List<ConceptResult> conceptResults = releaseReader.search("val*", 0, 10).getItems();
+		Assert.assertEquals(3, conceptResults.size());
+		Assert.assertTrue(conceptResults.contains(releaseReader.retrieveConcept("363675004")));
+		Assert.assertTrue(conceptResults.contains(releaseReader.retrieveConcept("360314001")));
+		Assert.assertTrue(conceptResults.contains(releaseReader.retrieveConcept("129264002")));
 	}
 
 	@Test

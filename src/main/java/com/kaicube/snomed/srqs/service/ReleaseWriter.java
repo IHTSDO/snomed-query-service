@@ -7,6 +7,7 @@ import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Version;
@@ -46,7 +47,7 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new StringField(Concept.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
 		conceptDoc.add(new StringField(Concept.MODULE_ID, concept.getModuleId(), Field.Store.YES));
 		conceptDoc.add(new StringField(Concept.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
-		conceptDoc.add(new StringField(Concept.FSN, concept.getFsn(), Field.Store.YES));
+		conceptDoc.add(new TextField(Concept.FSN, concept.getFsn(), Field.Store.YES));
 		final MultiValueMap<String, String> attributes = concept.getAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {
