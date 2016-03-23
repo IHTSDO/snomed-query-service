@@ -1,12 +1,13 @@
 package com.kaicube.snomed.srqs.service;
 
-import com.kaicube.snomed.srqs.Application;
 import com.kaicube.snomed.srqs.service.dto.ConceptResult;
 import com.kaicube.snomed.srqs.service.exception.ServiceException;
 import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,10 +22,18 @@ import java.util.Set;
 public class ExamplesIntegrationTestManual {
 
 	private ReleaseReader releaseReader;
+	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
 	public void setup() throws IOException {
-		final ReleaseStore releaseStore = new ReleaseImporter().loadReleaseZip(Application.RELEASE_DIR_PATH, LoadingMode.light, true);
+		final ReleaseImporter releaseImporter = new ReleaseImporter();
+		final ReleaseStore releaseStore;
+		if (releaseImporter.isReleaseStoreExists()) {
+			logger.info("Using existing release store");
+			releaseStore = releaseImporter.openExistingReleaseStore();
+		} else {
+			releaseStore = releaseImporter.loadReleaseZip("release/SnomedCT_RF2Release_INT_20150731.zip", LoadingMode.light);
+		}
 		releaseReader = new ReleaseReader(releaseStore);
 	}
 

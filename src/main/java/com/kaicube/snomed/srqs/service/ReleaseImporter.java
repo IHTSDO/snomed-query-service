@@ -9,7 +9,6 @@ import com.kaicube.snomed.srqs.domain.rf2.DescriptionFields;
 import com.kaicube.snomed.srqs.domain.rf2.RefsetFields;
 import com.kaicube.snomed.srqs.domain.rf2.RelationshipFields;
 import com.kaicube.snomed.srqs.service.store.DiskReleaseStore;
-import com.kaicube.snomed.srqs.service.store.RamReleaseStore;
 import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -30,20 +29,17 @@ public class ReleaseImporter {
 		concepts = new Long2ObjectOpenHashMap<>();
 	}
 
-	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode) throws IOException {
-		return loadReleaseZip(releaseDirPath, loadingMode, false);
+	public ReleaseStore openExistingReleaseStore() {
+		final ReleaseStore releaseStore = new DiskReleaseStore();
+		if (releaseStore.isIndexExisting()) {
+			return releaseStore;
+		} else {
+			throw new IllegalStateException("Release store does not exist");
+		}
 	}
 
-	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode, boolean useExisting) throws IOException {
-
-		if (useExisting) {
-			final ReleaseStore releaseStore = new DiskReleaseStore();
-			if (releaseStore.isIndexExisting()) {
-				return releaseStore;
-			}
-		}
-
-		File zipFile = findZipFilePath(releaseDirPath);
+	public ReleaseStore loadReleaseZip(String zipFilePath, LoadingMode loadingMode) throws IOException {
+		File zipFile = new File(zipFilePath);
 		logger.info("Loading release archive {}", zipFile.getAbsolutePath());
 		try (final ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(zipFile))) {
 			ZipEntry nextEntry;
@@ -62,6 +58,10 @@ public class ReleaseImporter {
 		}
 
 		return writeToIndex(new DiskReleaseStore());
+	}
+
+	public boolean isReleaseStoreExists() {
+		return new DiskReleaseStore().isIndexExisting();
 	}
 
 	protected ReleaseStore writeToIndex(ReleaseStore releaseStore) throws IOException {

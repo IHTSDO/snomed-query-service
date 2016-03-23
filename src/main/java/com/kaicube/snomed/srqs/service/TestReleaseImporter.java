@@ -4,6 +4,7 @@ import com.kaicube.snomed.srqs.domain.Concept;
 import com.kaicube.snomed.srqs.domain.ConceptConstants;
 import com.kaicube.snomed.srqs.domain.Description;
 import com.kaicube.snomed.srqs.domain.Relationship;
+import com.kaicube.snomed.srqs.service.store.DiskReleaseStore;
 import com.kaicube.snomed.srqs.service.store.RamReleaseStore;
 import com.kaicube.snomed.srqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
@@ -14,6 +15,12 @@ import java.io.IOException;
 public class TestReleaseImporter extends ReleaseImporter {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+
+	private final boolean writeToRam;
+
+	public TestReleaseImporter(boolean writeToRam) {
+		this.writeToRam = writeToRam;
+	}
 
 	@Override
 	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode) throws IOException {
@@ -59,7 +66,7 @@ public class TestReleaseImporter extends ReleaseImporter {
 												)
 								)
 				);
-		return writeToIndex(new RamReleaseStore());
+		return writeToIndex(writeToRam ? new RamReleaseStore() : new DiskReleaseStore());
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {

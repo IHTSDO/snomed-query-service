@@ -35,7 +35,7 @@ public class ReleaseReader {
 	private final ReleaseStore releaseStore;
 	private ExpressionConstraintToLuceneConverter elToLucene;
 	private final IndexSearcher indexSearcher;
-	private final QueryParser luceneQueryParser;
+	private final Analyzer analyzer;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Map<String, RefsetMembershipResult> refsetResultMap = new ConcurrentHashMap<>();
 
@@ -50,9 +50,7 @@ public class ReleaseReader {
 		elToLucene = new ExpressionConstraintToLuceneConverter();
 		this.releaseStore = releaseStore;
 		indexSearcher = new IndexSearcher(DirectoryReader.open(this.releaseStore.getDirectory()));
-		final Analyzer analyzer = releaseStore.createAnalyzer();
-		luceneQueryParser = new QueryParser(Version.LUCENE_40, Concept.ID, analyzer);
-		luceneQueryParser.setAllowLeadingWildcard(true);
+		analyzer = releaseStore.createAnalyzer();
 		BooleanQuery.setMaxClauseCount(4 * 100 * 1000);
 	}
 
@@ -118,7 +116,7 @@ public class ReleaseReader {
 				throw new InternalError("Error preparing internal search query.", e);
 			}
 			try {
-				final Query query = luceneQueryParser.parse(luceneQuery);
+				final Query query = getQueryParser().parse(luceneQuery);
 				final ConceptResults conceptResults = getConceptResults(query, offset, limit);
 
 				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), conceptResults.getTotal());
@@ -281,9 +279,15 @@ public class ReleaseReader {
 		return membershipResult;
 	}
 
+	private QueryParser getQueryParser() {
+		QueryParser parser = new QueryParser(Version.LUCENE_40, Concept.ID, analyzer);
+		parser.setAllowLeadingWildcard(true);
+		return parser;
+	}
+	
 	@PreDestroy
 	public void destroy() throws IOException {
-		releaseStore.destroy();
+//		releaseStore.destroy();
 	}
 
 	private String limitStringLength(String string, int limit) {
