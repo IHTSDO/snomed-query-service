@@ -77,40 +77,43 @@ public class Application implements CommandLineRunner {
 				.includePatterns("/stats.*", "/concepts.*", "/refsets.*");
 	}
 
-	public static void main(String[] args) throws IOException {
-		if (args.length > 0) {
-			final String option = args[0];
+	public static void main(String[] argsArray) throws IOException {
+		if (argsArray.length == 0) {
+			exit("Not enough arguments. " + USEAGE);
+		}
+
+		boolean meaningfulArgumentsFound = false;
+		for (int i = 0; i < argsArray.length; i++) {
+			final String option = argsArray[i];
 			switch (option) {
 				case "--loadRelease":
-					maxArgs(2, args);
-					if (args.length > 1) {
+					if (argsArray.length > i + 1) {
 						loadRelease = true;
-						releasePath = args[1];
+						releasePath = argsArray[1];
 						final File file = new File(releasePath);
 						if (!file.isFile()) {
 							exit("Is not a file: " + file.getAbsolutePath());
 						}
+						meaningfulArgumentsFound = true;
 					} else {
 						exit("Please specify RF2 release archive path after the --loadRelease argument.");
 					}
 					break;
 				case "--loadTestData":
-					maxArgs(1, args);
 					loadTestData = true;
+					meaningfulArgumentsFound = true;
 					break;
 				case "--serve":
-					maxArgs(1, args);
 					serve = true;
-					break;
-				default:
-					exit("Unrecognised option: " + option);
+					meaningfulArgumentsFound = true;
 					break;
 			}
-		} else {
+		}
+		if (!meaningfulArgumentsFound) {
 			exit("Not enough arguments. " + USEAGE);
 		}
 
-		SpringApplication.run(Application.class, args);
+		SpringApplication.run(Application.class, argsArray);
 	}
 
 	private static void maxArgs(int max, String[] args) {

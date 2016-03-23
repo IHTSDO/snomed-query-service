@@ -60,6 +60,12 @@ java -jar target/*.jar --loadRelease /my-documents/SnomedCT_RF2Release_INT_20150
 java -jar target/*.jar --serve
 ```
 
+### Run on another port
+This is useful for running multiple instances of the tool to serve more releases.
+```
+java -jar target/*.jar --serve ---server.port=8081
+```
+
 ## Project Info
 This project is not officialy supported by IHTSDO.
 
