@@ -126,7 +126,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroup example, attributeGroup is not currently supported.
+	// TODO support AttributeGroup example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroup_1() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
@@ -164,7 +165,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support ConcreteValues example, attributeGroup is not currently supported.
+	// TODO support ConcreteValues example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_ConcreteValues_1() {
 		assertConversion(
 				"< 27658006 |amoxicillin |: " +
@@ -177,7 +179,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support ConcreteValues example, attributeGroup is not currently supported.
+	// TODO support ConcreteValues example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_ConcreteValues_2() {
 		assertConversion(
 				"< 27658006 |amoxicillin |: " +
@@ -190,7 +193,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support ConcreteValues example, stringComparisonOperator is not currently supported.
+	// TODO support ConcreteValues example, stringComparisonOperator is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_ConcreteValues_3() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -211,7 +215,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AnyAttributeNameValue example, wildcard attributeName is not currently supported.
+	// TODO support AnyAttributeNameValue example, wildcard attributeName is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AnyAttributeNameValue_1() {
 		assertConversion(
 				"< 404684003 |clinical finding|: * = 79654002 |edema|",
@@ -230,7 +235,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeCardinality_1() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -241,7 +247,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeCardinality_2() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -252,7 +259,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeCardinality_3() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -263,7 +271,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeCardinality_4() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -274,7 +283,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeCardinality_5() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
@@ -285,7 +295,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeCardinality_6() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
@@ -296,7 +307,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeCardinality example, attributeGroup is not currently supported.
+	// TODO support AttributeCardinality example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeCardinality_7() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
@@ -306,7 +318,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroupCardinality_1() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -316,7 +329,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroupCardinality_2() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -326,7 +340,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroupCardinality_3() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -336,7 +351,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroupCardinality_4() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
@@ -346,7 +362,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroupCardinality_5() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
@@ -356,7 +373,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroupCardinality_6() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
@@ -476,7 +494,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO support AttributeGroupConjunctionDisjunction example, attributeGroup is not currently supported.
+	// TODO support AttributeGroupConjunctionDisjunction example, attributeGroup is not currently supported.
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeGroupConjunctionDisjunction_1() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
@@ -560,7 +579,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_NotEqualToAttributeValue_2() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
@@ -571,7 +591,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_NotEqualToAttributeValue_3() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
@@ -582,7 +603,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	//@Test TODO: cardinality support
+	// TODO: cardinality support
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_NotEqualToAttributeValue_4() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
