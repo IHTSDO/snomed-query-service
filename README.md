@@ -1,7 +1,6 @@
-# SNOMED CT Release Query Service
-This service supports loading of a of a SNOMED CT release snapshot for querying.
+# SNOMED CT Query Service
 
-A large portion of the SNOMED CT Expression Constraint Language syntax is supported.
+An implementation of the SNOMED CT Expression Constraint Language.
 
 ## Documentation / Live Demo
 API documentation here with live demo: http://srqs.kaicube.com/
@@ -53,7 +52,7 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 ## Quick Start
 Clone the project, use maven to build, load your release archive then serve.
 ```
-git clone https://github.com/kaicode/srqs.git
+git clone https://github.com/ihtsdo/snomed-query-service.git
 cd srqs
 mvn clean package
 java -jar target/*.jar --loadRelease /my-documents/SnomedCT_RF2Release_INT_20150731.zip
@@ -65,14 +64,6 @@ This is useful for running multiple instances of the tool to serve more releases
 ```
 java -jar target/*.jar --serve --server.port=8081
 ```
-
-## Project Info
-This project is not officialy supported by IHTSDO.
-
-Trello board here: https://trello.com/b/fZ0jvg0e/srqs
-
-### Build Status
-[![Build Status](https://travis-ci.org/kaicode/srqs.svg)](https://travis-ci.org/kaicube/srqs)
 
 ### Licence
  Apache 2.0 Open Source Licence

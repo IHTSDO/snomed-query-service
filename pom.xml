@@ -3,13 +3,12 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
-	<groupId>com.kaicube.snomed</groupId>
-	<artifactId>snomed-release-query-service</artifactId>
+	<groupId>org.ihtsdo.otf</groupId>
+	<artifactId>snomed-query-service</artifactId>
 	<version>1.0.1-SNAPSHOT</version>
-	<packaging>jar</packaging>
 
-	<name>Snomed CT Release Query Service</name>
-	<description>Snomed CT Release Query Service</description>
+	<name>Snomed CT Query Service</name>
+	<description>Snomed CT Query Service, an implementation of ECL.</description>
 
 	<parent>
 		<groupId>org.springframework.boot</groupId>
