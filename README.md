@@ -67,3 +67,6 @@ java -jar target/*.jar --serve --server.port=8081
 
 ### Licence
  Apache 2.0 Open Source Licence
+
+### Thanks
+ [kaicode](https://github.com/kaicode) for the code donation 
