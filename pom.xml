@@ -5,7 +5,7 @@
 
 	<groupId>org.ihtsdo.otf</groupId>
 	<artifactId>snomed-query-service</artifactId>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.0.1</version>
 
 	<name>Snomed CT Query Service</name>
 	<description>Snomed CT Query Service, an implementation of ECL.</description>
