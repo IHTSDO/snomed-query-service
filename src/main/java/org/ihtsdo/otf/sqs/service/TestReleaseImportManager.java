@@ -1,29 +1,34 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.ihtsdo.otf.sqs.domain.Concept;
+import org.ihtsdo.otf.snomedboot.ComponentStore;
+import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
-import org.ihtsdo.otf.sqs.domain.Description;
-import org.ihtsdo.otf.sqs.domain.Relationship;
 import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 
-public class TestReleaseImporter extends ReleaseImporter {
+public class TestReleaseImportManager extends ReleaseImportManager {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final ComponentStore componentStore;
+	private ComponentFactoryImpl componentFactory;
 
 	private final boolean writeToRam;
 
-	public TestReleaseImporter(boolean writeToRam) {
+	public TestReleaseImportManager(boolean writeToRam) {
+		componentStore = new ComponentStore();
+		componentFactory = new ComponentFactoryImpl(componentStore);
 		this.writeToRam = writeToRam;
 	}
 
 	@Override
-	public ReleaseStore loadReleaseZip(String releaseDirPath, LoadingMode loadingMode) throws IOException {
+	public ReleaseStore loadReleaseZip(File releaseDirectory, LoadingProfile loadingProfile) throws IOException {
 		return buildTestTaxonomy();
 	}
 
@@ -66,7 +71,7 @@ public class TestReleaseImporter extends ReleaseImporter {
 												)
 								)
 				);
-		return writeToIndex(writeToRam ? new RamReleaseStore() : new DiskReleaseStore());
+		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore());
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {
@@ -74,43 +79,36 @@ public class TestReleaseImporter extends ReleaseImporter {
 	}
 
 	private ConceptBuilder addConcept(long id, String fsn) {
-		final Concept concept = getConcept(id, fsn);
-		getConcepts().put(id, concept);
-		return new ConceptBuilder(concept);
-	}
-
-	private Concept getConcept(long id, String fsn) {
-		final Concept concept = new Concept(id);
-		// id	effectiveTime	active	moduleId	definitionStatusId
-		concept.update(new String[] {id + "", "20150731", "1", "900000000000207008", "900000000000074008"});
-		concept.setFsn(fsn);
-		concept.addDescription(new Description(fsn, id + ""));
-		return concept;
+		final String conceptId = id + "";
+		componentFactory.createConcept(conceptId, "20150731", "1", "900000000000207008", "900000000000074008");
+		componentFactory.addConceptFSN(conceptId, fsn);
+		componentFactory.addDescription("", "1", fsn, conceptId);
+		return new ConceptBuilder(conceptId);
 	}
 
 	class ConceptBuilder {
 
-		private final Concept concept;
+		private final String id;
 
-		public ConceptBuilder(Concept concept) {
-			this.concept = concept;
+		public ConceptBuilder(String id) {
+			this.id = id;
 		}
 
 		public ConceptBuilder addChildren(ConceptBuilder... conceptBuilder) {
 			for (ConceptBuilder builder : conceptBuilder) {
-				builder.concept.addParent(concept);
-				builder.concept.addRelationship(new Relationship(builder.concept.getId().toString(), concept.getId().toString()));
+				componentFactory.addConceptParent(builder.id, id);
+				componentFactory.addRelationship("", "", "1", "", builder.id, id, "0", ConceptConstants.isA, "", "");
 			}
 			return this;
 		}
 
 		public ConceptBuilder addAttribute(String type, String value) {
-			this.concept.addAttribute(type, value);
+			componentFactory.addConceptAttribute(id, type, value);
 			return this;
 		}
 
 		public ConceptBuilder addAttribute(ConceptBuilder type, ConceptBuilder value) {
-			return addAttribute(type.concept.getId().toString(), value.concept.getId().toString());
+			return addAttribute(type.id, value.id);
 		}
 	}
 

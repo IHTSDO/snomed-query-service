@@ -1,10 +1,10 @@
 package org.ihtsdo.otf.sqs.service;
 
 import com.google.common.collect.Lists;
-import org.ihtsdo.otf.sqs.domain.Concept;
+import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
-import org.ihtsdo.otf.sqs.domain.Description;
-import org.ihtsdo.otf.sqs.domain.Relationship;
+import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
+import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
 import org.ihtsdo.otf.sqs.service.dto.*;
 import org.ihtsdo.otf.sqs.service.exception.*;
 import org.ihtsdo.otf.sqs.service.exception.InternalError;
@@ -55,11 +55,11 @@ public class ReleaseReader {
 	}
 
 	public long getConceptCount() throws IOException {
-		return indexSearcher.collectionStatistics(Concept.ID).docCount();
+		return indexSearcher.collectionStatistics(ConceptFieldNames.ID).docCount();
 	}
 
 	public ConceptResults search(String term, int offset, int limit) throws ServiceException {
-		return getConceptResults(new WildcardQuery(new Term(Concept.FSN, term)), offset, limit);
+		return getConceptResults(new WildcardQuery(new Term(ConceptFieldNames.FSN, term)), offset, limit);
 	}
 
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
@@ -151,7 +151,7 @@ public class ReleaseReader {
 			for (int a = offset; a < joinScoreDoc.length; a++) {
 				ScoreDoc scoreDoc = joinScoreDoc[a];
 				final Document document = getDocument(scoreDoc);
-				if (document.get(Relationship.ID) != null) {
+				if (document.get(RelationshipFieldNames.ID) != null) {
 					final RelationshipResult relationshipResult = getRelationshipResult(document);
 					final ConceptResult conceptResult = conceptsMap.get(relationshipResult.getSourceId());
 					if (conceptResult != null) {
@@ -159,7 +159,7 @@ public class ReleaseReader {
 					}
 				} else {
 					final DescriptionResult descriptionResult = getDescriptionResult(document);
-					final ConceptResult conceptResult = conceptsMap.get(document.get(Description.CONCEPT_ID));
+					final ConceptResult conceptResult = conceptsMap.get(document.get(DescriptionFieldNames.CONCEPT_ID));
 					if (conceptResult != null) {
 						conceptResult.addDescription(descriptionResult);
 					}
@@ -181,12 +181,12 @@ public class ReleaseReader {
 		final String conceptId = matcher.group(2);
 		List<String> conceptRelatives;
 		if (internalFunction.isAncestorType()) {
-			conceptRelatives = Lists.newArrayList(getConceptDocument(conceptId).getValues(Concept.ANCESTOR));
+			conceptRelatives = Lists.newArrayList(getConceptDocument(conceptId).getValues(ConceptFieldNames.ANCESTOR));
 		} else {
-			final TopDocs topDocs = indexSearcher.search(new TermQuery(new Term(Concept.ANCESTOR, conceptId)), Integer.MAX_VALUE);
+			final TopDocs topDocs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.ANCESTOR, conceptId)), Integer.MAX_VALUE);
 			conceptRelatives = new ArrayList<>();
 			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				conceptRelatives.add(getDocument(scoreDoc).get(Concept.ID));
+				conceptRelatives.add(getDocument(scoreDoc).get(ConceptFieldNames.ID));
 			}
 		}
 		if (internalFunction.isIncludeSelf()) {
@@ -210,7 +210,7 @@ public class ReleaseReader {
 					relativesIdBuilder.append(" OR ");
 				}
 				if (includeIdFieldName) {
-					relativesIdBuilder.append(Concept.ID).append(":");
+					relativesIdBuilder.append(ConceptFieldNames.ID).append(":");
 				}
 				relativesIdBuilder.append(conceptRelative);
 			}
@@ -220,7 +220,7 @@ public class ReleaseReader {
 	}
 
 	private Document getConceptDocument(String conceptId) throws IOException, NotFoundException {
-		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(Concept.ID, conceptId)), Integer.MAX_VALUE);
+		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.ID, conceptId)), Integer.MAX_VALUE);
 		if (docs.totalHits < 1) {
 			throw new ConceptNotFoundException(conceptId);
 		}
@@ -232,40 +232,40 @@ public class ReleaseReader {
 	}
 
 	private ConceptResult getConceptResult(Document document) throws IOException, NotFoundException {
-		final String[] memberOfRefsetIds = document.getValues(Concept.MEMBER_OF);
+		final String[] memberOfRefsetIds = document.getValues(ConceptFieldNames.MEMBER_OF);
 		List<RefsetMembershipResult> memberOfRefsets = new ArrayList<>();
 		for (String memberOfRefsetId : memberOfRefsetIds) {
 			memberOfRefsets.add(getRefsetMembershipResult(memberOfRefsetId));
 		}
 
 		return new ConceptResult(
-				document.get(Concept.ID),
-				document.get(Concept.EFFECTIVE_TIME),
-				document.get(Concept.ACTIVE),
-				document.get(Concept.MODULE_ID),
-				document.get(Concept.DEFINITION_STATUS_ID),
-				document.get(Concept.FSN),
+				document.get(ConceptFieldNames.ID),
+				document.get(ConceptFieldNames.EFFECTIVE_TIME),
+				document.get(ConceptFieldNames.ACTIVE),
+				document.get(ConceptFieldNames.MODULE_ID),
+				document.get(ConceptFieldNames.DEFINITION_STATUS_ID),
+				document.get(ConceptFieldNames.FSN),
 				memberOfRefsets);
 	}
 
 	private RelationshipResult getRelationshipResult(Document document) {
 		return new RelationshipResult(
-				document.get(Relationship.ID),
-				document.get(Relationship.EFFECTIVE_TIME),
-				document.get(Relationship.ACTIVE),
-				document.get(Relationship.MODULE_ID),
-				document.get(Relationship.SOURCE_ID),
-				document.get(Relationship.DESTINATION_ID),
-				document.get(Relationship.RELATIONSHIP_GROUP),
-				document.get(Relationship.TYPE_ID),
-				document.get(Relationship.CHARACTERISTIC_TYPE_ID),
-				document.get(Relationship.MODIFIER_ID));
+				document.get(RelationshipFieldNames.ID),
+				document.get(RelationshipFieldNames.EFFECTIVE_TIME),
+				document.get(RelationshipFieldNames.ACTIVE),
+				document.get(RelationshipFieldNames.MODULE_ID),
+				document.get(RelationshipFieldNames.SOURCE_ID),
+				document.get(RelationshipFieldNames.DESTINATION_ID),
+				document.get(RelationshipFieldNames.RELATIONSHIP_GROUP),
+				document.get(RelationshipFieldNames.TYPE_ID),
+				document.get(RelationshipFieldNames.CHARACTERISTIC_TYPE_ID),
+				document.get(RelationshipFieldNames.MODIFIER_ID));
 	}
 
 	private DescriptionResult getDescriptionResult(Document document) {
 		return new DescriptionResult(
-				document.get(Description.ID),
-				document.get(Description.TERM));
+				document.get(DescriptionFieldNames.ID),
+				document.get(DescriptionFieldNames.TERM));
 	}
 
 	private RefsetMembershipResult getRefsetMembershipResult(String memberOfRefsetId) throws IOException, NotFoundException {
@@ -274,13 +274,13 @@ public class ReleaseReader {
 			return refsetMembershipResult;
 		}
 		final Document conceptDocument = getConceptDocument(memberOfRefsetId);
-		final RefsetMembershipResult membershipResult = new RefsetMembershipResult(memberOfRefsetId, conceptDocument.get(Concept.FSN));
+		final RefsetMembershipResult membershipResult = new RefsetMembershipResult(memberOfRefsetId, conceptDocument.get(ConceptFieldNames.FSN));
 		refsetResultMap.put(memberOfRefsetId, membershipResult);
 		return membershipResult;
 	}
 
 	private QueryParser getQueryParser() {
-		QueryParser parser = new QueryParser(Version.LUCENE_40, Concept.ID, analyzer);
+		QueryParser parser = new QueryParser(Version.LUCENE_40, ConceptFieldNames.ID, analyzer);
 		parser.setAllowLeadingWildcard(true);
 		return parser;
 	}

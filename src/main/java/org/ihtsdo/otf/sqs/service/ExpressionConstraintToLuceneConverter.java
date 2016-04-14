@@ -1,6 +1,6 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.ihtsdo.otf.sqs.domain.Concept;
+import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
 import org.ihtsdo.otf.sqs.parser.secl.ExpressionConstraintBaseListener;
 import org.ihtsdo.otf.sqs.parser.secl.ExpressionConstraintLexer;
 import org.ihtsdo.otf.sqs.parser.secl.ExpressionConstraintParser;
@@ -120,30 +120,30 @@ public class ExpressionConstraintToLuceneConverter {
 			final ExpressionConstraintParser.FocusconceptContext focusconcept = ctx.focusconcept();
 			if (focusconcept.wildcard() != null) {
 				if (!inAttribute) {
-					luceneQuery += Concept.ID + ":*";
+					luceneQuery += ConceptFieldNames.ID + ":*";
 				} else {
 					luceneQuery += "*";
 				}
 			} else if (focusconcept.memberof() != null) {
-				luceneQuery += Concept.MEMBER_OF + ":" + focusconcept.conceptreference().conceptid().getText();
+				luceneQuery += ConceptFieldNames.MEMBER_OF + ":" + focusconcept.conceptreference().conceptid().getText();
 			} else {
 				final String conceptId = focusconcept.conceptreference().conceptid().getText();
 				final ExpressionConstraintParser.ConstraintoperatorContext constraintoperator = ctx.constraintoperator();
 				if (constraintoperator == null) {
 					if (!inAttribute) {
-						luceneQuery += Concept.ID + ":";
+						luceneQuery += ConceptFieldNames.ID + ":";
 					}
 					luceneQuery += conceptId;
 				} else {
 					if (constraintoperator.descendantof() != null) {
 						if (!inAttribute) {
-							luceneQuery += Concept.ANCESTOR + ":" + conceptId;
+							luceneQuery += ConceptFieldNames.ANCESTOR + ":" + conceptId;
 						} else {
 							luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OF + "(" + conceptId + ")";
 						}
 					} else if (constraintoperator.descendantorselfof() != null) {
 						if (!inAttribute) {
-							luceneQuery += "(" + Concept.ID + ":" + conceptId + " OR " + Concept.ANCESTOR + ":" + conceptId + ")";
+							luceneQuery += "(" + ConceptFieldNames.ID + ":" + conceptId + " OR " + ConceptFieldNames.ANCESTOR + ":" + conceptId + ")";
 						} else {
 							luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF + "(" + conceptId + ")";
 						}
