@@ -20,7 +20,7 @@ public class IntegrationTest {
 
 	@Before
 	public void setup() throws IOException {
-		final ReleaseStore releaseStore = new TestReleaseImporter(true).buildTestTaxonomy();
+		final ReleaseStore releaseStore = new TestReleaseImportManager(true).buildTestTaxonomy();
 		releaseReader = new ReleaseReader(releaseStore);
 	}
 

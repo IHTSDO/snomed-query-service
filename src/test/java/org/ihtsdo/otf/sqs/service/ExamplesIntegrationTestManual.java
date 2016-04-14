@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.sqs.service;
 
+import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * This test requires the SNOMED-CT International Release published July 2015 placed within the release directory.
+ * This test requires the SNOMED-CT International Release published July 2015 extracted within the release directory.
  */
 public class ExamplesIntegrationTestManual {
 
@@ -25,14 +26,14 @@ public class ExamplesIntegrationTestManual {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
-	public void setup() throws IOException {
-		final ReleaseImporter releaseImporter = new ReleaseImporter();
+	public void setup() throws IOException, InterruptedException {
+		final ReleaseImportManager releaseImportManager = new ReleaseImportManager();
 		final ReleaseStore releaseStore;
-		if (releaseImporter.isReleaseStoreExists()) {
+		if (releaseImportManager.isReleaseStoreExists()) {
 			logger.info("Using existing release store");
-			releaseStore = releaseImporter.openExistingReleaseStore();
+			releaseStore = releaseImportManager.openExistingReleaseStore();
 		} else {
-			releaseStore = releaseImporter.loadReleaseZip("release/SnomedCT_RF2Release_INT_20150731.zip", LoadingMode.light);
+			releaseStore = releaseImportManager.loadReleaseZip(new File("release"), LoadingProfile.light.withRefset("447563008"));
 		}
 		releaseReader = new ReleaseReader(releaseStore);
 	}

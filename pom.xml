@@ -24,6 +24,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.ihtsdo.otf</groupId>
+			<artifactId>snomed-boot</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
@@ -87,6 +92,18 @@
 		</plugins>
 	</build>
 	<repositories>
+		<repository>
+			<id>ihtsdo-releases</id>
+			<releases><enabled>true</enabled></releases>
+			<snapshots><enabled>false</enabled></snapshots>
+			<url>https://maven.ihtsdotools.org/content/repositories/releases/</url>
+		</repository>
+		<repository>
+			<id>ihtsdo-snapshots</id>
+			<releases><enabled>false</enabled></releases>
+			<snapshots><enabled>true</enabled></snapshots>
+			<url>https://maven.ihtsdotools.org/content/repositories/snapshots/</url>
+		</repository>
 		<repository>
 			<id>kaicode-github</id>
 			<url>https://raw.githubusercontent.com/kaicode/maven-repo/master/</url>

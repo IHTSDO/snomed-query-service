@@ -50,12 +50,14 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 
 
 ## Quick Start
-Clone the project, use maven to build, load your release archive then serve.
+Unzip your release archive, clone the project, use maven to build, load your release then serve.
 ```
+cd my-documents
+unzip SnomedCT_RF2Release_INT_20160131.zip
 git clone https://github.com/ihtsdo/snomed-query-service.git
 cd srqs
 mvn clean package
-java -jar target/*.jar --loadRelease /my-documents/SnomedCT_RF2Release_INT_20150731.zip
+java -jar target/*.jar --loadRelease /my-documents/SnomedCT_RF2Release_INT_20160131
 java -jar target/*.jar --serve
 ```
 

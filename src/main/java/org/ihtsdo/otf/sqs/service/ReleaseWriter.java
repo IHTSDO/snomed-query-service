@@ -1,9 +1,5 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.ihtsdo.otf.sqs.domain.Concept;
-import org.ihtsdo.otf.sqs.domain.Description;
-import org.ihtsdo.otf.sqs.domain.Relationship;
-import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.StringField;
@@ -11,6 +7,13 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.Version;
+import org.ihtsdo.otf.snomedboot.domain.Concept;
+import org.ihtsdo.otf.snomedboot.domain.Description;
+import org.ihtsdo.otf.snomedboot.domain.Relationship;
+import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
+import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
+import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
+import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
@@ -42,12 +45,12 @@ public class ReleaseWriter implements AutoCloseable {
 	private Document getConceptDocument(Concept concept) {
 		Document conceptDoc = new Document();
 		conceptDoc.add(new StringField("type", "concept", Field.Store.YES));
-		conceptDoc.add(new StringField(Concept.ID, concept.getId().toString(), Field.Store.YES));
-		conceptDoc.add(new StringField(Concept.EFFECTIVE_TIME, concept.getEffectiveTime(), Field.Store.YES));
-		conceptDoc.add(new StringField(Concept.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
-		conceptDoc.add(new StringField(Concept.MODULE_ID, concept.getModuleId(), Field.Store.YES));
-		conceptDoc.add(new StringField(Concept.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
-		conceptDoc.add(new TextField(Concept.FSN, concept.getFsn(), Field.Store.YES));
+		conceptDoc.add(new StringField(ConceptFieldNames.ID, concept.getId().toString(), Field.Store.YES));
+		conceptDoc.add(new StringField(ConceptFieldNames.EFFECTIVE_TIME, concept.getEffectiveTime(), Field.Store.YES));
+		conceptDoc.add(new StringField(ConceptFieldNames.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
+		conceptDoc.add(new StringField(ConceptFieldNames.MODULE_ID, concept.getModuleId(), Field.Store.YES));
+		conceptDoc.add(new StringField(ConceptFieldNames.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
+		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
 		final MultiValueMap<String, String> attributes = concept.getAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {
@@ -56,34 +59,34 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 		final Set<Long> ancestorIds = concept.getAncestorIds();
 		for (Long ancestorId : ancestorIds) {
-			conceptDoc.add(new StringField(Concept.ANCESTOR, ancestorId.toString(), Field.Store.YES));
+			conceptDoc.add(new StringField(ConceptFieldNames.ANCESTOR, ancestorId.toString(), Field.Store.YES));
 		}
 		for (Long memberRefsetId : concept.getMemberOfRefsetIds()) {
-			conceptDoc.add(new StringField(Concept.MEMBER_OF, memberRefsetId.toString(), Field.Store.YES));
+			conceptDoc.add(new StringField(ConceptFieldNames.MEMBER_OF, memberRefsetId.toString(), Field.Store.YES));
 		}
 		return conceptDoc;
 	}
 
-	private Document getRelationshipDocument(Relationship relationship) {
+	private Document getRelationshipDocument(org.ihtsdo.otf.snomedboot.domain.Relationship relationship) {
 		Document doc = new Document();
-		doc.add(new StringField(Relationship.ID, relationship.getId(), Field.Store.YES));
-		doc.add(new StringField(Relationship.EFFECTIVE_TIME, relationship.getEffectiveTime(), Field.Store.YES));
-		doc.add(new StringField(Relationship.ACTIVE, relationship.getActive(), Field.Store.YES));
-		doc.add(new StringField(Relationship.MODULE_ID, relationship.getModuleId(), Field.Store.YES));
-		doc.add(new StringField(Relationship.SOURCE_ID, relationship.getSourceId(), Field.Store.YES));
-		doc.add(new StringField(Relationship.DESTINATION_ID, relationship.getDestinationId(), Field.Store.YES));
-		doc.add(new StringField(Relationship.RELATIONSHIP_GROUP, relationship.getRelationshipGroup(), Field.Store.YES));
-		doc.add(new StringField(Relationship.TYPE_ID, relationship.getTypeId(), Field.Store.YES));
-		doc.add(new StringField(Relationship.CHARACTERISTIC_TYPE_ID, relationship.getCharacteristicTypeId(), Field.Store.YES));
-		doc.add(new StringField(Relationship.MODIFIER_ID, relationship.getModifierId(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.ID, relationship.getId(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.EFFECTIVE_TIME, relationship.getEffectiveTime(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.ACTIVE, relationship.getActive(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.MODULE_ID, relationship.getModuleId(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.SOURCE_ID, relationship.getSourceId(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.DESTINATION_ID, relationship.getDestinationId(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.RELATIONSHIP_GROUP, relationship.getRelationshipGroup(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.TYPE_ID, relationship.getTypeId(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.CHARACTERISTIC_TYPE_ID, relationship.getCharacteristicTypeId(), Field.Store.YES));
+		doc.add(new StringField(RelationshipFieldNames.MODIFIER_ID, relationship.getModifierId(), Field.Store.YES));
 		return doc;
 	}
 
 	private Document getDescriptionDocument(Description description) {
 		Document doc = new Document();
-		doc.add(new StringField(Description.ID, description.getId(), Field.Store.YES));
-		doc.add(new StringField(Description.TERM, description.getTerm(), Field.Store.YES));
-		doc.add(new StringField(Description.CONCEPT_ID, description.getConceptId(), Field.Store.YES));
+		doc.add(new StringField(DescriptionFieldNames.ID, description.getId(), Field.Store.YES));
+		doc.add(new StringField(DescriptionFieldNames.TERM, description.getTerm(), Field.Store.YES));
+		doc.add(new StringField(DescriptionFieldNames.CONCEPT_ID, description.getConceptId(), Field.Store.YES));
 		return doc;
 	}
 
