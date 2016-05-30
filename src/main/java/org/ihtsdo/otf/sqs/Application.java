@@ -50,6 +50,9 @@ public class Application implements CommandLineRunner {
 	@Value("${serve}")
 	private String serve;
 
+	@Value("${loadInactiveConcepts}")
+	private String loadInactiveConcepts;
+
 	private ReleaseImportManager releaseImportManager;
 
 	private LoadingProfile loadingProfile = LoadingProfile.light; // TODO Configure via config
@@ -98,6 +101,9 @@ public class Application implements CommandLineRunner {
 		checkArguments();
 		if (!isServe()) {
 			// If not running in serve mode, load release files and exit
+			if (isParamSet(loadInactiveConcepts)) {
+				loadingProfile = loadingProfile.withInactiveConcepts();
+			}
 			releaseImportManager.loadReleaseFiles(releaseDirectory, loadingProfile);
 			context.close();
 		}

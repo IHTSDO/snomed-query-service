@@ -36,25 +36,25 @@ public class ReleaseImportManager {
 	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws IOException, InterruptedException {
 		final Map<Long, ? extends org.ihtsdo.otf.snomedboot.domain.Concept> conceptMap =
 				releaseImporter.loadReleaseFiles(releaseDirectory.getPath(), loadingProfile);
-		return writeToIndex(conceptMap, new DiskReleaseStore());
+		return writeToIndex(conceptMap, new DiskReleaseStore(), loadingProfile.isInactiveConcepts());
 	}
 
 	public boolean isReleaseStoreExists() {
 		return new DiskReleaseStore().isIndexExisting();
 	}
 
-	protected ReleaseStore writeToIndex(Map<Long, ? extends org.ihtsdo.otf.snomedboot.domain.Concept> conceptMap, ReleaseStore releaseStore) throws IOException {
+	protected ReleaseStore writeToIndex(Map<Long, ? extends Concept> conceptMap, ReleaseStore releaseStore, boolean writeInactiveConcepts) throws IOException {
 		logger.info("All in memory. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 		logger.info("Writing to index...");
 
 		try (final ReleaseWriter releaseWriter = new ReleaseWriter(releaseStore)) {
 			long conceptsAdded = 0;
 			for (Concept concept : conceptMap.values()) {
-				if (concept.isActive()) {
+				if (concept.isActive() || writeInactiveConcepts) {
 					releaseWriter.addConcept(concept);
 					conceptsAdded++;
 					if (conceptsAdded % 100000 == 0) {
-						logger.info("{} active concepts added to index...", conceptsAdded);
+						logger.info("{} concepts added to index...", conceptsAdded);
 					}
 				}
 			}

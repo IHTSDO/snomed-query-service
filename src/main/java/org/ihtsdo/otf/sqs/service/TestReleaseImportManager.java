@@ -71,7 +71,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 												)
 								)
 				);
-		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore());
+		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore(), false);
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {
