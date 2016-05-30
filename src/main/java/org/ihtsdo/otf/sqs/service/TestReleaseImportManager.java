@@ -28,7 +28,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 	}
 
 	@Override
-	public ReleaseStore loadReleaseZip(File releaseDirectory, LoadingProfile loadingProfile) throws IOException {
+	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws IOException {
 		return buildTestTaxonomy();
 	}
 

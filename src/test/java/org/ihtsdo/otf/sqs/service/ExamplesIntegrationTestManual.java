@@ -33,7 +33,7 @@ public class ExamplesIntegrationTestManual {
 			logger.info("Using existing release store");
 			releaseStore = releaseImportManager.openExistingReleaseStore();
 		} else {
-			releaseStore = releaseImportManager.loadReleaseZip(new File("release"), LoadingProfile.light.withRefset("447563008"));
+			releaseStore = releaseImportManager.loadReleaseFiles(new File("release"), LoadingProfile.light.withRefset("447563008"));
 		}
 		releaseReader = new ReleaseReader(releaseStore);
 	}

@@ -33,7 +33,7 @@ public class ReleaseImportManager {
 		}
 	}
 
-	public ReleaseStore loadReleaseZip(File releaseDirectory, LoadingProfile loadingProfile) throws IOException, InterruptedException {
+	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws IOException, InterruptedException {
 		final Map<Long, ? extends org.ihtsdo.otf.snomedboot.domain.Concept> conceptMap =
 				releaseImporter.loadReleaseFiles(releaseDirectory.getPath(), loadingProfile);
 		return writeToIndex(conceptMap, new DiskReleaseStore());
