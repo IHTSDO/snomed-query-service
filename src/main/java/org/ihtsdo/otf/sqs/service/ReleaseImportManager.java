@@ -1,16 +1,17 @@
 package org.ihtsdo.otf.sqs.service;
 
+import org.ihtsdo.otf.snomedboot.ComponentStore;
+import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.ReleaseImporter;
 import org.ihtsdo.otf.snomedboot.domain.Concept;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
 import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.Map;
@@ -19,9 +20,11 @@ public class ReleaseImportManager {
 
 	private Logger logger = LoggerFactory.getLogger(getClass());
 	private ReleaseImporter releaseImporter;
+	private final ComponentStore componentStore;
 
 	public ReleaseImportManager() {
-		releaseImporter = new ReleaseImporter();
+		componentStore = new ComponentStore();
+		releaseImporter = new ReleaseImporter(new ComponentFactoryImpl(componentStore));
 	}
 
 	public ReleaseStore openExistingReleaseStore() {
@@ -33,9 +36,9 @@ public class ReleaseImportManager {
 		}
 	}
 
-	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws IOException, InterruptedException {
-		final Map<Long, ? extends org.ihtsdo.otf.snomedboot.domain.Concept> conceptMap =
-				releaseImporter.loadReleaseFiles(releaseDirectory.getPath(), loadingProfile);
+	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException {
+		releaseImporter.loadReleaseFiles(releaseDirectory.getPath(), loadingProfile);
+		final Map<Long, ? extends org.ihtsdo.otf.snomedboot.domain.Concept> conceptMap = componentStore.getConcepts();
 		return writeToIndex(conceptMap, new DiskReleaseStore(), loadingProfile.isInactiveConcepts());
 	}
 
@@ -67,23 +70,6 @@ public class ReleaseImportManager {
 		logger.info("Finished creating index. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 
 		return releaseStore;
-	}
-
-	private File findZipFilePath(String releaseDirPath) throws FileNotFoundException {
-		final File releaseDir = new File(releaseDirPath);
-		if (!releaseDir.isDirectory()) {
-			throw new FileNotFoundException("Could not find release directory.");
-		}
-		final File[] zips = releaseDir.listFiles(new FilenameFilter() {
-			@Override
-			public boolean accept(File dir, String name) {
-				return name.endsWith(".zip");
-			}
-		});
-		if (zips.length == 0) {
-			throw new FileNotFoundException("Please place a SNOMED-CT RF2 release zip file in the release directory. Content will be loaded from there.");
-		}
-		return zips[0];
 	}
 
 	private String formatAsMB(long bytes) {

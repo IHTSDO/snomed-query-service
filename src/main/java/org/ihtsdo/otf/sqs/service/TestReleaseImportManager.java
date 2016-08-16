@@ -82,7 +82,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 		final String conceptId = id + "";
 		componentFactory.createConcept(conceptId, "20150731", "1", "900000000000207008", "900000000000074008");
 		componentFactory.addConceptFSN(conceptId, fsn);
-		componentFactory.addDescription("", "1", fsn, conceptId);
+		componentFactory.addDescription("", "", "1", "", conceptId, "en", ConceptConstants.FSN, fsn, "");
 		return new ConceptBuilder(conceptId);
 	}
 

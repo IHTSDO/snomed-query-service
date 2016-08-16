@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.sqs.service;
 
+import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
@@ -26,7 +27,7 @@ public class ExamplesIntegrationTestManual {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
-	public void setup() throws IOException, InterruptedException {
+	public void setup() throws IOException, ReleaseImportException {
 		final ReleaseImportManager releaseImportManager = new ReleaseImportManager();
 		final ReleaseStore releaseStore;
 		if (releaseImportManager.isReleaseStoreExists()) {
