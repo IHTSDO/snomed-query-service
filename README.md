@@ -2,15 +2,6 @@
 
 An implementation of the SNOMED CT Expression Constraint Language.
 
-## Documentation / Live Demo
-API documentation here with live demo: http://srqs.kaicube.com/
-
-## Live Example Expression Constraint Language queries:
-* Descendant of "Administrative statuses (finding)" [http://srqs.kaicube.com/concepts?ecQuery=<<307824009](http://srqs.kaicube.com/concepts?ecQuery=<307824009)
-* Ancestor or self of "Fitting of contact lens (procedure)" having attribute "Method (attribute)" [http://srqs.kaicube.com/concepts?ecQuery=>>448642000:260686004=*](http://srqs.kaicube.com/concepts?ecQuery=>>448642000:260686004=*)
-* Concepts having attribute "Direct device (attribute)" with value "Plaster cast, device (physical object)" [http://srqs.kaicube.com/concepts?ecQuery=*:363699004=34164001](http://srqs.kaicube.com/concepts?ecQuery=*:363699004=34164001)
-* Concepts in the ICD-O simple map reference set having attribute "Procedure site (attribute)" [http://srqs.kaicube.com/concepts?ecQuery=^446608001:363704007=*](http://srqs.kaicube.com/concepts?ecQuery=^446608001:363704007=*)
-
 ## Expression Constraint Language feature support
 Feature | Example | Supported
 ------- | --------- | -------
@@ -60,6 +51,17 @@ mvn clean package
 java -jar target/*.jar --loadRelease /my-documents/SnomedCT_RF2Release_INT_20160131
 java -jar target/*.jar --serve
 ```
+
+## Documentation / Live Demo
+Once the service is running Swagger API documentation can be found at: http://localhost:8080/
+
+## Example Expression Constraint Language queries:
+Follow the quick start to use these examples:
+* Descendant of "Administrative statuses (finding)" [http://localhost:8080/concepts?ecQuery=<<307824009](http://localhost:8080/concepts?ecQuery=<307824009)
+* Ancestor or self of "Fitting of contact lens (procedure)" having attribute "Method (attribute)" [http://localhost:8080/concepts?ecQuery=>>448642000:260686004=*](http://localhost:8080/concepts?ecQuery=>>448642000:260686004=*)
+* Concepts having attribute "Direct device (attribute)" with value "Plaster cast, device (physical object)" [http://localhost:8080/concepts?ecQuery=*:363699004=34164001](http://localhost:8080/concepts?ecQuery=*:363699004=34164001)
+* Concepts in the ICD-O simple map reference set having attribute "Procedure site (attribute)" [http://localhost:8080/concepts?ecQuery=^446608001:363704007=*](http://localhost:8080/concepts?ecQuery=^446608001:363704007=*)
+
 
 ### Run on another port
 This is useful for running multiple instances of the tool to serve more releases.
