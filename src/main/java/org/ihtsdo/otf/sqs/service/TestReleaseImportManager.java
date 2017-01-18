@@ -96,7 +96,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 
 		public ConceptBuilder addChildren(ConceptBuilder... conceptBuilder) {
 			for (ConceptBuilder builder : conceptBuilder) {
-				componentFactory.addConceptParent(builder.id, id);
+				componentFactory.addInferredConceptParent(builder.id, id);
 				componentFactory.addRelationship("", "", "1", "", builder.id, id, "0", ConceptConstants.isA, "", "");
 			}
 			return this;

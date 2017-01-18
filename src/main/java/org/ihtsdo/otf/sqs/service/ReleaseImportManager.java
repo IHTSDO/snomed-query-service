@@ -24,7 +24,7 @@ public class ReleaseImportManager {
 
 	public ReleaseImportManager() {
 		componentStore = new ComponentStore();
-		releaseImporter = new ReleaseImporter(new ComponentFactoryImpl(componentStore));
+		releaseImporter = new ReleaseImporter();
 	}
 
 	public ReleaseStore openExistingReleaseStore() {
@@ -37,7 +37,7 @@ public class ReleaseImportManager {
 	}
 
 	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException {
-		releaseImporter.loadReleaseFiles(releaseDirectory.getPath(), loadingProfile);
+		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile, new ComponentFactoryImpl(componentStore));
 		final Map<Long, ? extends org.ihtsdo.otf.snomedboot.domain.Concept> conceptMap = componentStore.getConcepts();
 		return writeToIndex(conceptMap, new DiskReleaseStore(), loadingProfile.isInactiveConcepts());
 	}
