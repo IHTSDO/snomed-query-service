@@ -80,9 +80,9 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 
 	private ConceptBuilder addConcept(long id, String fsn) {
 		final String conceptId = id + "";
-		componentFactory.createConcept(conceptId, "20150731", "1", "900000000000207008", "900000000000074008");
+		componentFactory.newConceptState(conceptId, "20150731", "1", "900000000000207008", "900000000000074008");
 		componentFactory.addConceptFSN(conceptId, fsn);
-		componentFactory.addDescription("", "", "1", "", conceptId, "en", ConceptConstants.FSN, fsn, "");
+		componentFactory.newDescriptionState("", "", "1", "", conceptId, "en", ConceptConstants.FSN, fsn, "");
 		return new ConceptBuilder(conceptId);
 	}
 
@@ -97,7 +97,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 		public ConceptBuilder addChildren(ConceptBuilder... conceptBuilder) {
 			for (ConceptBuilder builder : conceptBuilder) {
 				componentFactory.addInferredConceptParent(builder.id, id);
-				componentFactory.addRelationship("", "", "1", "", builder.id, id, "0", ConceptConstants.isA, "", "");
+				componentFactory.newRelationshipState("", "", "1", "", builder.id, id, "0", ConceptConstants.isA, "", "");
 			}
 			return this;
 		}
