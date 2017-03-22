@@ -1,10 +1,11 @@
 package org.ihtsdo.otf.sqs.rest;
 
+import com.google.common.base.Strings;
+import com.wordnik.swagger.annotations.ApiOperation;
 import org.ihtsdo.otf.sqs.service.ReleaseReader;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
-import com.wordnik.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -26,10 +27,12 @@ public class ConceptController {
 			@RequestParam(required = false, defaultValue = "0") int offset,
 			@RequestParam(required = false, defaultValue = ReleaseReader.DEFAULT_LIMIT + "") int limit) throws ServiceException {
 
-		if (term != null && !term.isEmpty()) {
+		if (!Strings.isNullOrEmpty(term)) {
 			return releaseReader.search(term, offset, limit);
-		} else {
+		} else if (!Strings.isNullOrEmpty(ecQuery)){
 			return releaseReader.expressionConstraintQuery(ecQuery, offset, limit);
+		} else {
+			return releaseReader.listAll(offset, limit);
 		}
 	}
 

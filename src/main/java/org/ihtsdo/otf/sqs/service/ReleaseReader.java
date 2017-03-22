@@ -62,6 +62,10 @@ public class ReleaseReader {
 		return getConceptResults(new WildcardQuery(new Term(ConceptFieldNames.FSN, term)), offset, limit);
 	}
 
+	public ConceptResults listAll(int offset, int limit) throws ServiceException {
+		return getConceptResults(new TermQuery(new Term("type", "concept")), offset, limit);
+	}
+
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
 		final List<ConceptResult> results = expressionConstraintQuery(conceptId).getItems();
 		if (!results.isEmpty()) {
