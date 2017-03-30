@@ -6,7 +6,7 @@ import com.mangofactory.swagger.plugin.EnableSwagger;
 import com.mangofactory.swagger.plugin.SwaggerSpringMvcPlugin;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.ReleaseImportManager;
-import org.ihtsdo.otf.sqs.service.ReleaseReader;
+import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.TestReleaseImportManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,10 +61,10 @@ public class Application implements CommandLineRunner {
 	private static File releaseDirectory = null;
 
 	@Bean
-	public ReleaseReader getReleaseReader() throws IOException, InterruptedException {
+	public SnomedQueryService getReleaseReader() throws IOException, InterruptedException {
 		releaseImportManager = isParamSet(loadTestData) ? new TestReleaseImportManager(false) : new ReleaseImportManager();
 		if (isServe()) {
-			return new ReleaseReader(releaseImportManager.openExistingReleaseStore());
+			return new SnomedQueryService(releaseImportManager.openExistingReleaseStore());
 		} else {
 			return null;
 		}

@@ -29,7 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.annotation.PreDestroy;
 
-public class ReleaseReader {
+public class SnomedQueryService {
 
 	public static final int DEFAULT_LIMIT = 1000;
 	private final ReleaseStore releaseStore;
@@ -46,7 +46,7 @@ public class ReleaseReader {
 		}
 	}
 
-	public ReleaseReader(ReleaseStore releaseStore) throws IOException {
+	public SnomedQueryService(ReleaseStore releaseStore) throws IOException {
 		elToLucene = new ExpressionConstraintToLuceneConverter();
 		this.releaseStore = releaseStore;
 		indexSearcher = new IndexSearcher(DirectoryReader.open(this.releaseStore.getDirectory()));
@@ -67,7 +67,7 @@ public class ReleaseReader {
 	}
 
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
-		final List<ConceptResult> results = expressionConstraintQuery(conceptId).getItems();
+		final List<ConceptResult> results = eclQueryReturnConceptDetails(conceptId).getItems();
 		if (!results.isEmpty()) {
 			return results.get(0);
 		} else {
@@ -80,7 +80,7 @@ public class ReleaseReader {
 	}
 
 	public ConceptResults retrieveConceptAncestors(String conceptId, int offset, int limit) throws ServiceException {
-		return expressionConstraintQuery(">" + conceptId, offset, limit);
+		return eclQueryReturnConceptDetails(">" + conceptId, offset, limit);
 	}
 
 	public ConceptResults retrieveConceptDescendants(String conceptId) throws ServiceException {
@@ -88,37 +88,21 @@ public class ReleaseReader {
 	}
 
 	public ConceptResults retrieveConceptDescendants(String conceptId, int offset, int limit) throws ServiceException {
-		return expressionConstraintQuery("<" + conceptId, offset, limit);
+		return eclQueryReturnConceptDetails("<" + conceptId, offset, limit);
 	}
 
 	public ConceptResults retrieveReferenceSets(int offset, int limit) throws ServiceException {
 		// TODO: harden this
-		return expressionConstraintQuery("<" + ConceptConstants.REFSET_CONCEPT, offset, limit);
+		return eclQueryReturnConceptDetails("<" + ConceptConstants.REFSET_CONCEPT, offset, limit);
 	}
 
-	public ConceptResults expressionConstraintQuery(String ecQuery) throws ServiceException {
-		return expressionConstraintQuery(ecQuery, 0, DEFAULT_LIMIT);
+	public ConceptResults eclQueryReturnConceptDetails(String ecQuery) throws ServiceException {
+		return eclQueryReturnConceptDetails(ecQuery, 0, DEFAULT_LIMIT);
 	}
 
-	public ConceptResults expressionConstraintQuery(String ecQuery, int offset, int limit) throws ServiceException {
-		int total = 0;
+	public ConceptResults eclQueryReturnConceptDetails(String ecQuery, int offset, int limit) throws ServiceException {
 		if (ecQuery != null && !ecQuery.isEmpty()) {
-			String luceneQuery;
-			try {
-				luceneQuery = elToLucene.parse(ecQuery);
-				logger.info("ec:'{}', unprocessed-lucene:'{}'", ecQuery, luceneQuery);
-			} catch (RecognitionException e) {
-				throw new InvalidECLSyntaxException(ecQuery, e);
-			}
-			try {
-				for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
-					while (luceneQuery.contains(internalFunction.name())) {
-						luceneQuery = processInternalFunction(luceneQuery, internalFunction);
-					}
-				}
-			} catch (IOException e) {
-				throw new InternalError("Error preparing internal search query.", e);
-			}
+			String luceneQuery = preprocessECLQuery(ecQuery);
 			try {
 				final Query query = getQueryParser().parse(luceneQuery);
 				final ConceptResults conceptResults = getConceptResults(query, offset, limit);
@@ -129,7 +113,61 @@ public class ReleaseReader {
 				throw new InternalError("Error parsing internal search query.", e);
 			}
 		}
-		return new ConceptResults(new ArrayList<ConceptResult>(), offset, total, limit);
+		return new ConceptResults(new ArrayList<ConceptResult>(), offset, 0, limit);
+	}
+
+	public ConceptIdResults eclQueryReturnConceptIdentifiers(String ecQuery, int offset, int limit) throws ServiceException {
+		if (ecQuery != null && !ecQuery.isEmpty()) {
+			String luceneQuery = preprocessECLQuery(ecQuery);
+			try {
+				final Query query = getQueryParser().parse(luceneQuery);
+				final ConceptIdResults conceptIdResults = getConceptIdResults(query, offset, limit);
+
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), conceptIdResults.getTotal());
+				return conceptIdResults;
+			} catch (ParseException e) {
+				throw new InternalError("Error parsing internal search query.", e);
+			}
+		}
+		return new ConceptIdResults(new ArrayList<Long>(), offset, 0, limit);
+	}
+
+	private String preprocessECLQuery(String ecQuery) throws InvalidECLSyntaxException, NotFoundException, InternalError {
+		String luceneQuery;
+		try {
+			luceneQuery = elToLucene.parse(ecQuery);
+			logger.info("ec:'{}', unprocessed-lucene:'{}'", ecQuery, luceneQuery);
+		} catch (RecognitionException e) {
+			throw new InvalidECLSyntaxException(ecQuery, e);
+		}
+		try {
+			for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
+				while (luceneQuery.contains(internalFunction.name())) {
+					luceneQuery = processInternalFunction(luceneQuery, internalFunction);
+				}
+			}
+		} catch (IOException e) {
+			throw new InternalError("Error preparing internal search query.", e);
+		}
+		return luceneQuery;
+	}
+
+	private ConceptIdResults getConceptIdResults(Query query, int offset, int limit) throws InternalError {
+		try {
+			if (offset < 0) offset = 0;
+			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
+			final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.INDEXORDER);
+			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
+			int total = topDocs.totalHits;
+			List<Long> conceptIds = new ArrayList<>();
+			for (int a = offset; a < scoreDocs.length; a++) {
+				String conceptId = getDocument(scoreDocs[a]).get(ConceptFieldNames.ID);
+				conceptIds.add(Long.parseLong(conceptId));
+			}
+			return new ConceptIdResults(conceptIds, offset, total, limit);
+		} catch (IOException e) {
+			throw new InternalError("Error performing search.", e);
+		}
 	}
 
 	private ConceptResults getConceptResults(Query query, int offset, int limit) throws ServiceException {

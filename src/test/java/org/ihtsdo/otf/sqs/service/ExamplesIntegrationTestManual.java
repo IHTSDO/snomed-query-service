@@ -23,7 +23,7 @@ import java.util.Set;
  */
 public class ExamplesIntegrationTestManual {
 
-	private ReleaseReader releaseReader;
+	private SnomedQueryService snomedQueryService;
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
@@ -36,12 +36,12 @@ public class ExamplesIntegrationTestManual {
 		} else {
 			releaseStore = releaseImportManager.loadReleaseFiles(new File("release"), LoadingProfile.light.withRefset("447563008"));
 		}
-		releaseReader = new ReleaseReader(releaseStore);
+		snomedQueryService = new SnomedQueryService(releaseStore);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_wildcardFocusConcept() throws Exception {
-		final List<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery("*", 0, -1).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.eclQueryReturnConceptDetails("*", 0, -1).getItems();
 		Assert.assertEquals(317057, conceptResults.size());
 	}
 
@@ -636,7 +636,7 @@ public class ExamplesIntegrationTestManual {
 //	}
 
 	private void assertQueryMatches(String eclQuery, long... conceptIds) throws ServiceException {
-		final List<ConceptResult> conceptResults = releaseReader.expressionConstraintQuery(eclQuery, 0, -1).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.eclQueryReturnConceptDetails(eclQuery, 0, -1).getItems();
 		Set<ConceptResult> notFound = new HashSet<>();
 		for (long conceptId : conceptIds) {
 			final ConceptResult testConcept = new ConceptResult(conceptId + "");

@@ -1,6 +1,6 @@
 package org.ihtsdo.otf.sqs.rest;
 
-import org.ihtsdo.otf.sqs.service.ReleaseReader;
+import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,13 +17,13 @@ import java.util.Map;
 public class StatsController {
 
 	@Autowired
-	private ReleaseReader releaseReader;
+	private SnomedQueryService snomedQueryService;
 
 	@RequestMapping
 	@ResponseBody
 	public Map<String, String> home() throws IOException {
 		Map<String, String> map = new HashMap<>();
-		map.put("conceptCount", releaseReader.getConceptCount() + "");
+		map.put("conceptCount", snomedQueryService.getConceptCount() + "");
 		return map;
 	}
 

@@ -2,7 +2,7 @@ package org.ihtsdo.otf.sqs.rest;
 
 import com.google.common.base.Strings;
 import com.wordnik.swagger.annotations.ApiOperation;
-import org.ihtsdo.otf.sqs.service.ReleaseReader;
+import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 public class ConceptController {
 
 	@Autowired
-	private ReleaseReader releaseReader;
+	private SnomedQueryService snomedQueryService;
 
 	@RequestMapping
 	@ApiOperation(value = "Query concepts using Expression Constraint Language or search term", notes = "SNOMED CT Expression Constraint Language queries can be used. " +
@@ -25,14 +25,14 @@ public class ConceptController {
 	public ConceptResults retrieveConcepts(@RequestParam(required = false) String ecQuery,
 			@RequestParam(required = false) String term,
 			@RequestParam(required = false, defaultValue = "0") int offset,
-			@RequestParam(required = false, defaultValue = ReleaseReader.DEFAULT_LIMIT + "") int limit) throws ServiceException {
+			@RequestParam(required = false, defaultValue = SnomedQueryService.DEFAULT_LIMIT + "") int limit) throws ServiceException {
 
 		if (!Strings.isNullOrEmpty(term)) {
-			return releaseReader.search(term, offset, limit);
+			return snomedQueryService.search(term, offset, limit);
 		} else if (!Strings.isNullOrEmpty(ecQuery)){
-			return releaseReader.expressionConstraintQuery(ecQuery, offset, limit);
+			return snomedQueryService.eclQueryReturnConceptDetails(ecQuery, offset, limit);
 		} else {
-			return releaseReader.listAll(offset, limit);
+			return snomedQueryService.listAll(offset, limit);
 		}
 	}
 
@@ -42,7 +42,7 @@ public class ConceptController {
 			response = ConceptResult.class)
 	@ResponseBody
 	public ConceptResult retrieveConcept(@PathVariable String conceptId) throws ServiceException {
-		return releaseReader.retrieveConcept(conceptId);
+		return snomedQueryService.retrieveConcept(conceptId);
 	}
 
 	@RequestMapping("/{conceptId}/ancestors")
@@ -52,8 +52,8 @@ public class ConceptController {
 	@ResponseBody
 	public ConceptResults retrieveConceptAncestors(@PathVariable String conceptId,
 			@RequestParam(required = false, defaultValue = "0") int offset,
-			@RequestParam(required = false, defaultValue = ReleaseReader.DEFAULT_LIMIT + "") int limit) throws ServiceException {
-		return releaseReader.retrieveConceptAncestors(conceptId, offset, limit);
+			@RequestParam(required = false, defaultValue = SnomedQueryService.DEFAULT_LIMIT + "") int limit) throws ServiceException {
+		return snomedQueryService.retrieveConceptAncestors(conceptId, offset, limit);
 	}
 
 	@RequestMapping("/{conceptId}/descendants")
@@ -62,8 +62,8 @@ public class ConceptController {
 	@ResponseBody
 	public ConceptResults retrieveConceptDescendants(@PathVariable String conceptId,
 			@RequestParam(required = false, defaultValue = "0") int offset,
-			@RequestParam(required = false, defaultValue = ReleaseReader.DEFAULT_LIMIT + "") int limit) throws ServiceException {
-		return releaseReader.retrieveConceptDescendants(conceptId, offset, limit);
+			@RequestParam(required = false, defaultValue = SnomedQueryService.DEFAULT_LIMIT + "") int limit) throws ServiceException {
+		return snomedQueryService.retrieveConceptDescendants(conceptId, offset, limit);
 	}
 
 }
