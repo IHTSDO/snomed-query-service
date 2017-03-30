@@ -103,7 +103,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 		}
 
 		public ConceptBuilder addAttribute(String type, String value) {
-			componentFactory.addConceptAttribute(id, type, value);
+			componentFactory.addInferredConceptAttribute(id, type, value);
 			return this;
 		}
 

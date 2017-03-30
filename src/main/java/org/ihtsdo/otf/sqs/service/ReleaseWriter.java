@@ -51,13 +51,13 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new StringField(ConceptFieldNames.MODULE_ID, concept.getModuleId(), Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
-		final MultiValueMap<String, String> attributes = concept.getAttributes();
+		final MultiValueMap<String, String> attributes = concept.getInferredAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {
 				conceptDoc.add(new StringField(type, value, Field.Store.YES));
 			}
 		}
-		final Set<Long> ancestorIds = concept.getAncestorIds();
+		final Set<Long> ancestorIds = concept.getInferredAncestorIds();
 		for (Long ancestorId : ancestorIds) {
 			conceptDoc.add(new StringField(ConceptFieldNames.ANCESTOR, ancestorId.toString(), Field.Store.YES));
 		}
