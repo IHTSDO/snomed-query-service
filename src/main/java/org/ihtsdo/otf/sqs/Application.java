@@ -33,7 +33,7 @@ import java.io.IOException;
 @RequestMapping(produces={MediaType.APPLICATION_JSON_VALUE}, method = RequestMethod.GET)
 public class Application implements CommandLineRunner {
 
-	public static final String USAGE = "Use one of --loadRelease='pathOfExtractedRelease', --serve";
+	public static final String USAGE = "Use one of --loadRelease='pathOfExtractedRelease' [--loadStatedFormMode], --serve";
 
 	@Autowired
 	private SpringSwaggerConfig springSwaggerConfig;
@@ -43,6 +43,9 @@ public class Application implements CommandLineRunner {
 
 	@Value("${loadRelease}")
 	private String loadReleaseArchive;
+
+	@Value("${loadStatedFormMode}")
+	private String loadStatedFormMode;
 
 	@Value("${loadTestData}")
 	private String loadTestData;
@@ -103,6 +106,14 @@ public class Application implements CommandLineRunner {
 			// If not running in serve mode, load release files and exit
 			if (isParamSet(loadInactiveConcepts)) {
 				loadingProfile = loadingProfile.withInactiveConcepts();
+			}
+			if (isParamSet(loadStatedFormMode)) {
+				// Load stated form instead of inferred. This is useful for ECL based MRCM assertions.
+				loadingProfile = loadingProfile
+						.withStatedRelationships()
+						.withStatedAttributeMapOnConcept()
+						.withoutInferredAttributeMapOnConcept();
+				LOGGER.warn("Loading Stated Form mode. All ECL queries will be against the stated form!");
 			}
 			releaseImportManager.loadReleaseFiles(releaseDirectory, loadingProfile);
 			context.close();

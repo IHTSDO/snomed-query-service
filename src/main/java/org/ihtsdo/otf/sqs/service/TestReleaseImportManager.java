@@ -71,7 +71,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 												)
 								)
 				);
-		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore(), false);
+		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore(), false, true);
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {
@@ -103,7 +103,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 		}
 
 		public ConceptBuilder addAttribute(String type, String value) {
-			componentFactory.addConceptAttribute(id, type, value);
+			componentFactory.addInferredConceptAttribute(id, type, value);
 			return this;
 		}
 

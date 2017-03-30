@@ -19,7 +19,6 @@ import org.springframework.util.MultiValueMap;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 public class ReleaseWriter implements AutoCloseable {
 
@@ -30,7 +29,7 @@ public class ReleaseWriter implements AutoCloseable {
 		iwriter = new IndexWriter(releaseStore.getDirectory(), config);
 	}
 
-	public void addConcept(Concept concept) throws IOException {
+	public void addConcept(Concept concept, boolean inferredFormMode) throws IOException {
 		List<Document> documents = new ArrayList<>();
 		for (Relationship relationship : concept.getRelationships()) {
 			documents.add(getRelationshipDocument(relationship));
@@ -38,11 +37,11 @@ public class ReleaseWriter implements AutoCloseable {
 		for (Description description : concept.getDescriptions()) {
 			documents.add(getDescriptionDocument(description));
 		}
-		documents.add(getConceptDocument(concept));
+		documents.add(getConceptDocument(concept, inferredFormMode));
 		iwriter.addDocuments(documents);
 	}
 
-	private Document getConceptDocument(Concept concept) {
+	private Document getConceptDocument(Concept concept, boolean inferredFormMode) {
 		Document conceptDoc = new Document();
 		conceptDoc.add(new StringField("type", "concept", Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.ID, concept.getId().toString(), Field.Store.YES));
@@ -51,14 +50,13 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new StringField(ConceptFieldNames.MODULE_ID, concept.getModuleId(), Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
-		final MultiValueMap<String, String> attributes = concept.getAttributes();
+		final MultiValueMap<String, String> attributes = inferredFormMode ? concept.getInferredAttributes() : concept.getStatedAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {
 				conceptDoc.add(new StringField(type, value, Field.Store.YES));
 			}
 		}
-		final Set<Long> ancestorIds = concept.getAncestorIds();
-		for (Long ancestorId : ancestorIds) {
+		for (Long ancestorId : inferredFormMode ? concept.getInferredAncestorIds() : concept.getStatedAncestorIds()) {
 			conceptDoc.add(new StringField(ConceptFieldNames.ANCESTOR, ancestorId.toString(), Field.Store.YES));
 		}
 		for (Long memberRefsetId : concept.getMemberOfRefsetIds()) {

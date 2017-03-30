@@ -39,7 +39,7 @@ public class ReleaseReader {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Map<String, RefsetMembershipResult> refsetResultMap = new ConcurrentHashMap<>();
 
-	public static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
+	private static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
 	static {
 		for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : ExpressionConstraintToLuceneConverter.InternalFunction.values()) {
 			internalFunctionPatternMap.put(internalFunction, Pattern.compile(".*(" + internalFunction + "\\(([^\\)]+)\\)).*"));
@@ -119,7 +119,11 @@ public class ReleaseReader {
 			} catch (IOException e) {
 				throw new InternalError("Error preparing internal search query.", e);
 			}
+			if (luceneQuery.isEmpty()) {
+				return new ConceptResults(new ArrayList<ConceptResult>(), offset, limit, 0);
+			}
 			try {
+				logger.info("luceneQuery = {}", luceneQuery);
 				final Query query = getQueryParser().parse(luceneQuery);
 				final ConceptResults conceptResults = getConceptResults(query, offset, limit);
 
