@@ -17,7 +17,7 @@ public class RamReleaseStore implements ReleaseStore {
 	}
 
 	public Analyzer createAnalyzer() {
-		return new StandardAnalyzer(Version.LUCENE_40);
+		return new StandardAnalyzer();
 	}
 
 	public Directory getDirectory() {

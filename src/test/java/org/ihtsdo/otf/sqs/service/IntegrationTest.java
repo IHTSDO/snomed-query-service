@@ -181,7 +181,6 @@ public class IntegrationTest {
 		Assert.assertEquals(true, conceptResult.isActive());
 		Assert.assertEquals("900000000000207008", conceptResult.getModuleId());
 		Assert.assertEquals("900000000000074008", conceptResult.getDefinitionStatusId());
-		Assert.assertEquals(1, conceptResult.getDescriptions().size());
 	}
 
 	@Test

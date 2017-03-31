@@ -1,14 +1,6 @@
 package org.ihtsdo.otf.sqs.service;
 
 import com.google.common.collect.Lists;
-import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.domain.ConceptConstants;
-import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
-import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
-import org.ihtsdo.otf.sqs.service.dto.*;
-import org.ihtsdo.otf.sqs.service.exception.*;
-import org.ihtsdo.otf.sqs.service.exception.InternalError;
-import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -17,17 +9,23 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.join.ToChildBlockJoinQuery;
-import org.apache.lucene.util.Version;
+import org.ihtsdo.otf.sqs.domain.ConceptConstants;
+import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
+import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
+import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
+import org.ihtsdo.otf.sqs.service.dto.*;
+import org.ihtsdo.otf.sqs.service.exception.*;
+import org.ihtsdo.otf.sqs.service.exception.InternalError;
+import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.PreDestroy;
 
 public class SnomedQueryService {
 
@@ -186,27 +184,6 @@ public class SnomedQueryService {
 				concepts.add(conceptResult);
 			}
 
-			// Fetch Join Relationships
-			final ToChildBlockJoinQuery joinQuery = new ToChildBlockJoinQuery(query, new CachingWrapperFilter(new QueryWrapperFilter(new TermQuery(new Term("type", "concept")))), false);
-			final TopDocs joinTopDocs = indexSearcher.search(joinQuery, Integer.MAX_VALUE);
-			final ScoreDoc[] joinScoreDoc = joinTopDocs.scoreDocs;
-			for (int a = offset; a < joinScoreDoc.length; a++) {
-				ScoreDoc scoreDoc = joinScoreDoc[a];
-				final Document document = getDocument(scoreDoc);
-				if (document.get(RelationshipFieldNames.ID) != null) {
-					final RelationshipResult relationshipResult = getRelationshipResult(document);
-					final ConceptResult conceptResult = conceptsMap.get(relationshipResult.getSourceId());
-					if (conceptResult != null) {
-						conceptResult.addRelationship(relationshipResult);
-					}
-				} else {
-					final DescriptionResult descriptionResult = getDescriptionResult(document);
-					final ConceptResult conceptResult = conceptsMap.get(document.get(DescriptionFieldNames.CONCEPT_ID));
-					if (conceptResult != null) {
-						conceptResult.addDescription(descriptionResult);
-					}
-				}
-			}
 			return new ConceptResults(concepts, offset, total, limit);
 		} catch (IOException e) {
 			throw new InternalError("Error performing search.", e);
@@ -322,7 +299,7 @@ public class SnomedQueryService {
 	}
 
 	private QueryParser getQueryParser() {
-		QueryParser parser = new QueryParser(Version.LUCENE_40, ConceptFieldNames.ID, analyzer);
+		QueryParser parser = new QueryParser(ConceptFieldNames.ID, analyzer);
 		parser.setAllowLeadingWildcard(true);
 		return parser;
 	}

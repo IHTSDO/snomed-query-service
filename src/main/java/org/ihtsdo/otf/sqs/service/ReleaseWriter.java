@@ -26,7 +26,7 @@ public class ReleaseWriter implements AutoCloseable {
 	private final IndexWriter iwriter;
 
 	public ReleaseWriter(ReleaseStore releaseStore) throws IOException {
-		IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_40, releaseStore.createAnalyzer());
+		IndexWriterConfig config = new IndexWriterConfig(releaseStore.createAnalyzer());
 		iwriter = new IndexWriter(releaseStore.getDirectory(), config);
 	}
 

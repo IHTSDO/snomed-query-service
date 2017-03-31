@@ -4,7 +4,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
-import org.apache.lucene.util.Version;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 
 import java.io.File;
@@ -19,14 +18,14 @@ public class DiskReleaseStore implements ReleaseStore {
 		try {
 			directoryFile = new File("index");
 			directoryFile.mkdirs();
-			directory = new NIOFSDirectory(directoryFile);
+			directory = new NIOFSDirectory(directoryFile.toPath());
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
 	public Analyzer createAnalyzer() {
-		return new StandardAnalyzer(Version.LUCENE_40);
+		return new StandardAnalyzer();
 	}
 
 	public Directory getDirectory() {
