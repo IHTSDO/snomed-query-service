@@ -1,12 +1,8 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.util.Version;
 import org.ihtsdo.otf.snomedboot.domain.Concept;
 import org.ihtsdo.otf.snomedboot.domain.Description;
 import org.ihtsdo.otf.snomedboot.domain.Relationship;
@@ -51,6 +47,7 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new StringField(ConceptFieldNames.MODULE_ID, concept.getModuleId(), Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
+		conceptDoc.add(new SortedNumericDocValuesField(ConceptFieldNames.FSN_WORD_COUNT, concept.getFsn().split(" ").length));
 		final MultiValueMap<String, String> attributes = concept.getInferredAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {

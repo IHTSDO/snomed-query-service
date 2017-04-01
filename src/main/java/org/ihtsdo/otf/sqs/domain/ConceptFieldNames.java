@@ -10,5 +10,6 @@ public interface ConceptFieldNames {
 	String FSN = "fsn";
 	String ANCESTOR = "ancestor";
 	String MEMBER_OF = "memberOf";
+	String FSN_WORD_COUNT = "fsn-word-count";
 
 }
