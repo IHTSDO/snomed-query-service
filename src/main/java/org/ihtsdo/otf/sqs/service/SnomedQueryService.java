@@ -62,7 +62,7 @@ public class SnomedQueryService {
 		}
 
 		BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
-		for (String prefix : term.trim().split(" ")) {
+		for (String prefix : term.toLowerCase().trim().split(" ")) {
 			prefix = prefix.trim();
 			if (!prefix.isEmpty()) {
 				queryBuilder.add(new WildcardQuery(new Term(ConceptFieldNames.FSN, prefix + "*")), BooleanClause.Occur.SHOULD);
