@@ -57,7 +57,18 @@ public class SnomedQueryService {
 	}
 
 	public ConceptResults search(String term, int offset, int limit) throws ServiceException {
-		return getConceptResults(new WildcardQuery(new Term(ConceptFieldNames.FSN, term)), offset, limit);
+		if (term == null || term.trim().isEmpty()) {
+			return new ConceptResults(new ArrayList<ConceptResult>(), offset, 0, limit);
+		}
+
+		BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+		for (String prefix : term.trim().split(" ")) {
+			prefix = prefix.trim();
+			if (!prefix.isEmpty()) {
+				queryBuilder.add(new WildcardQuery(new Term(ConceptFieldNames.FSN, prefix + "*")), BooleanClause.Occur.SHOULD);
+			}
+		}
+		return getConceptResults(queryBuilder.build(), offset, limit);
 	}
 
 	public ConceptResults listAll(int offset, int limit) throws ServiceException {
@@ -172,7 +183,7 @@ public class SnomedQueryService {
 		try {
 			if (offset < 0) offset = 0;
 			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
-			final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.INDEXORDER);
+			final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.RELEVANCE);
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 			int total = topDocs.totalHits;
 			List<ConceptResult> concepts = new ArrayList<>();
