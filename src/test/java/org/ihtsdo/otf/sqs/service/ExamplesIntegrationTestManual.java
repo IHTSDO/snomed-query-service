@@ -30,11 +30,11 @@ public class ExamplesIntegrationTestManual {
 	public void setup() throws IOException, ReleaseImportException {
 		final ReleaseImportManager releaseImportManager = new ReleaseImportManager();
 		final ReleaseStore releaseStore;
-		if (releaseImportManager.isReleaseStoreExists()) {
+		if (releaseImportManager.isReleaseStoreExists(new File("index"))) {
 			logger.info("Using existing release store");
 			releaseStore = releaseImportManager.openExistingReleaseStore();
 		} else {
-			releaseStore = releaseImportManager.loadReleaseFiles(new File("release"), LoadingProfile.light.withRefset("447563008"));
+			releaseStore = releaseImportManager.loadReleaseFilesToDiskBasedIndex(new File("release"), LoadingProfile.light.withRefset("447563008"), new File("index"));
 		}
 		snomedQueryService = new SnomedQueryService(releaseStore);
 	}

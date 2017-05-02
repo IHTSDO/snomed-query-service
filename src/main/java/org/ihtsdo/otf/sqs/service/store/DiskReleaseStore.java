@@ -14,9 +14,9 @@ public class DiskReleaseStore implements ReleaseStore {
 	private final Directory directory;
 	private final File directoryFile;
 
-	public DiskReleaseStore() {
+	public DiskReleaseStore(File indexDirectory) {
 		try {
-			directoryFile = new File("index");
+			directoryFile = indexDirectory;
 			directoryFile.mkdirs();
 			directory = new NIOFSDirectory(directoryFile.toPath());
 		} catch (IOException e) {

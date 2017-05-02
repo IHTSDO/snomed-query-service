@@ -104,7 +104,7 @@ public class Application implements CommandLineRunner {
 			if (isParamSet(loadInactiveConcepts)) {
 				loadingProfile = loadingProfile.withInactiveConcepts();
 			}
-			releaseImportManager.loadReleaseFiles(releaseDirectory, loadingProfile);
+			releaseImportManager.loadReleaseFilesToDiskBasedIndex(releaseDirectory, loadingProfile, new File("index"));
 			context.close();
 		}
 	}

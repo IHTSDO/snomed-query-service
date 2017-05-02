@@ -26,6 +26,11 @@ public class IntegrationTest {
 	}
 
 	@Test
+	public void adhocTest() throws ServiceException {
+		snomedQueryService.eclQueryReturnConceptIdentifiers("<< 363787002 |Observable entity (observable entity)|: 704318007 = *", 0, -1);
+	}
+
+	@Test
 	public void testWordSearch() throws ServiceException {
 		final List<ConceptResult> conceptResults = snomedQueryService.search("action", 0, 10).getItems();
 		Assert.assertEquals(2, conceptResults.size());

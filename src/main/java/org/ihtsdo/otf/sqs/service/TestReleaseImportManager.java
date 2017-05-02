@@ -28,7 +28,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 	}
 
 	@Override
-	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws IOException {
+	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws IOException {
 		return buildTestTaxonomy();
 	}
 
@@ -71,7 +71,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 												)
 								)
 				);
-		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore(), false);
+		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore(new File("index")), false);
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {

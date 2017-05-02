@@ -7,6 +7,7 @@ import org.ihtsdo.otf.snomedboot.domain.Concept;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
 import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
+import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,7 @@ public class ReleaseImportManager {
 	}
 
 	public ReleaseStore openExistingReleaseStore() {
-		final ReleaseStore releaseStore = new DiskReleaseStore();
+		final ReleaseStore releaseStore = new DiskReleaseStore(new File("index"));
 		if (releaseStore.isIndexExisting()) {
 			return releaseStore;
 		} else {
@@ -36,14 +37,22 @@ public class ReleaseImportManager {
 		}
 	}
 
-	public ReleaseStore loadReleaseFiles(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException {
-		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile, new ComponentFactoryImpl(componentStore));
-		final Map<Long, ? extends org.ihtsdo.otf.snomedboot.domain.Concept> conceptMap = componentStore.getConcepts();
-		return writeToIndex(conceptMap, new DiskReleaseStore(), loadingProfile.isInactiveConcepts());
+	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws ReleaseImportException, IOException {
+		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new DiskReleaseStore(indexDirectory));
 	}
 
-	public boolean isReleaseStoreExists() {
-		return new DiskReleaseStore().isIndexExisting();
+	public ReleaseStore loadReleaseFilesToMemoryBasedIndex(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException {
+		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new RamReleaseStore());
+	}
+
+	private ReleaseStore loadReleaseFiledToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException {
+		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile, new ComponentFactoryImpl(componentStore));
+		final Map<Long, ? extends Concept> conceptMap = componentStore.getConcepts();
+		return writeToIndex(conceptMap, releaseStore, loadingProfile.isInactiveConcepts());
+	}
+
+	public boolean isReleaseStoreExists(File indexDirectory) {
+		return new DiskReleaseStore(indexDirectory).isIndexExisting();
 	}
 
 	protected ReleaseStore writeToIndex(Map<Long, ? extends Concept> conceptMap, ReleaseStore releaseStore, boolean writeInactiveConcepts) throws IOException {
