@@ -48,7 +48,7 @@ unzip SnomedCT_RF2Release_INT_20160131.zip
 git clone https://github.com/ihtsdo/snomed-query-service.git
 cd snomed-query-service
 mvn clean package
-java -jar target/*.jar --loadRelease /my-documents/SnomedCT_RF2Release_INT_20160131
+java -jar target/*.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
 java -jar target/*.jar --serve
 ```
 
