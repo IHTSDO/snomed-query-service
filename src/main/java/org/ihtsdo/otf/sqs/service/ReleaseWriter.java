@@ -29,7 +29,9 @@ public class ReleaseWriter implements AutoCloseable {
 	public void addConcept(Concept concept) throws IOException {
 		List<Document> documents = new ArrayList<>();
 		for (Relationship relationship : concept.getRelationships()) {
-			documents.add(getRelationshipDocument(relationship));
+			if (relationship != null) {
+				documents.add(getRelationshipDocument(relationship));
+			} 
 		}
 		for (Description description : concept.getDescriptions()) {
 			documents.add(getDescriptionDocument(description));
@@ -46,6 +48,9 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new StringField(ConceptFieldNames.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.MODULE_ID, concept.getModuleId(), Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
+		if (concept.getFsn() == null) {
+			throw new IllegalStateException("FSN can't be null for concept:" + concept.getId());
+		}
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
 		conceptDoc.add(new SortedNumericDocValuesField(ConceptFieldNames.FSN_WORD_COUNT, concept.getFsn().split(" ").length));
 		final MultiValueMap<String, String> attributes = concept.getInferredAttributes();

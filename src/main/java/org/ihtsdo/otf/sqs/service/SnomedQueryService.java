@@ -115,7 +115,6 @@ public class SnomedQueryService {
 			try {
 				final Query query = getQueryParser().parse(luceneQuery);
 				final ConceptResults conceptResults = getConceptResults(query, offset, limit);
-
 				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), conceptResults.getTotal());
 				return conceptResults;
 			} catch (ParseException e) {
@@ -225,7 +224,10 @@ public class SnomedQueryService {
 		if (internalFunction.isIncludeSelf()) {
 			conceptRelatives.add(conceptId);
 		}
-
+		if (conceptRelatives.isEmpty()) {
+			logger.warn(internalFunction.name() + " internalFunction returned empty result therefore the default value 0 is used.");
+			conceptRelatives.add("0");
+		}
 		String newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
 		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 100), limitStringLength(newLuceneQuery, 100));
 		return newLuceneQuery;
@@ -248,6 +250,8 @@ public class SnomedQueryService {
 				relativesIdBuilder.append(conceptRelative);
 			}
 			relativesIdBuilder.append(")");
+		} else {
+			relativesIdBuilder.append("0");
 		}
 		return relativesIdBuilder.toString();
 	}

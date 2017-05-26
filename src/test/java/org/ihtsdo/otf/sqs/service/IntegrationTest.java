@@ -27,7 +27,11 @@ public class IntegrationTest {
 
 	@Test
 	public void adhocTest() throws ServiceException {
-		snomedQueryService.eclQueryReturnConceptIdentifiers("<< 363787002 |Observable entity (observable entity)|: 704318007 = *", 0, -1);
+		//<< 404684003 |Clinical finding (finding)|: 363698007 = *
+		//<< 363787002 |Observable entity (observable entity)|: 704318007 = *"
+		//* MINUS (<<91723000  OR <<723264001) :  272741003=*
+		//* MINUS <<91723000 : 272741003=*
+		snomedQueryService.eclQueryReturnConceptIdentifiers("* MINUS (<<91723000  OR <<723264001) :  272741003=*", 0, -1);
 	}
 
 	@Test
@@ -203,6 +207,12 @@ public class IntegrationTest {
 		Assert.assertTrue(descendants.contains(new ConceptResult("362961001")));
 		Assert.assertTrue(descendants.contains(new ConceptResult("128927009")));
 		Assert.assertTrue(descendants.contains(new ConceptResult("8367003")));
+	}
+
+	@Test
+	public void testEclQueryWhenConceptDescendantIsEmpty() throws Exception {
+		final ConceptResults result = snomedQueryService.eclQueryReturnConceptDetails("<< 105590001 |Substance (substance)|: 726542003 = < 726711005 |Disposition (disposition)|");
+		Assert.assertEquals(0,result.getItems().size());
 	}
 
 	private void assertResultSet(List<ConceptResult> conceptResults, int... conceptIds) {

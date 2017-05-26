@@ -80,6 +80,18 @@ public class ExpressionConstraintToLuceneConverterTest {
 	public void test_refinedExpressionConstraint_wildcardAttributeNameAndConceptValue() {
 		parser.parse("307824009:*=34164001");
 	}
+	
+	@Test
+	public void test_refinedEclWithMultipleDomainsExclusion() {
+		assertConversion("(*:<<272741003=*) MINUS (<<91723000 OR <<723264001)", 
+				" ( id:* AND 272741003:* )  NOT  ( (id:91723000 OR ancestor:91723000) OR (id:723264001 OR ancestor:723264001) ) " );
+	}
+	
+	@Test
+	public void test_refinedEclWithOneDomainExclusion() {
+		assertConversion("(*:<<272741003=*) MINUS <<91723000)", 
+				" ( id:* AND 272741003:* )  NOT (id:91723000 OR ancestor:91723000)" );
+	}
 
 	private void assertConversion(String ecQuery, String expectedLuceneQuery) {
 		Assert.assertEquals(expectedLuceneQuery, parser.parse(ecQuery));
