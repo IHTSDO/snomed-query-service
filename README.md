@@ -51,6 +51,7 @@ mvn clean package
 java -jar target/*.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
 java -jar target/*.jar --serve
 ```
+This will create an "index" directory. This directory must be removed before running the load process again.
 
 ## Documentation / Live Demo
 Once the service is running Swagger API documentation can be found at: http://localhost:8080/
