@@ -56,9 +56,45 @@ public class SnomedQueryService {
 		return indexSearcher.collectionStatistics(ConceptFieldNames.ID).docCount();
 	}
 
-	public ConceptResults search(String term, int offset, int limit) throws ServiceException {
+	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
+		final List<ConceptResult> results = search(conceptId).getItems();
+		if (!results.isEmpty()) {
+			return results.get(0);
+		} else {
+			throw new ConceptNotFoundException(conceptId);
+		}
+	}
+
+	public ConceptResults listAll(int offset, int limit) throws ServiceException {
+		return getConceptResults(new TermQuery(new Term("type", "concept")), offset, limit);
+	}
+
+	public ConceptResults search(String ecQuery, String term, int offset, int limit) throws ServiceException {
+		BooleanQuery termLuceneQuery = getTermQuery(term);
+		Query eclLuceneQuery = getECLQuery(ecQuery);
+
+		if (termLuceneQuery == null && eclLuceneQuery == null) {
+			return listAll(offset, limit);
+		}
+
+		BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
+
+		if (termLuceneQuery != null) {
+			queryBuilder.add(termLuceneQuery, BooleanClause.Occur.MUST);
+		}
+		if (eclLuceneQuery != null) {
+			queryBuilder.add(eclLuceneQuery, BooleanClause.Occur.MUST);
+		}
+
+		BooleanQuery query = queryBuilder.build();
+		final ConceptResults conceptResults = getConceptResults(query, offset, limit);
+		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 100), conceptResults.getTotal());
+		return conceptResults;
+	}
+
+	private BooleanQuery getTermQuery(String term) {
 		if (term == null || term.trim().isEmpty()) {
-			return new ConceptResults(new ArrayList<ConceptResult>(), offset, 0, limit);
+			return null;
 		}
 
 		BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
@@ -68,60 +104,19 @@ public class SnomedQueryService {
 				queryBuilder.add(new WildcardQuery(new Term(ConceptFieldNames.FSN, prefix + "*")), BooleanClause.Occur.SHOULD);
 			}
 		}
-		return getConceptResults(queryBuilder.build(), offset, limit);
+		return queryBuilder.build();
 	}
 
-	public ConceptResults listAll(int offset, int limit) throws ServiceException {
-		return getConceptResults(new TermQuery(new Term("type", "concept")), offset, limit);
-	}
-
-	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
-		final List<ConceptResult> results = eclQueryReturnConceptDetails(conceptId).getItems();
-		if (!results.isEmpty()) {
-			return results.get(0);
-		} else {
-			throw new ConceptNotFoundException(conceptId);
+	private Query getECLQuery(String ecQuery) throws InvalidECLSyntaxException, NotFoundException, InternalError {
+		if (ecQuery == null || ecQuery.isEmpty()) {
+			return null;
 		}
-	}
-
-	public ConceptResults retrieveConceptAncestors(String conceptId) throws ServiceException {
-		return retrieveConceptAncestors(conceptId, 0, DEFAULT_LIMIT);
-	}
-
-	public ConceptResults retrieveConceptAncestors(String conceptId, int offset, int limit) throws ServiceException {
-		return eclQueryReturnConceptDetails(">" + conceptId, offset, limit);
-	}
-
-	public ConceptResults retrieveConceptDescendants(String conceptId) throws ServiceException {
-		return retrieveConceptDescendants(conceptId, 0, DEFAULT_LIMIT);
-	}
-
-	public ConceptResults retrieveConceptDescendants(String conceptId, int offset, int limit) throws ServiceException {
-		return eclQueryReturnConceptDetails("<" + conceptId, offset, limit);
-	}
-
-	public ConceptResults retrieveReferenceSets(int offset, int limit) throws ServiceException {
-		// TODO: harden this
-		return eclQueryReturnConceptDetails("<" + ConceptConstants.REFSET_CONCEPT, offset, limit);
-	}
-
-	public ConceptResults eclQueryReturnConceptDetails(String ecQuery) throws ServiceException {
-		return eclQueryReturnConceptDetails(ecQuery, 0, DEFAULT_LIMIT);
-	}
-
-	public ConceptResults eclQueryReturnConceptDetails(String ecQuery, int offset, int limit) throws ServiceException {
-		if (ecQuery != null && !ecQuery.isEmpty()) {
-			String luceneQuery = preprocessECLQuery(ecQuery);
-			try {
-				final Query query = getQueryParser().parse(luceneQuery);
-				final ConceptResults conceptResults = getConceptResults(query, offset, limit);
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), conceptResults.getTotal());
-				return conceptResults;
-			} catch (ParseException e) {
-				throw new InternalError("Error parsing internal search query.", e);
-			}
+		String luceneQueryString = preprocessECLQuery(ecQuery);
+		try {
+			return getQueryParser().parse(luceneQueryString);
+		} catch (ParseException e) {
+			throw new InternalError("Error parsing internal search query.", e);
 		}
-		return new ConceptResults(new ArrayList<ConceptResult>(), offset, 0, limit);
 	}
 
 	public ConceptIdResults eclQueryReturnConceptIdentifiers(String ecQuery, int offset, int limit) throws ServiceException {
@@ -138,6 +133,31 @@ public class SnomedQueryService {
 			}
 		}
 		return new ConceptIdResults(new ArrayList<Long>(), offset, 0, limit);
+	}
+
+	public ConceptResults retrieveConceptAncestors(String conceptId) throws ServiceException {
+		return retrieveConceptAncestors(conceptId, 0, DEFAULT_LIMIT);
+	}
+
+	public ConceptResults retrieveConceptAncestors(String conceptId, int offset, int limit) throws ServiceException {
+		return search(">" + conceptId, null, offset, limit);
+	}
+
+	public ConceptResults retrieveConceptDescendants(String conceptId) throws ServiceException {
+		return retrieveConceptDescendants(conceptId, 0, DEFAULT_LIMIT);
+	}
+
+	public ConceptResults retrieveConceptDescendants(String conceptId, int offset, int limit) throws ServiceException {
+		return search("<" + conceptId, null, offset, limit);
+	}
+
+	public ConceptResults retrieveReferenceSets(int offset, int limit) throws ServiceException {
+		// TODO: harden this
+		return search("<" + ConceptConstants.REFSET_CONCEPT, null, offset, limit);
+	}
+
+	ConceptResults search(String ecQuery) throws ServiceException {
+		return search(ecQuery, null, 0, DEFAULT_LIMIT);
 	}
 
 	private String preprocessECLQuery(String ecQuery) throws InvalidECLSyntaxException, NotFoundException, InternalError {
@@ -328,7 +348,6 @@ public class SnomedQueryService {
 	}
 
 	private String limitStringLength(String string, int limit) {
-		Pattern.compile("\\(.*\\)(\\d+ OR)[10:]");
 		return string.length() > limit ? string.substring(0, limit) : string;
 	}
 

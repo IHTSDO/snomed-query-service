@@ -27,13 +27,7 @@ public class ConceptController {
 			@RequestParam(required = false, defaultValue = "0") int offset,
 			@RequestParam(required = false, defaultValue = SnomedQueryService.DEFAULT_LIMIT + "") int limit) throws ServiceException {
 
-		if (!Strings.isNullOrEmpty(term)) {
-			return snomedQueryService.search(term, offset, limit);
-		} else if (!Strings.isNullOrEmpty(ecQuery)){
-			return snomedQueryService.eclQueryReturnConceptDetails(ecQuery, offset, limit);
-		} else {
-			return snomedQueryService.listAll(offset, limit);
-		}
+		return snomedQueryService.search(ecQuery, term, offset, limit);
 	}
 
 	@RequestMapping("/{conceptId}")
