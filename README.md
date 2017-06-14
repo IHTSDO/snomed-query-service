@@ -41,20 +41,15 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 
 
 ## Quick Start
-Unzip your release archive, clone the project, use maven to build, load your release then serve.
+Download the latest release Jar from the [releases](https://github.com/IHTSDO/snomed-query-service/releases) page, unzip your SNOMED RF2 archive, load your SNOMED content and then serve.
 ```
 cd my-documents
 unzip SnomedCT_RF2Release_INT_20160131.zip
-git clone https://github.com/ihtsdo/snomed-query-service.git
-cd snomed-query-service
-mvn clean package
-java -jar target/*.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
-java -jar target/*.jar --serve
+java -jar snomed-query-service-1.1.0.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
+java -jar snomed-query-service-1.1.0.jar --serve
 ```
 This will create an "index" directory. This directory must be removed before running the load process again.
-
-## Documentation / Live Demo
-Once the service is running Swagger API documentation can be found at: http://localhost:8080/
+Once the service is running in serve mode Swagger API documentation can be found at: http://localhost:8080/
 
 ## Example Expression Constraint Language queries:
 Follow the quick start to use these examples:
@@ -69,6 +64,15 @@ This is useful for running multiple instances of the tool to serve more releases
 ```
 java -jar target/*.jar --serve --server.port=8081
 ```
+
+### Building the software yourself
+If you would like to build this open source software yourself it's simple with maven:
+```
+git clone https://github.com/ihtsdo/snomed-query-service.git
+cd snomed-query-service
+mvn clean package
+```
+Find the binaries in the target directory.
 
 ### Licence
  Apache 2.0 Open Source Licence
