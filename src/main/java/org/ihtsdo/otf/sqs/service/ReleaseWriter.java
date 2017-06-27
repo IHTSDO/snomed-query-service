@@ -10,11 +10,20 @@ import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
 import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
 import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
+import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+
+import com.mangofactory.swagger.models.Collections;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ReleaseWriter implements AutoCloseable {
@@ -38,6 +47,50 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 		documents.add(getConceptDocument(concept));
 		iwriter.addDocuments(documents);
+	}
+
+	private Document getCardinalityDocument(Concept concept, Document doc) {
+		final MultiValueMap<String, String> statedAttributeGroups = new LinkedMultiValueMap<>();
+		final MultiValueMap<String, String> inferredAttributeGroups = new LinkedMultiValueMap<>();
+		for (Relationship relationship : concept.getRelationships()) {
+			if ("900000000000011006".equals(relationship.getCharacteristicTypeId())) {
+				inferredAttributeGroups.add(relationship.getTypeId(), relationship.getRelationshipGroup());
+			} else {
+				statedAttributeGroups.add(relationship.getTypeId(), relationship.getRelationshipGroup());
+			}
+		}
+		//attributeCardinality
+		for (String key : inferredAttributeGroups.keySet()) {
+			doc.add(new StringField(key + ConceptFieldNames.CARDINALITY, String.valueOf(inferredAttributeGroups.get(key).size()), Field.Store.YES));
+		}
+		//attributeGroupCardinality
+		for (String key : inferredAttributeGroups.keySet()) {
+			Iterator<String> itrator = inferredAttributeGroups.get(key).iterator();
+			List<String> roleGroups = new ArrayList<>();
+			Map<String,Integer> groupCountMap = new HashMap<>();
+			while (itrator.hasNext()) {
+				String grp = itrator.next();
+				if (!"0".equals(grp)) {
+					roleGroups.add(grp);
+					if (groupCountMap.containsKey(grp)) {
+						groupCountMap.put(grp, groupCountMap.get(grp).intValue() + 1);
+					} else {
+						groupCountMap.put(grp, 1);
+					}
+				}
+			}
+			Set<String> distinctGroups = new HashSet<>(roleGroups);
+			if (!distinctGroups.isEmpty()) {
+				doc.add(new StringField(key + ConceptFieldNames.TOTAL_GROUPS, String.valueOf(distinctGroups.size()), Field.Store.YES));
+				List<Integer> countList = new ArrayList<>(groupCountMap.values());
+				java.util.Collections.sort(countList);
+				if (!countList.isEmpty()) {
+					Integer maxGroup = countList.get(countList.size()-1);
+					doc.add(new StringField(key + ConceptFieldNames.GROUP_CARDINALITY, maxGroup.toString(), Field.Store.YES));
+				}
+			}
+		}
+		return doc;
 	}
 
 	private Document getConceptDocument(Concept concept) {
@@ -66,7 +119,7 @@ public class ReleaseWriter implements AutoCloseable {
 		for (Long memberRefsetId : concept.getMemberOfRefsetIds()) {
 			conceptDoc.add(new StringField(ConceptFieldNames.MEMBER_OF, memberRefsetId.toString(), Field.Store.YES));
 		}
-		return conceptDoc;
+		return getCardinalityDocument(concept, conceptDoc);
 	}
 
 	private Document getRelationshipDocument(org.ihtsdo.otf.snomedboot.domain.Relationship relationship) {

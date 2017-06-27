@@ -64,6 +64,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 												.addAttribute(hasIntentAttribute, intentsQualifierValue),
 										addConcept(128927009, "Procedure by method (procedure)")
 												.addAttribute(methodAttribute, actionQualifierValue)
+												.addAttribute(methodAttribute, actionQualifierValue)
 												.addAttribute(procedureSiteDirectAttribute, nailStructure)
 												.addChildren(
 														addConcept(8367003, "Clipping nails of patient (procedure)")
@@ -101,14 +102,11 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 			}
 			return this;
 		}
-
-		public ConceptBuilder addAttribute(String type, String value) {
-			componentFactory.addInferredConceptAttribute(id, type, value);
-			return this;
-		}
-
+		
 		public ConceptBuilder addAttribute(ConceptBuilder type, ConceptBuilder value) {
-			return addAttribute(type.id, value.id);
+			componentFactory.addInferredConceptAttribute(id, type.id, value.id);
+			componentFactory.newRelationshipState("", "20170731", "1", "", id, "", "1", type.id, "900000000000011006", "");
+			return this;
 		}
 	}
 

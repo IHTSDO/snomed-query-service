@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.security.cert.CollectionCertStoreParameters;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -213,6 +214,88 @@ public class IntegrationTest {
 	public void testEclQueryWhenConceptDescendantIsEmpty() throws Exception {
 		final ConceptResults result = snomedQueryService.search("<< 105590001 |Substance (substance)|: 726542003 = < 726711005 |Disposition (disposition)|");
 		Assert.assertEquals(0,result.getItems().size());
+	}
+	
+	@Test
+	public void testAttribute() throws Exception {
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:260686004 = *", 0, -1).getConceptIds();
+		Assert.assertEquals(2,results.size());
+		Assert.assertTrue(results.contains(new Long(128927009)));
+		Assert.assertTrue(results.contains(new Long(8367003)));
+		
+	}
+	
+	
+	@Test
+	public void testAttributeWithCardinality() throws Exception {
+		final ConceptIdResults result = snomedQueryService.eclQueryReturnConceptIdentifiers("<  373873005 |Pharmaceutical / biologic product| : [1..3]  127489000 |Has active ingredient|  = <  105590001 |Substance|", 0 ,-1);
+		Assert.assertEquals(0,result.getConceptIds().size());
+	}
+	
+	@Test
+	public void testAttributeCardinalityWithSpecificDomain() throws Exception {
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("128927009:[2..*] <<260686004 = *", 0, -1).getConceptIds();
+		Assert.assertEquals(1,results.size());
+		Assert.assertTrue(results.contains(new Long("128927009")));
+	}
+	
+	@Test
+	public void testAttributeCardinality() throws Exception {
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:[1..2] <<260686004 = *", 0, -1).getConceptIds();
+		Assert.assertEquals(2,results.size());
+		Assert.assertTrue(results.contains(new Long("128927009")));
+		Assert.assertTrue(results.contains(new Long("8367003")));
+	}
+	
+	@Test
+	public void testAttributeCardinalityWithoutMatch() throws Exception {
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("128927009:[0..1] 260686004 = *", 0, -1).getConceptIds();
+		Assert.assertEquals(0,results.size());
+	}
+	
+	
+	@Test
+	public void testAttributeGroupCardinality() throws Exception {
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [0..1] { [0..1] 260686004 = *}", 0, -1).getConceptIds();
+		Assert.assertEquals(1,results.size());
+		Assert.assertTrue(results.contains(new Long("8367003")));
+	}
+	
+	@Test
+	public void testAttributeGroupCardinalityWithMatchedResults() throws Exception {
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..*] { [1..*] 260686004 = *}", 0, -1).getConceptIds();
+		Assert.assertEquals(2,results.size());
+		Assert.assertTrue(results.contains(new Long("128927009")));
+		Assert.assertTrue(results.contains(new Long("8367003")));
+	}
+	
+	@Test
+	public void testAttributeGroupCardinalityWithoutMatch() throws Exception {
+		final ConceptIdResults result = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..3] { [3..*] 260686004 = *}", 0, -1);
+		Assert.assertEquals(0,result.getConceptIds().size());
+	}
+	
+	
+	@Test
+	public void testAttributeGroupCardinalityWithoutMatchWithDefaultGroupCardinality() throws Exception {
+		final ConceptResults result = snomedQueryService.search("*: [2..*] { 260686004 = *}");
+		Assert.assertEquals(0,result.getItems().size());
+	}
+	
+	@Test
+	public void testDefaultAttributeGroupCardinality() throws Exception {
+		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { [1..*] 260686004 = *}", 0, -1).getConceptIds();
+		Assert.assertEquals(2,results.size());
+		Assert.assertTrue(results.contains(new Long("128927009")));
+		Assert.assertTrue(results.contains(new Long("8367003")));
+	}
+
+	@Test
+	public void testDefaultAttributeGroupCardinalities() throws Exception {
+		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { 260686004 = *}", 0, -1).getConceptIds();
+		Assert.assertEquals(2,results.size());
+		Assert.assertTrue(results.contains(new Long("128927009")));
+		Assert.assertTrue(results.contains(new Long("8367003")));
 	}
 
 	private void assertResultSet(List<ConceptResult> conceptResults, int... conceptIds) {

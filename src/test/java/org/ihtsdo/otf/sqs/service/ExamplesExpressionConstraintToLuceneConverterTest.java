@@ -126,8 +126,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	// TODO support AttributeGroup example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroup_1() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
@@ -136,7 +135,10 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"{ 363698007 |finding site| = << 53085002 |right ventricular structure|,  " +
 						"  116676008 |associated morphology| = << 56246009 |hypertrophy|}",
 
-				""
+				"ancestor:404684003 AND 363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(39057004) "
+				+ "AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(415582006) "
+				+ "AND 363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(53085002) "
+				+ "AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(56246009)"
 		);
 	}
 
@@ -235,152 +237,132 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	// TODO: cardinality support
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeCardinality_1() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[1..3] 127489000 |has active ingredient| = < 105590001 |substance|",
 
-				"ancestor:373873005 " +
-						"AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
+				"ancestor:373873005 AND 127489000_card:[1 TO 3] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO: cardinality support
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeCardinality_2() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[1..1] 127489000 |has active ingredient| = < 105590001 |substance|",
 
-				"ancestor:373873005 " +
-						"AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
+				"ancestor:373873005 AND 127489000_card:[1 TO 1] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO: cardinality support
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeCardinality_3() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[0..1] 127489000 |has active ingredient| = < 105590001 |substance|",
 
-				"ancestor:373873005 " +
-						"AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
+				"ancestor:373873005 AND 127489000_card:[0 TO 1] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO: cardinality support
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeCardinality_4() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[1..*] 127489000 |has active ingredient| = < 105590001 |substance|",
 
-				"ancestor:373873005 " +
-						"AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
+				"ancestor:373873005 AND 127489000_card:[1 TO *] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO: cardinality support
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeCardinality_5() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
 						"[1..1] 363698007 |finding site| = < 91723000 |anatomical structure|",
 
-				"ancestor:404684003 " +
-						"AND 363698007:ATTRIBUTE_DESCENDANT_OF(91723000)"
+				"ancestor:404684003 AND 363698007_card:[1 TO 1] AND 363698007:ATTRIBUTE_DESCENDANT_OF(91723000)"
 		);
 	}
 
-	// TODO: cardinality support
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeCardinality_6() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
 						"[2..*] 363698007 |finding site| = < 91723000 |anatomical structure|",
 
-				"ancestor:404684003 " +
-						"AND 363698007:ATTRIBUTE_DESCENDANT_OF(91723000)"
+				"ancestor:404684003 AND 363698007_card:[2 TO *] AND 363698007:ATTRIBUTE_DESCENDANT_OF(91723000)"
 		);
 	}
 
-	// TODO support AttributeCardinality example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeCardinality_7() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
 						"{ [2..*] 363698007 |finding site| = < 91723000 |anatomical structure| }",
-
-				""
+				"ancestor:404684003 AND 363698007_totalGrp:[1 TO *] AND 363698007_grpCard:[2 TO *] AND 363698007:ATTRIBUTE_DESCENDANT_OF(91723000)"
 		);
 	}
 
-	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroupCardinality_1() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[1..3] { [1..*] 127489000 |has active ingredient| = < 105590001 |substance|}",
 
-				""
+				"ancestor:373873005 AND 127489000_totalGrp:[1 TO 3] AND 127489000_grpCard:[1 TO *] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroupCardinality_2() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[0..1] { 127489000 |has active ingredient| = < 105590001 |substance|}",
 
-				""
+				"ancestor:373873005 AND 127489000_totalGrp:[0 TO 1] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroupCardinality_3() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[1..*] { 127489000 |has active ingredient| = < 105590001 |substance|}",
 
-				""
+				"ancestor:373873005 AND 127489000_totalGrp:[1 TO *] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroupCardinality_4() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"[1..*] { [1..*] 127489000 |has active ingredient| = < 105590001 |substance|}",
 
-				""
+				"ancestor:373873005 AND 127489000_totalGrp:[1 TO *] AND 127489000_grpCard:[1 TO *] AND 127489000:ATTRIBUTE_DESCENDANT_OF(105590001)"
 		);
 	}
 
-	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroupCardinality_5() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
 						"[1..1] { 363698007 |finding site| = < 91723000 |anatomical structure|}",
 
-				""
+				"ancestor:404684003 AND 363698007_totalGrp:[1 TO 1] AND 363698007:ATTRIBUTE_DESCENDANT_OF(91723000)"
 		);
 	}
 
-	// TODO support AttributeGroupCardinality example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroupCardinality_6() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
 						"[0..0] { [2..*] 363698007 |finding site| = < 91723000 |anatomical structure|}",
 
-				""
+				"ancestor:404684003 AND 363698007_totalGrp:[0 TO 0] AND 363698007_grpCard:[2 TO *] AND 363698007:ATTRIBUTE_DESCENDANT_OF(91723000)"
 		);
 	}
 
@@ -494,8 +476,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	// TODO support AttributeGroupConjunctionDisjunction example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_AttributeGroupConjunctionDisjunction_1() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
@@ -504,7 +485,10 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"{ 363698007 |finding site| = << 53085002 |right ventricular structure|, " +
 						"   116676008 |associated morphology| = << 56246009 |hypertrophy|}",
 
-				""
+				"ancestor:404684003 AND 363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(39057004) "
+				+ "AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(415582006) "
+				+ "OR 363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(53085002) "
+				+ "AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(56246009)"
 		);
 	}
 
@@ -579,19 +563,16 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	// TODO: cardinality support
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_NotEqualToAttributeValue_2() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
 						"[0..0] 116676008 |associated morphology| =  << 26036001 |obstruction|",
 
-				"ancestor:404684003 " +
-						"AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001)"
+				"ancestor:404684003 AND 116676008_card:[0 TO 0] AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001)"
 		);
 	}
 
-	// TODO: cardinality support
 	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_NotEqualToAttributeValue_3() {
 		assertConversion(
@@ -603,7 +584,6 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	// TODO: cardinality support
 	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_NotEqualToAttributeValue_4() {
 		assertConversion(
