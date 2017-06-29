@@ -204,7 +204,7 @@ public class SnomedQueryService {
 			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
 
 			final TopDocs topDocs = indexSearcher.search(query, fetchLimit, new Sort(SortField.FIELD_SCORE,
-					new SortedNumericSortField(ConceptFieldNames.FSN_WORD_COUNT, SortField.Type.LONG)));
+					new SortedNumericSortField(ConceptFieldNames.FSN_LENGTH, SortField.Type.INT)));
 
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 			int total = topDocs.totalHits;

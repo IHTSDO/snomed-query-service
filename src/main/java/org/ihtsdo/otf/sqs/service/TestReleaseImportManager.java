@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.sqs.service;
 
 import org.ihtsdo.otf.snomedboot.ComponentStore;
+import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
@@ -12,7 +13,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.ParseException;
 
 public class TestReleaseImportManager extends ReleaseImportManager {
 
@@ -29,11 +29,11 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 	}
 
 	@Override
-	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws IOException, ParseException {
+	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws IOException, ReleaseImportException {
 		return buildTestTaxonomy(loadingProfile);
 	}
 
-	public ReleaseStore buildTestTaxonomy(LoadingProfile loadingProfile) throws IOException, ParseException {
+	public ReleaseStore buildTestTaxonomy(LoadingProfile loadingProfile) throws IOException, ReleaseImportException {
 		logger.info("-- LOADING TEST DATA --");
 
 		// Build a taxonomy, this is not the correct structure, it's purely for testing expression constraint queries

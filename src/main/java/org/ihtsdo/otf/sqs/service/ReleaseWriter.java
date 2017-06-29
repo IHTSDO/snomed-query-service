@@ -105,7 +105,7 @@ public class ReleaseWriter implements AutoCloseable {
 			throw new IllegalStateException("FSN can't be null for concept:" + concept.getId());
 		}
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
-		conceptDoc.add(new SortedNumericDocValuesField(ConceptFieldNames.FSN_WORD_COUNT, concept.getFsn().split(" ").length));
+		conceptDoc.add(new SortedNumericDocValuesField(ConceptFieldNames.FSN_LENGTH, concept.getFsn() != null ? concept.getFsn().length() : 100));
 		final MultiValueMap<String, String> attributes = isStatedRelationship ? concept.getStatedAttributes() : concept.getInferredAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {
