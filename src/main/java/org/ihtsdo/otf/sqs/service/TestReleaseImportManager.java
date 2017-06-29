@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.ParseException;
 
 public class TestReleaseImportManager extends ReleaseImportManager {
 
@@ -28,11 +29,11 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 	}
 
 	@Override
-	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws IOException {
-		return buildTestTaxonomy();
+	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws IOException, ParseException {
+		return buildTestTaxonomy(loadingProfile);
 	}
 
-	public ReleaseStore buildTestTaxonomy() throws IOException {
+	public ReleaseStore buildTestTaxonomy(LoadingProfile loadingProfile) throws IOException, ParseException {
 		logger.info("-- LOADING TEST DATA --");
 
 		// Build a taxonomy, this is not the correct structure, it's purely for testing expression constraint queries
@@ -72,7 +73,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 												)
 								)
 				);
-		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore(new File("index")), false);
+		return writeToIndex(componentStore.getConcepts(), writeToRam ? new RamReleaseStore() : new DiskReleaseStore(new File("index")), loadingProfile);
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {

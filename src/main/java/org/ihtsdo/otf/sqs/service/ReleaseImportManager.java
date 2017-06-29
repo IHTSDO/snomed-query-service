@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.Map;
 
 public class ReleaseImportManager {
@@ -37,33 +38,33 @@ public class ReleaseImportManager {
 		}
 	}
 
-	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws ReleaseImportException, IOException {
+	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws ReleaseImportException, IOException, ParseException {
 		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new DiskReleaseStore(indexDirectory));
 	}
 
-	public ReleaseStore loadReleaseFilesToMemoryBasedIndex(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException {
+	public ReleaseStore loadReleaseFilesToMemoryBasedIndex(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException, ParseException {
 		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new RamReleaseStore());
 	}
 
-	private ReleaseStore loadReleaseFiledToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException {
+	private ReleaseStore loadReleaseFiledToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException, ParseException {
 		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile, new ComponentFactoryImpl(componentStore));
 		final Map<Long, ? extends Concept> conceptMap = componentStore.getConcepts();
-		return writeToIndex(conceptMap, releaseStore, loadingProfile.isInactiveConcepts());
+		return writeToIndex(conceptMap, releaseStore, loadingProfile);
 	}
 
 	public boolean isReleaseStoreExists(File indexDirectory) {
 		return new DiskReleaseStore(indexDirectory).isIndexExisting();
 	}
 
-	protected ReleaseStore writeToIndex(Map<Long, ? extends Concept> conceptMap, ReleaseStore releaseStore, boolean writeInactiveConcepts) throws IOException {
+	protected ReleaseStore writeToIndex(Map<Long, ? extends Concept> conceptMap, ReleaseStore releaseStore, LoadingProfile loadingProfile) throws IOException, ParseException {
 		logger.info("All in memory. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 		logger.info("Writing to index...");
 
 		try (final ReleaseWriter releaseWriter = new ReleaseWriter(releaseStore)) {
 			long conceptsAdded = 0;
 			for (Concept concept : conceptMap.values()) {
-				if (concept.isActive() || writeInactiveConcepts) {
-					releaseWriter.addConcept(concept);
+				if (concept.isActive() || loadingProfile.isInactiveConcepts()) {
+					releaseWriter.addConcept(concept,loadingProfile.isStatedRelationships());
 					conceptsAdded++;
 					if (conceptsAdded % 100000 == 0) {
 						logger.info("{} concepts added to index...", conceptsAdded);

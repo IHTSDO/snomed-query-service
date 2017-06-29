@@ -55,7 +55,7 @@ public class Application implements CommandLineRunner {
 
 	private ReleaseImportManager releaseImportManager;
 
-	private LoadingProfile loadingProfile = LoadingProfile.light; // TODO Configure via config
+	private LoadingProfile loadingProfile = LoadingProfile.light.withFullRelationshipObjects(); // TODO Configure via config
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 	private static File releaseDirectory = null;

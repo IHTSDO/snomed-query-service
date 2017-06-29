@@ -1,5 +1,6 @@
 package org.ihtsdo.otf.sqs.service;
 
+import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
@@ -21,8 +22,8 @@ public class IntegrationTest {
 	private SnomedQueryService snomedQueryService;
 
 	@Before
-	public void setup() throws IOException {
-		final ReleaseStore releaseStore = new TestReleaseImportManager(true).buildTestTaxonomy();
+	public void setup() throws Exception {
+		final ReleaseStore releaseStore = new TestReleaseImportManager(true).buildTestTaxonomy(LoadingProfile.light.withoutInactiveConcepts());
 		snomedQueryService = new SnomedQueryService(releaseStore);
 	}
 

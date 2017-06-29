@@ -27,7 +27,7 @@ public class ExamplesIntegrationTestManual {
 	private Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
-	public void setup() throws IOException, ReleaseImportException {
+	public void setup() throws Exception {
 		final ReleaseImportManager releaseImportManager = new ReleaseImportManager();
 		final ReleaseStore releaseStore;
 		if (releaseImportManager.isReleaseStoreExists(new File("index"))) {
