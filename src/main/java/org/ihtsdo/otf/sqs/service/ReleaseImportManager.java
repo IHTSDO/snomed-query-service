@@ -38,15 +38,15 @@ public class ReleaseImportManager {
 		}
 	}
 
-	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws ReleaseImportException, IOException, ParseException {
+	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws ReleaseImportException, IOException {
 		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new DiskReleaseStore(indexDirectory));
 	}
 
-	public ReleaseStore loadReleaseFilesToMemoryBasedIndex(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException, ParseException {
+	public ReleaseStore loadReleaseFilesToMemoryBasedIndex(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException {
 		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new RamReleaseStore());
 	}
 
-	private ReleaseStore loadReleaseFiledToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException, ParseException {
+	private ReleaseStore loadReleaseFiledToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException {
 		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile, new ComponentFactoryImpl(componentStore));
 		final Map<Long, ? extends Concept> conceptMap = componentStore.getConcepts();
 		return writeToIndex(conceptMap, releaseStore, loadingProfile);
@@ -56,7 +56,7 @@ public class ReleaseImportManager {
 		return new DiskReleaseStore(indexDirectory).isIndexExisting();
 	}
 
-	protected ReleaseStore writeToIndex(Map<Long, ? extends Concept> conceptMap, ReleaseStore releaseStore, LoadingProfile loadingProfile) throws IOException, ParseException {
+	protected ReleaseStore writeToIndex(Map<Long, ? extends Concept> conceptMap, ReleaseStore releaseStore, LoadingProfile loadingProfile) throws IOException, ReleaseImportException {
 		logger.info("All in memory. Using approx {} MB of memory.", formatAsMB(Runtime.getRuntime().totalMemory()));
 		logger.info("Writing to index...");
 
@@ -64,7 +64,7 @@ public class ReleaseImportManager {
 			long conceptsAdded = 0;
 			for (Concept concept : conceptMap.values()) {
 				if (concept.isActive() || loadingProfile.isInactiveConcepts()) {
-					releaseWriter.addConcept(concept,loadingProfile.isStatedRelationships());
+					releaseWriter.addConcept(concept, loadingProfile.isStatedRelationships());
 					conceptsAdded++;
 					if (conceptsAdded % 100000 == 0) {
 						logger.info("{} concepts added to index...", conceptsAdded);
@@ -73,6 +73,8 @@ public class ReleaseImportManager {
 			}
 			logger.info("{} concepts added to index in total.", conceptsAdded);
 			logger.info("Closing index writer.");
+		} catch (ParseException e) {
+			throw new ReleaseImportException("Failed to parse date.", e);
 		}
 
 		conceptMap.clear();
