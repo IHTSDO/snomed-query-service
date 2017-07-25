@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ExpressionConstraintToLuceneConverter {
 
@@ -109,6 +111,10 @@ public class ExpressionConstraintToLuceneConverter {
 		private String luceneQuery = "";
 		private boolean inAttribute;
 		private Set<ParserRuleContext> bracesToClose = new HashSet<>();
+		private boolean isAttributeGroupFound = false;
+		private boolean isDefaultGroupConstraint = false;
+		private String attributeId = null;
+		private boolean isTotalGroupApplied = false;
 
 		@Override
 		public void visitErrorNode(ErrorNode node) {
@@ -171,6 +177,10 @@ public class ExpressionConstraintToLuceneConverter {
 
 		@Override
 		public void enterAttribute(ExpressionConstraintParser.AttributeContext ctx) {
+			final ExpressionConstraintParser.ConceptreferenceContext conceptreference = ctx.attributename().conceptreference();
+			if (conceptreference != null) {
+				attributeId = conceptreference.conceptid().getText();
+			}
 			inAttribute = true;
 		}
 
@@ -267,19 +277,55 @@ public class ExpressionConstraintToLuceneConverter {
 				luceneQuery += " ) ";
 			}
 		}
-
-		// Unsupported enter methods below this line
-
+		
 		@Override
 		public void enterCardinality(ExpressionConstraintParser.CardinalityContext ctx) {
-			throwUnsupported("cardinality");
+			String text = ctx.getText();
+			String range = "";
+			String regex = "\\[*..*\\]";
+			Pattern pattern = Pattern.compile(regex);
+			Matcher matcher = pattern.matcher(text);
+			if (matcher.matches()) {
+				if (isAttributeGroupFound) {
+					if (!isTotalGroupApplied && isDefaultGroupConstraint) {
+						range = attributeId + ConceptFieldNames.TOTAL_GROUPS + ":" + "[1 TO *]";
+						isTotalGroupApplied = true;
+						luceneQuery += range + " AND ";
+						range = "";
+					} 
+					if (!isTotalGroupApplied && !isDefaultGroupConstraint) {
+						range = attributeId + ConceptFieldNames.TOTAL_GROUPS;
+						isTotalGroupApplied = true;
+					} else {
+						range +=  attributeId + ConceptFieldNames.GROUP_CARDINALITY;
+					}
+				} else {
+					range = attributeId + ConceptFieldNames.CARDINALITY;
+				}
+				text = text.replace("..", " TO ");
+				range += ":" + text;
+			} else {
+				range = text;
+			}
+			luceneQuery += range + " AND ";
 		}
 
 		@Override
 		public void enterAttributegroup(ExpressionConstraintParser.AttributegroupContext ctx) {
-			throwUnsupported("attributeGroup");
+			isAttributeGroupFound = true;
+			if (!ctx.getText().startsWith("[")) {
+				isDefaultGroupConstraint = true;
+			} 
+		}
+		
+		@Override
+		public void exitAttributegroup(ExpressionConstraintParser.AttributegroupContext ctx) {
+			if (luceneQuery.contains("null")) {
+				luceneQuery = luceneQuery.replace("null", attributeId);
+			}
 		}
 
+		// Unsupported enter methods below this line
 		@Override
 		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
 			throwUnsupported("stringComparisonOperator");
