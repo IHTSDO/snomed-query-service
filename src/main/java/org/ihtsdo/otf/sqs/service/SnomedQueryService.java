@@ -1,10 +1,12 @@
 package org.ihtsdo.otf.sqs.service;
 
 import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
@@ -37,6 +39,7 @@ public class SnomedQueryService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Map<String, RefsetMembershipResult> refsetResultMap = new ConcurrentHashMap<>();
 
+	private static final Set<String> CONCEPT_FIELD_SET = Collections.singleton(ConceptFieldNames.ID);
 	public static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
 	static {
 		for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : ExpressionConstraintToLuceneConverter.InternalFunction.values()) {
@@ -184,12 +187,12 @@ public class SnomedQueryService {
 		try {
 			if (offset < 0) offset = 0;
 			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
-			final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.INDEXORDER);
+			final TopDocs topDocs = indexSearcher.search(query, fetchLimit);
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 			int total = topDocs.totalHits;
-			List<Long> conceptIds = new ArrayList<>();
+			List<Long> conceptIds = new LongArrayList();
 			for (int a = offset; a < scoreDocs.length; a++) {
-				String conceptId = getDocument(scoreDocs[a]).get(ConceptFieldNames.ID);
+				String conceptId = getConceptId(scoreDocs[a]);
 				conceptIds.add(Long.parseLong(conceptId));
 			}
 			return new ConceptIdResults(conceptIds, offset, total, limit);
@@ -238,7 +241,7 @@ public class SnomedQueryService {
 			final TopDocs topDocs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.ANCESTOR, conceptId)), Integer.MAX_VALUE);
 			conceptRelatives = new ArrayList<>();
 			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				conceptRelatives.add(getDocument(scoreDoc).get(ConceptFieldNames.ID));
+				conceptRelatives.add(getConceptId(scoreDoc));
 			}
 		}
 		if (internalFunction.isIncludeSelf()) {
@@ -286,6 +289,10 @@ public class SnomedQueryService {
 
 	private Document getDocument(ScoreDoc scoreDoc) throws IOException {
 		return indexSearcher.doc(scoreDoc.doc);
+	}
+
+	private String getConceptId(ScoreDoc scoreDoc) throws IOException {
+		return indexSearcher.doc(scoreDoc.doc, CONCEPT_FIELD_SET).getValues(ConceptFieldNames.ID)[0];
 	}
 
 	private ConceptResult getConceptResult(Document document) throws IOException, NotFoundException {
