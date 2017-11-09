@@ -22,9 +22,11 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.yaml.snakeyaml.Yaml;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Controller
 @EnableSwagger
@@ -55,7 +57,7 @@ public class Application implements CommandLineRunner {
 
 	private ReleaseImportManager releaseImportManager;
 
-	private LoadingProfile loadingProfile = LoadingProfile.light.withFullRelationshipObjects(); // TODO Configure via config
+	private LoadingProfile loadingProfile;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 	private static File releaseDirectory = null;
@@ -98,6 +100,7 @@ public class Application implements CommandLineRunner {
 
 	@Override
 	public void run(String... strings) throws Exception {
+		configure();
 		checkArguments();
 		if (!isServe()) {
 			// If not running in serve mode, load release files and exit
@@ -134,6 +137,16 @@ public class Application implements CommandLineRunner {
 
 	private boolean isParamSet(String flag) {
 		return !"not_set".equals(flag);
+	}
+	
+	private void configure(){
+		Yaml yaml = new Yaml();  	
+		ClassLoader loader = Thread.currentThread().getContextClassLoader();
+		InputStream is = loader.getResourceAsStream("loadingProfile.yaml");
+		
+        LoadingProfileConfig config = yaml.loadAs( is, LoadingProfileConfig.class );
+
+        loadingProfile = config.createLoadingProfile();
 	}
 
 }
