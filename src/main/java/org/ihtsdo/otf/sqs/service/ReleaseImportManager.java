@@ -1,22 +1,22 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.ihtsdo.otf.snomedboot.ComponentStore;
-import org.ihtsdo.otf.snomedboot.ReleaseImportException;
-import org.ihtsdo.otf.snomedboot.ReleaseImporter;
-import org.ihtsdo.otf.snomedboot.domain.Concept;
-import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
-import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
-import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
-import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
-import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Map;
+
+import org.ihtsdo.otf.snomedboot.ReleaseImportException;
+import org.ihtsdo.otf.snomedboot.ReleaseImporter;
+import org.ihtsdo.otf.snomedboot.domain.Concept;
+import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentStore;
+import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
+import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
+import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ReleaseImportManager {
 

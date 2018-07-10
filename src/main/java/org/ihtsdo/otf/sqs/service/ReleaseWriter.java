@@ -1,17 +1,5 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.ihtsdo.otf.snomedboot.domain.Concept;
-import org.ihtsdo.otf.snomedboot.domain.Description;
-import org.ihtsdo.otf.snomedboot.domain.Relationship;
-import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
-import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
-import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -23,6 +11,24 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.LongField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.ihtsdo.otf.snomedboot.domain.Concept;
+import org.ihtsdo.otf.snomedboot.domain.Description;
+import org.ihtsdo.otf.snomedboot.domain.Relationship;
+import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
+import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
+import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
+import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 public class ReleaseWriter implements AutoCloseable {
 
@@ -140,9 +146,9 @@ public class ReleaseWriter implements AutoCloseable {
 
 	private Document getDescriptionDocument(Description description) {
 		Document doc = new Document();
-		doc.add(new StringField(DescriptionFieldNames.ID, description.getId(), Field.Store.YES));
+		doc.add(new LongField(DescriptionFieldNames.ID, description.getId(), Field.Store.YES));
 		doc.add(new StringField(DescriptionFieldNames.TERM, description.getTerm(), Field.Store.YES));
-		doc.add(new StringField(DescriptionFieldNames.CONCEPT_ID, description.getConceptId(), Field.Store.YES));
+		doc.add(new LongField(DescriptionFieldNames.CONCEPT_ID, description.getConceptId(), Field.Store.YES));
 		return doc;
 	}
 
