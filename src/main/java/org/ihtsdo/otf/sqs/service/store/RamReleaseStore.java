@@ -4,9 +4,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
-
-import java.io.IOException;
 
 public class RamReleaseStore implements ReleaseStore {
 
@@ -28,6 +25,6 @@ public class RamReleaseStore implements ReleaseStore {
 		return false;
 	}
 
-	public void destroy() throws IOException {
+	public void destroy() {
 	}
 }

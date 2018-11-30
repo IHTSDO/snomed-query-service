@@ -6,23 +6,22 @@ import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
-import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
-import org.ihtsdo.otf.sqs.service.dto.*;
-import org.ihtsdo.otf.sqs.service.exception.*;
+import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
+import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
+import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
+import org.ihtsdo.otf.sqs.service.dto.RefsetMembershipResult;
 import org.ihtsdo.otf.sqs.service.exception.InternalError;
+import org.ihtsdo.otf.sqs.service.exception.*;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -312,26 +311,6 @@ public class SnomedQueryService {
 				memberOfRefsets);
 	}
 
-	private RelationshipResult getRelationshipResult(Document document) {
-		return new RelationshipResult(
-				document.get(RelationshipFieldNames.ID),
-				document.get(RelationshipFieldNames.EFFECTIVE_TIME),
-				document.get(RelationshipFieldNames.ACTIVE),
-				document.get(RelationshipFieldNames.MODULE_ID),
-				document.get(RelationshipFieldNames.SOURCE_ID),
-				document.get(RelationshipFieldNames.DESTINATION_ID),
-				document.get(RelationshipFieldNames.RELATIONSHIP_GROUP),
-				document.get(RelationshipFieldNames.TYPE_ID),
-				document.get(RelationshipFieldNames.CHARACTERISTIC_TYPE_ID),
-				document.get(RelationshipFieldNames.MODIFIER_ID));
-	}
-
-	private DescriptionResult getDescriptionResult(Document document) {
-		return new DescriptionResult(
-				document.get(DescriptionFieldNames.ID),
-				document.get(DescriptionFieldNames.TERM));
-	}
-
 	private RefsetMembershipResult getRefsetMembershipResult(String memberOfRefsetId) throws IOException, NotFoundException {
 		final RefsetMembershipResult refsetMembershipResult = refsetResultMap.get(memberOfRefsetId);
 		if (refsetMembershipResult != null) {
@@ -349,11 +328,6 @@ public class SnomedQueryService {
 		return parser;
 	}
 	
-	@PreDestroy
-	public void destroy() throws IOException {
-//		releaseStore.destroy();
-	}
-
 	private String limitStringLength(String string, int limit) {
 		return string.length() > limit ? string.substring(0, limit) : string;
 	}

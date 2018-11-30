@@ -1,34 +1,19 @@
 package org.ihtsdo.otf.sqs.service;
 
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.LongField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StringField;
-import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.ihtsdo.otf.snomedboot.domain.Concept;
-import org.ihtsdo.otf.snomedboot.domain.Description;
 import org.ihtsdo.otf.snomedboot.domain.Relationship;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
-import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class ReleaseWriter implements AutoCloseable {
 
@@ -79,7 +64,7 @@ public class ReleaseWriter implements AutoCloseable {
 				if (!"0".equals(grp)) {
 					roleGroups.add(grp);
 					if (groupCountMap.containsKey(grp)) {
-						groupCountMap.put(grp, groupCountMap.get(grp).intValue() + 1);
+						groupCountMap.put(grp, groupCountMap.get(grp) + 1);
 					} else {
 						groupCountMap.put(grp, 1);
 					}
@@ -127,29 +112,6 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 		addCardinalityToDocument(concept, conceptDoc, isStatedRelationship);
 		return conceptDoc;
-	}
-
-	private Document getRelationshipDocument(org.ihtsdo.otf.snomedboot.domain.Relationship relationship) {
-		Document doc = new Document();
-		doc.add(new StringField(RelationshipFieldNames.ID, relationship.getId(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.EFFECTIVE_TIME, relationship.getEffectiveTime(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.ACTIVE, relationship.getActive(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.MODULE_ID, relationship.getModuleId(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.SOURCE_ID, relationship.getSourceId(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.DESTINATION_ID, relationship.getDestinationId(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.RELATIONSHIP_GROUP, relationship.getRelationshipGroup(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.TYPE_ID, relationship.getTypeId(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.CHARACTERISTIC_TYPE_ID, relationship.getCharacteristicTypeId(), Field.Store.YES));
-		doc.add(new StringField(RelationshipFieldNames.MODIFIER_ID, relationship.getModifierId(), Field.Store.YES));
-		return doc;
-	}
-
-	private Document getDescriptionDocument(Description description) {
-		Document doc = new Document();
-		doc.add(new LongField(DescriptionFieldNames.ID, description.getId(), Field.Store.YES));
-		doc.add(new StringField(DescriptionFieldNames.TERM, description.getTerm(), Field.Store.YES));
-		doc.add(new LongField(DescriptionFieldNames.CONCEPT_ID, description.getConceptId(), Field.Store.YES));
-		return doc;
 	}
 
 	@Override
