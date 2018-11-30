@@ -188,7 +188,7 @@ public class SnomedQueryService {
 			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
 			final TopDocs topDocs = indexSearcher.search(query, fetchLimit);
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = topDocs.totalHits;
+			int total = (int) topDocs.totalHits;
 			List<Long> conceptIds = new LongArrayList();
 			for (int a = offset; a < scoreDocs.length; a++) {
 				String conceptId = getConceptId(scoreDocs[a]);
@@ -209,7 +209,7 @@ public class SnomedQueryService {
 					new SortedNumericSortField(ConceptFieldNames.FSN_LENGTH, SortField.Type.INT)));
 
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = topDocs.totalHits;
+			int total = (int) topDocs.totalHits;
 			List<ConceptResult> concepts = new ArrayList<>();
 			Map<String, ConceptResult> conceptsMap = new HashMap<>();
 			for (int a = offset; a < scoreDocs.length; a++) {
