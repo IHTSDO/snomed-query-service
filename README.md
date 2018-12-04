@@ -45,8 +45,8 @@ Download the latest release Jar from the [releases](https://github.com/IHTSDO/sn
 ```
 cd my-documents
 unzip SnomedCT_RF2Release_INT_20160131.zip
-java -jar snomed-query-service-1.2.0.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
-java -jar snomed-query-service-1.2.0.jar --serve
+java -jar snomed-query-service-1.4.0.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
+java -jar snomed-query-service-1.4.0.jar --serve
 ```
 This will create an "index" directory. This directory must be removed before running the load process again.
 Once the service is running in serve mode Swagger API documentation can be found at: http://localhost:8080/
