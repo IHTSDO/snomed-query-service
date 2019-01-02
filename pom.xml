@@ -4,7 +4,7 @@
 
 	<groupId>org.ihtsdo.otf</groupId>
 	<artifactId>snomed-query-service</artifactId>
-	<version>1.2.1</version>
+	<version>1.4.0</version>
 
 	<name>Snomed CT Query Service</name>
 	<description>Snomed CT Query Service, an implementation of ECL.</description>
@@ -17,15 +17,15 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<java.version>1.7</java.version>
-		<lucene.version>5.5.2</lucene.version>
+		<java.version>1.8</java.version>
+		<lucene.version>7.5.0</lucene.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
 			<groupId>org.snomed.otf</groupId>
 			<artifactId>snomed-boot</artifactId>
-			<version>1.3.0</version>
+			<version>1.9.0</version>
 			<exclusions>
 				<exclusion>
 					<groupId>com.google.collections</groupId>

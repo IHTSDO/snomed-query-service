@@ -1,6 +1,7 @@
 package org.ihtsdo.otf.sqs.service;
 
 import com.google.common.collect.Lists;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
@@ -11,16 +12,16 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
-import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
-import org.ihtsdo.otf.sqs.service.dto.*;
-import org.ihtsdo.otf.sqs.service.exception.*;
+import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
+import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
+import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
+import org.ihtsdo.otf.sqs.service.dto.RefsetMembershipResult;
 import org.ihtsdo.otf.sqs.service.exception.InternalError;
+import org.ihtsdo.otf.sqs.service.exception.*;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +38,7 @@ public class SnomedQueryService {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final Map<String, RefsetMembershipResult> refsetResultMap = new ConcurrentHashMap<>();
 
+	private static final Set<String> CONCEPT_FIELD_SET = Collections.singleton(ConceptFieldNames.ID);
 	public static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
 	static {
 		for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : ExpressionConstraintToLuceneConverter.InternalFunction.values()) {
@@ -184,12 +186,12 @@ public class SnomedQueryService {
 		try {
 			if (offset < 0) offset = 0;
 			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
-			final TopDocs topDocs = indexSearcher.search(query, fetchLimit, Sort.INDEXORDER);
+			final TopDocs topDocs = indexSearcher.search(query, fetchLimit);
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = topDocs.totalHits;
-			List<Long> conceptIds = new ArrayList<>();
+			int total = (int) topDocs.totalHits;
+			List<Long> conceptIds = new LongArrayList();
 			for (int a = offset; a < scoreDocs.length; a++) {
-				String conceptId = getDocument(scoreDocs[a]).get(ConceptFieldNames.ID);
+				String conceptId = getConceptId(scoreDocs[a]);
 				conceptIds.add(Long.parseLong(conceptId));
 			}
 			return new ConceptIdResults(conceptIds, offset, total, limit);
@@ -207,7 +209,7 @@ public class SnomedQueryService {
 					new SortedNumericSortField(ConceptFieldNames.FSN_LENGTH, SortField.Type.INT)));
 
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = topDocs.totalHits;
+			int total = (int) topDocs.totalHits;
 			List<ConceptResult> concepts = new ArrayList<>();
 			Map<String, ConceptResult> conceptsMap = new HashMap<>();
 			for (int a = offset; a < scoreDocs.length; a++) {
@@ -238,7 +240,7 @@ public class SnomedQueryService {
 			final TopDocs topDocs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.ANCESTOR, conceptId)), Integer.MAX_VALUE);
 			conceptRelatives = new ArrayList<>();
 			for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
-				conceptRelatives.add(getDocument(scoreDoc).get(ConceptFieldNames.ID));
+				conceptRelatives.add(getConceptId(scoreDoc));
 			}
 		}
 		if (internalFunction.isIncludeSelf()) {
@@ -288,6 +290,10 @@ public class SnomedQueryService {
 		return indexSearcher.doc(scoreDoc.doc);
 	}
 
+	private String getConceptId(ScoreDoc scoreDoc) throws IOException {
+		return indexSearcher.doc(scoreDoc.doc, CONCEPT_FIELD_SET).getValues(ConceptFieldNames.ID)[0];
+	}
+
 	private ConceptResult getConceptResult(Document document) throws IOException, NotFoundException {
 		final String[] memberOfRefsetIds = document.getValues(ConceptFieldNames.MEMBER_OF);
 		List<RefsetMembershipResult> memberOfRefsets = new ArrayList<>();
@@ -303,26 +309,6 @@ public class SnomedQueryService {
 				document.get(ConceptFieldNames.DEFINITION_STATUS_ID),
 				document.get(ConceptFieldNames.FSN),
 				memberOfRefsets);
-	}
-
-	private RelationshipResult getRelationshipResult(Document document) {
-		return new RelationshipResult(
-				document.get(RelationshipFieldNames.ID),
-				document.get(RelationshipFieldNames.EFFECTIVE_TIME),
-				document.get(RelationshipFieldNames.ACTIVE),
-				document.get(RelationshipFieldNames.MODULE_ID),
-				document.get(RelationshipFieldNames.SOURCE_ID),
-				document.get(RelationshipFieldNames.DESTINATION_ID),
-				document.get(RelationshipFieldNames.RELATIONSHIP_GROUP),
-				document.get(RelationshipFieldNames.TYPE_ID),
-				document.get(RelationshipFieldNames.CHARACTERISTIC_TYPE_ID),
-				document.get(RelationshipFieldNames.MODIFIER_ID));
-	}
-
-	private DescriptionResult getDescriptionResult(Document document) {
-		return new DescriptionResult(
-				document.get(DescriptionFieldNames.ID),
-				document.get(DescriptionFieldNames.TERM));
 	}
 
 	private RefsetMembershipResult getRefsetMembershipResult(String memberOfRefsetId) throws IOException, NotFoundException {
@@ -342,11 +328,6 @@ public class SnomedQueryService {
 		return parser;
 	}
 	
-	@PreDestroy
-	public void destroy() throws IOException {
-//		releaseStore.destroy();
-	}
-
 	private String limitStringLength(String string, int limit) {
 		return string.length() > limit ? string.substring(0, limit) : string;
 	}

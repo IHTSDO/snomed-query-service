@@ -1,18 +1,19 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.ihtsdo.otf.snomedboot.ComponentStore;
+import java.io.File;
+import java.io.IOException;
+import java.util.Random;
+
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentStore;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
 
 public class TestReleaseImportManager extends ReleaseImportManager {
 
@@ -84,7 +85,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 		final String conceptId = id + "";
 		componentFactory.newConceptState(conceptId, "20150731", "1", "900000000000207008", "900000000000074008");
 		componentFactory.addConceptFSN(conceptId, fsn);
-		componentFactory.newDescriptionState("", "", "1", "", conceptId, "en", ConceptConstants.FSN, fsn, "");
+		componentFactory.newDescriptionState(String.valueOf(new Random().nextLong()), "", "1", "", conceptId, "en", ConceptConstants.FSN, fsn, "");
 		return new ConceptBuilder(conceptId);
 	}
 
