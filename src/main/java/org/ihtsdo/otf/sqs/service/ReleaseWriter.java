@@ -97,7 +97,7 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
 		conceptDoc.add(new SortedNumericDocValuesField(ConceptFieldNames.FSN_LENGTH, concept.getFsn() != null ? concept.getFsn().length() : 100));
-		final MultiValueMap<String, String> attributes = isStatedRelationship ? concept.getStatedAttributes() : concept.getInferredAttributes();
+		final Map<String, Set<String>> attributes = isStatedRelationship ? concept.getStatedAttributes() : concept.getInferredAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {
 				conceptDoc.add(new StringField(type, value, Field.Store.YES));
