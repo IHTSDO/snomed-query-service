@@ -11,6 +11,7 @@ public interface ConceptFieldNames {
 	String FSN_LENGTH = "fsn-len";
 	String ANCESTOR = "ancestor";
 	String MEMBER_OF = "memberOf";
+	String DESCRIPTION_IDS = "descriptionIds";
 	String TOTAL_GROUPS = "_totalGrp";
 	String CARDINALITY = "_card";
 	String GROUP_CARDINALITY = "_grpCard";

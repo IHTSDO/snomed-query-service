@@ -16,6 +16,9 @@ import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.ihtsdo.otf.sqs.service.dto.RefsetMembershipResult;
+import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
+import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
+import org.ihtsdo.otf.sqs.service.dto.*;
 import org.ihtsdo.otf.sqs.service.exception.InternalError;
 import org.ihtsdo.otf.sqs.service.exception.*;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
@@ -56,6 +59,19 @@ public class SnomedQueryService {
 
 	public long getConceptCount() throws IOException {
 		return indexSearcher.collectionStatistics(ConceptFieldNames.ID).docCount();
+	}
+
+	public ConceptResult retrieveConceptByDescriptionId(String descriptionId) throws ServiceException {
+		try {
+			TopDocs conceptDocs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.DESCRIPTION_IDS, descriptionId)), 1);
+			if (conceptDocs.totalHits > 0) {
+				Document conceptDoc = getDocument(conceptDocs.scoreDocs[0]);
+				return getConceptResult(conceptDoc);
+			}
+			return null;
+		} catch (IOException e) {
+			throw new NotFoundException("Could not find concept by description id.");
+		}
 	}
 
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
@@ -286,6 +302,14 @@ public class SnomedQueryService {
 		return indexSearcher.doc(docs.scoreDocs[0].doc);
 	}
 
+	private Document getDescriptionDocument(String descriptionId) throws IOException, NotFoundException {
+		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(DescriptionFieldNames.ID, descriptionId)), 1);
+		if (docs.totalHits < 1) {
+			throw new NotFoundException("Description not found with id " + descriptionId);
+		}
+		return indexSearcher.doc(docs.scoreDocs[0].doc);
+	}
+
 	private Document getDocument(ScoreDoc scoreDoc) throws IOException {
 		return indexSearcher.doc(scoreDoc.doc);
 	}
@@ -311,6 +335,27 @@ public class SnomedQueryService {
 				memberOfRefsets);
 	}
 
+	private RelationshipResult getRelationshipResult(Document document) {
+		return new RelationshipResult(
+				document.get(RelationshipFieldNames.ID),
+				document.get(RelationshipFieldNames.EFFECTIVE_TIME),
+				document.get(RelationshipFieldNames.ACTIVE),
+				document.get(RelationshipFieldNames.MODULE_ID),
+				document.get(RelationshipFieldNames.SOURCE_ID),
+				document.get(RelationshipFieldNames.DESTINATION_ID),
+				document.get(RelationshipFieldNames.RELATIONSHIP_GROUP),
+				document.get(RelationshipFieldNames.TYPE_ID),
+				document.get(RelationshipFieldNames.CHARACTERISTIC_TYPE_ID),
+				document.get(RelationshipFieldNames.MODIFIER_ID));
+	}
+
+	private DescriptionResult getDescriptionResult(Document document) {
+		return new DescriptionResult(
+				document.get(DescriptionFieldNames.ID),
+				document.get(DescriptionFieldNames.CONCEPT_ID),
+				document.get(DescriptionFieldNames.TERM));
+	}
+
 	private RefsetMembershipResult getRefsetMembershipResult(String memberOfRefsetId) throws IOException, NotFoundException {
 		final RefsetMembershipResult refsetMembershipResult = refsetResultMap.get(memberOfRefsetId);
 		if (refsetMembershipResult != null) {
@@ -327,7 +372,7 @@ public class SnomedQueryService {
 		parser.setAllowLeadingWildcard(true);
 		return parser;
 	}
-	
+
 	private String limitStringLength(String string, int limit) {
 		return string.length() > limit ? string.substring(0, limit) : string;
 	}

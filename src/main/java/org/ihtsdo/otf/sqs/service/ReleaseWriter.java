@@ -92,6 +92,9 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new StringField(ConceptFieldNames.ACTIVE, concept.isActive() ? "1" : "0", Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.MODULE_ID, concept.getModuleId(), Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
+		for (Description description : concept.getDescriptions()) {
+			conceptDoc.add(new StringField(ConceptFieldNames.DESCRIPTION_IDS, description.getId(), Field.Store.YES));
+		}
 		if (concept.getFsn() == null) {
 			throw new IllegalStateException("FSN can't be null for concept:" + concept.getId());
 		}
