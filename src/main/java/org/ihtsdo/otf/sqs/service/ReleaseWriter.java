@@ -5,6 +5,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.ihtsdo.otf.snomedboot.domain.Concept;
 import org.ihtsdo.otf.snomedboot.domain.Relationship;
+import org.ihtsdo.otf.snomedboot.domain.Description;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.springframework.util.LinkedMultiValueMap;
@@ -93,7 +94,7 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new StringField(ConceptFieldNames.MODULE_ID, concept.getModuleId(), Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.DEFINITION_STATUS_ID, concept.getDefinitionStatusId(), Field.Store.YES));
 		for (Description description : concept.getDescriptions()) {
-			conceptDoc.add(new StringField(ConceptFieldNames.DESCRIPTION_IDS, description.getId(), Field.Store.YES));
+			conceptDoc.add(new StringField(ConceptFieldNames.DESCRIPTION_IDS, description.getId().toString(), Field.Store.YES));
 		}
 		if (concept.getFsn() == null) {
 			throw new IllegalStateException("FSN can't be null for concept:" + concept.getId());
