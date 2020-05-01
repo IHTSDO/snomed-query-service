@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 
 public class ReleaseImportManager {
 
-	private Logger logger = LoggerFactory.getLogger(getClass());
-	private ReleaseImporter releaseImporter;
+	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final ReleaseImporter releaseImporter;
 	private final ComponentStore componentStore;
 
 	public ReleaseImportManager() {
@@ -29,8 +29,8 @@ public class ReleaseImportManager {
 		releaseImporter = new ReleaseImporter();
 	}
 
-	public ReleaseStore openExistingReleaseStore() {
-		final ReleaseStore releaseStore = new DiskReleaseStore(new File("index"));
+	public ReleaseStore openExistingReleaseStore(File indexDirectory) {
+		final ReleaseStore releaseStore = new DiskReleaseStore(indexDirectory);
 		if (releaseStore.isIndexExisting()) {
 			return releaseStore;
 		} else {

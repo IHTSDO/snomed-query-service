@@ -1,6 +1,5 @@
 package org.ihtsdo.otf.sqs.service;
 
-import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
@@ -32,7 +31,7 @@ public class ExamplesIntegrationTestManual {
 		final ReleaseStore releaseStore;
 		if (releaseImportManager.isReleaseStoreExists(new File("index"))) {
 			logger.info("Using existing release store");
-			releaseStore = releaseImportManager.openExistingReleaseStore();
+			releaseStore = releaseImportManager.openExistingReleaseStore(new File("index"));
 		} else {
 			releaseStore = releaseImportManager.loadReleaseFilesToDiskBasedIndex(new File("release"), LoadingProfile.light.withRefset("447563008"), new File("index"));
 		}

@@ -64,7 +64,7 @@ public class Application implements CommandLineRunner {
 	public SnomedQueryService getReleaseReader() throws IOException, InterruptedException {
 		releaseImportManager = isParamSet(loadTestData) ? new TestReleaseImportManager(false) : new ReleaseImportManager();
 		if (isServe()) {
-			return new SnomedQueryService(releaseImportManager.openExistingReleaseStore());
+			return new SnomedQueryService(releaseImportManager.openExistingReleaseStore(new File("index")));
 		} else {
 			return null;
 		}
