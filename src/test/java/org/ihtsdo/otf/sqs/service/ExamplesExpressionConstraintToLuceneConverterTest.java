@@ -142,7 +142,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_NestedAttribute_1() {
 		assertConversion(
 				"< 404684003 |clinical finding|: " +
@@ -167,8 +167,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	// TODO support ConcreteValues example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_ConcreteValues_1() {
 		assertConversion(
 				"< 27658006 |amoxicillin |: " +
@@ -177,12 +176,11 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"   111115 |strength magnitude| >= #500, " +
 						"   111115 |strength unit| = 258684004 |mg|)}",
 
-				""
+				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) AND 111115: ( 111115 AND 111115:[500 TO *] AND 111115:258684004 ) "
 		);
 	}
 
-	// TODO support ConcreteValues example, attributeGroup is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_ConcreteValues_2() {
 		assertConversion(
 				"< 27658006 |amoxicillin |: " +
@@ -191,18 +189,17 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"   111115 |strength magnitude| >= #500,   111115 |strength magnitude| <= #800,  " +
 						"   111115 |strength unit| = 258684004 |mg|)}",
 
-				""
+				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) AND 111115: ( 111115 AND 111115:[500 TO *] AND 111115:[* TO 800] AND 111115:258684004 ) "
 		);
 	}
 
-	// TODO support ConcreteValues example, stringComparisonOperator is not currently supported.
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_ConcreteValues_3() {
 		assertConversion(
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"111115 |trade name| = \"PANADOL\"",
 
-				""
+				"ancestor:373873005 AND 111115:\"PANADOL\""
 		);
 	}
 

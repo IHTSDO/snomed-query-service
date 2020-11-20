@@ -106,7 +106,7 @@ public class SnomedQueryService {
 
 		BooleanQuery query = queryBuilder.build();
 		final ConceptResults conceptResults = getConceptResults(query, offset, limit);
-		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 100), conceptResults.getTotal());
+		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 200), conceptResults.getTotal());
 		return conceptResults;
 	}
 
@@ -144,7 +144,7 @@ public class SnomedQueryService {
 				final Query query = getQueryParser().parse(luceneQuery);
 				final ConceptIdResults conceptIdResults = getConceptIdResults(query, offset, limit);
 
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 100), conceptIdResults.getTotal());
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.getTotal());
 				return conceptIdResults;
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);

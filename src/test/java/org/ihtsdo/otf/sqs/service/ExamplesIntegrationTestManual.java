@@ -38,6 +38,39 @@ public class ExamplesIntegrationTestManual {
 		snomedQueryService = new SnomedQueryService(releaseStore);
 	}
 
+
+	@Test
+	public void testECLWithConcreteValue() throws ServiceException {
+		assertQueryMatches(
+				"<< 373873005 : 3311482005 = #2 }",
+				376792007
+		);
+	}
+
+	@Test
+	public void testECLWithConcreteValueMinRangeOnly() throws ServiceException {
+		assertQueryMatches(
+				"<< 373873005 : 3311482005 > #2 }",
+				375745003
+		);
+	}
+
+	@Test
+	public void testECLWithConcreteValueMaxRangeOnly() throws ServiceException {
+		assertQueryMatches(
+				"<< 373873005 : 3311482005 < #2 }",
+				1010589006
+		);
+	}
+
+	@Test
+	public void testECLWithConcreteValueRanges() throws ServiceException {
+		assertQueryMatches(
+				"<< 373873005 : (3311482005 >= #2 AND 3311482005 <= #10) }",
+				1010589006
+		);
+	}
+
 	@Test
 	public void testExpressionConstraintQuery_wildcardFocusConcept() throws Exception {
 		final List<ConceptResult> conceptResults = snomedQueryService.search("*", null, 0, -1).getItems();

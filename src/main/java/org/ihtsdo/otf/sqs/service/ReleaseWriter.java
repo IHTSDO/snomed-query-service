@@ -4,6 +4,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.ihtsdo.otf.snomedboot.domain.Concept;
+import org.ihtsdo.otf.snomedboot.domain.ConcreteRelationship;
 import org.ihtsdo.otf.snomedboot.domain.Relationship;
 import org.ihtsdo.otf.snomedboot.domain.Description;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
@@ -19,7 +20,7 @@ import java.util.*;
 public class ReleaseWriter implements AutoCloseable {
 
 	private final IndexWriter iwriter;
-	private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
+	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 
 	public ReleaseWriter(ReleaseStore releaseStore) throws IOException {
 		IndexWriterConfig config = new IndexWriterConfig(releaseStore.createAnalyzer());
@@ -49,6 +50,15 @@ public class ReleaseWriter implements AutoCloseable {
 				attributeGroups.add(relationship.getTypeId(), relationship.getRelationshipGroup());
 			}
 		}
+		if (concept.getConcreteRelationships() != null && !isStatedRelationship) {
+			for (ConcreteRelationship concreteRelationship : concept.getConcreteRelationships()) {
+				if (concreteRelationship.getEffectiveTime() != null && !concreteRelationship.getEffectiveTime().isEmpty() &&
+						dateFormat.parse(concreteRelationship.getEffectiveTime()).after(maxDate)) {
+					maxDate = dateFormat.parse(concreteRelationship.getEffectiveTime());
+				}
+				attributeGroups.add(concreteRelationship.getTypeId(), concreteRelationship.getRelationshipGroup());
+			}
+		}
 		doc.add(new StringField(ConceptFieldNames.EFFECTIVE_TIME, dateFormat.format(maxDate), Field.Store.YES));
 		addAttributeCardinalityDocument(doc, attributeGroups);
 	}
@@ -56,11 +66,11 @@ public class ReleaseWriter implements AutoCloseable {
 	private void addAttributeCardinalityDocument(Document doc, final MultiValueMap<String, String> attributeGroups) {
 		for (String key : attributeGroups.keySet()) {
 			int totalCount = 0;
-			Iterator<String> itrator = attributeGroups.get(key).iterator();
+			Iterator<String> iterator = attributeGroups.get(key).iterator();
 			List<String> roleGroups = new ArrayList<>();
 			Map<String,Integer> groupCountMap = new HashMap<>();
-			while (itrator.hasNext()) {
-				String grp = itrator.next();
+			while (iterator.hasNext()) {
+				String grp = iterator.next();
 				totalCount++;
 				if (!"0".equals(grp)) {
 					roleGroups.add(grp);
@@ -101,10 +111,20 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
 		conceptDoc.add(new SortedNumericDocValuesField(ConceptFieldNames.FSN_LENGTH, concept.getFsn() != null ? concept.getFsn().length() : 100));
+
 		final Map<String, Set<String>> attributes = isStatedRelationship ? concept.getStatedAttributes() : concept.getInferredAttributes();
 		for (String type : attributes.keySet()) {
 			for (String value : attributes.get(type)) {
 				conceptDoc.add(new StringField(type, value, Field.Store.YES));
+			}
+		}
+
+		// concrete values
+		if (!isStatedRelationship && concept.getInferredConcreteAttributes() != null) {
+			for (Map.Entry<String, Set<String>> entry: concept.getInferredConcreteAttributes().entrySet()) {
+				for (String value : entry.getValue()) {
+					conceptDoc.add(new StringField(entry.getKey(), value.replace("#",""), Field.Store.YES));
+				}
 			}
 		}
 		final Set<Long> ancestorIds = concept.getInferredAncestorIds();

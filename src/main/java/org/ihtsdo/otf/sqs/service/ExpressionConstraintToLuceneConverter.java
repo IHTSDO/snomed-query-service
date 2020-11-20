@@ -9,12 +9,11 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.ihtsdo.otf.sqs.service.ExpressionConstraintToLuceneConverter.ExpressionConstraintListener.ComparisonOperator.*;
 
 public class ExpressionConstraintToLuceneConverter {
 
@@ -107,6 +106,32 @@ public class ExpressionConstraintToLuceneConverter {
 	}
 
 	protected static final class ExpressionConstraintListener extends ExpressionConstraintBaseListener {
+		enum ComparisonOperator {
+			EQUAL_TO("="),
+			GREAT_THAN(">"),
+			LESS_THAN("<"),
+			GREAT_THAN_OR_EQUAL_TO(">="),
+			LESS_THAN_OR_EQUAL_TO("<="),
+			NOT_EQUAL_TO ("!="),
+			NOT_EQUAL_TO_WITH_WORD("not ="),
+			NOT_EQUAL_TO_WITH_GREAT_THAN_AND_LESS_THAN("<>");
+
+			private String text;
+
+			ComparisonOperator(String text) {
+				this.text = text;
+			}
+
+			public String getText() {
+				return this.text;
+			}
+
+			public static Optional<ComparisonOperator> fromText(String text) {
+				return Arrays.stream(values())
+						.filter(comparisonOperator -> comparisonOperator.text.equalsIgnoreCase(text))
+						.findFirst();
+			}
+		}
 
 		private String luceneQuery = "";
 		private boolean inAttribute;
@@ -115,6 +140,8 @@ public class ExpressionConstraintToLuceneConverter {
 		private boolean isDefaultGroupConstraint = false;
 		private String attributeId = null;
 		private boolean isTotalGroupApplied = false;
+		private ComparisonOperator comparisonOperator = null;
+
 
 		@Override
 		public void visitErrorNode(ErrorNode node) {
@@ -250,9 +277,6 @@ public class ExpressionConstraintToLuceneConverter {
 
 		@Override
 		public void enterExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
-			if (ctx.refinedexpressionconstraint() != null || (ctx.compoundexpressionconstraint() != null && ctx.compoundexpressionconstraint().getText().contains(":"))) {
-				throw new UnsupportedOperationException("Within an expressionConstraintValue refinedExpressionConstraint is not currently supported.");
-			}
 			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
 		}
 
@@ -325,15 +349,48 @@ public class ExpressionConstraintToLuceneConverter {
 			}
 		}
 
-		// Unsupported enter methods below this line
 		@Override
 		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
-			throwUnsupported("stringComparisonOperator");
+			comparisonOperator = ComparisonOperator.fromText(ctx.getText()).get();
+			if (EQUAL_TO == comparisonOperator) {
+				luceneQuery += ":";
+			} else if (NOT_EQUAL_TO == comparisonOperator
+					|| NOT_EQUAL_TO_WITH_WORD == comparisonOperator
+					|| ComparisonOperator.NOT_EQUAL_TO_WITH_GREAT_THAN_AND_LESS_THAN == comparisonOperator) {
+				luceneQuery += " NOT ";
+			} else {
+				throw new IllegalArgumentException(String.format("Invalid comparison operator %s for String", ctx.getText()));
+			}
+		}
+
+		@Override
+		public void enterStringvalue(ExpressionConstraintParser.StringvalueContext ctx) {
+			luceneQuery += ctx.getText();
+
 		}
 
 		@Override
 		public void enterNumericcomparisonoperator(ExpressionConstraintParser.NumericcomparisonoperatorContext ctx) {
-			throwUnsupported("numericComparisonOperator");
+			comparisonOperator = ComparisonOperator.fromText(ctx.getText()).get();
+		}
+
+		@Override
+		public void enterNumericvalue(ExpressionConstraintParser.NumericvalueContext ctx) {
+			String value = ctx.getText().startsWith("#") ? ctx.getText().substring(1) : ctx.getText();
+			if (EQUAL_TO == comparisonOperator) {
+				luceneQuery += ":" + value;
+			} else if (GREAT_THAN_OR_EQUAL_TO == comparisonOperator) {
+				luceneQuery += ":[" + value + " TO *]";
+			} else if (GREAT_THAN == comparisonOperator) {
+				luceneQuery += ":{" + value + " TO *}";
+			} else if (LESS_THAN == comparisonOperator) {
+				luceneQuery += ":{* TO " + value + "}";
+			} else if (LESS_THAN_OR_EQUAL_TO == comparisonOperator) {
+				luceneQuery += ":[* TO " + value + "]";
+			} else if (NOT_EQUAL_TO == comparisonOperator || NOT_EQUAL_TO_WITH_WORD == comparisonOperator
+					|| NOT_EQUAL_TO_WITH_GREAT_THAN_AND_LESS_THAN == comparisonOperator ) {
+				luceneQuery += " NOT " + value;
+			}
 		}
 
 		@Override
