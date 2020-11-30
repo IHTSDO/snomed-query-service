@@ -1,21 +1,27 @@
 package org.ihtsdo.otf.sqs.service;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.parser.secl.ExpressionConstraintBaseListener;
-import org.ihtsdo.otf.sqs.parser.secl.ExpressionConstraintLexer;
-import org.ihtsdo.otf.sqs.parser.secl.ExpressionConstraintParser;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.snomed.langauges.ecl.ECLException;
+import org.snomed.langauges.ecl.ECLObjectFactory;
+import org.snomed.langauges.ecl.ECLQueryBuilder;
+import org.snomed.langauges.ecl.generated.ImpotentECLListener;
+import org.snomed.langauges.ecl.generated.parser.ECLLexer;
+import org.snomed.langauges.ecl.generated.parser.ECLParser;
 
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.ihtsdo.otf.sqs.service.ExpressionConstraintToLuceneConverter.ExpressionConstraintListener.ComparisonOperator.*;
 
 public class ExpressionConstraintToLuceneConverter {
+
+	public static final String DEFAULT_CARDINALITY = "1 TO *";
+
+	private ECLQueryBuilder eclQueryBuilder = new ECLQueryBuilder(new ECLObjectFactory());
 
 	enum InternalFunction {
 		ATTRIBUTE_DESCENDANT_OF(true, false, false),
@@ -50,62 +56,26 @@ public class ExpressionConstraintToLuceneConverter {
 
 	}
 
-	public String parse(String ecQuery) throws RecognitionException {
-		final ExpressionConstraintLexer lexer = new ExpressionConstraintLexer(new ANTLRInputStream(ecQuery));
-		CommonTokenStream tokens = new CommonTokenStream(lexer);
-		final ExpressionConstraintParser parser = new ExpressionConstraintParser(tokens);
-		final List<RecognitionException> exceptions = new ArrayList<>();
-		parser.setErrorHandler(new ANTLRErrorStrategy() {
-			@Override
-			public void reportError(Parser parser, RecognitionException e) {
-				exceptions.add(e);
-			}
-
-			@Override
-			public void reset(Parser parser) {
-			}
-
-			@Override
-			public Token recoverInline(Parser parser) throws RecognitionException {
-				return null;
-			}
-
-			@Override
-			public void recover(Parser parser, RecognitionException e) throws RecognitionException {
-			}
-
-			@Override
-			public void sync(Parser parser) throws RecognitionException {
-			}
-
-			@Override
-			public boolean inErrorRecoveryMode(Parser parser) {
-				return false;
-			}
-
-			@Override
-			public void reportMatch(Parser parser) {
-			}
-		});
-		ParserRuleContext tree = parser.expressionconstraint();
-
+	public String parse(String ecl) throws RecognitionException {
+		ANTLRInputStream inputStream = new ANTLRInputStream(ecl);
+		final ECLLexer lexer = new ECLLexer(inputStream);
+		final CommonTokenStream tokenStream = new CommonTokenStream(lexer);
+		final ECLParser parser = new ECLParser(tokenStream);
+		parser.setErrorHandler(new BailErrorStrategy());
+		ParserRuleContext tree;
+		try {
+			tree = parser.expressionconstraint();
+		} catch (NullPointerException | RecognitionException | ParseCancellationException e) {
+			throw new ECLException("Failed to parse ECL '" + ecl + "'", e);
+		}
 		final ParseTreeWalker walker = new ParseTreeWalker();
+
 		final ExpressionConstraintListener listener = new ExpressionConstraintListener();
 		walker.walk(listener, tree);
-		if (exceptions.isEmpty()) {
-			return listener.getLuceneQuery();
-		} else {
-			final RecognitionException recognitionException = exceptions.get(0);
-			// TODO Decent exception which logs this stuff
-//			System.err.println(recognitionException);
-//			System.err.println(recognitionException.getOffendingToken().getLine());
-//			System.err.println(recognitionException.getExpectedTokens());
-//			System.err.println(ExpressionConstraintLexer.ruleNames[4]);
-			throw recognitionException;
-		}
+		return listener.getLuceneQuery().trim();
 	}
 
-	protected static final class ExpressionConstraintListener extends ExpressionConstraintBaseListener {
+	protected static final class ExpressionConstraintListener extends ImpotentECLListener {
 		enum ComparisonOperator {
 			EQUAL_TO("="),
 			GREAT_THAN(">"),
@@ -136,11 +106,13 @@ public class ExpressionConstraintToLuceneConverter {
 		private String luceneQuery = "";
 		private boolean inAttribute;
 		private Set<ParserRuleContext> bracesToClose = new HashSet<>();
-		private boolean isAttributeGroupFound = false;
-		private boolean isDefaultGroupConstraint = false;
-		private String attributeId = null;
-		private boolean isTotalGroupApplied = false;
+		private boolean inAttributeGroup;
 		private ComparisonOperator comparisonOperator = null;
+		private ECLParser.ConstraintoperatorContext constraintOperatorContext = null;
+		private boolean isMemberOf;
+		String cardinality = null;
+		String attributeInGroupCardinality = null;
+		private boolean isTotalGroupApplied;
 
 
 		@Override
@@ -148,86 +120,121 @@ public class ExpressionConstraintToLuceneConverter {
 			super.visitErrorNode(node);
 		}
 
+
 		@Override
-		public void enterSimpleexpressionconstraint(ExpressionConstraintParser.SimpleexpressionconstraintContext ctx) {
-			final ExpressionConstraintParser.FocusconceptContext focusconcept = ctx.focusconcept();
-			if (focusconcept.wildcard() != null) {
+		public void enterMemberof(ECLParser.MemberofContext ctx) {
+			isMemberOf = true;
+		}
+
+		@Override
+		public void enterConstraintoperator(ECLParser.ConstraintoperatorContext ctx) {
+			constraintOperatorContext = ctx;
+		}
+
+		@Override
+		public void enterEclfocusconcept(ECLParser.EclfocusconceptContext ctx) {
+			if (ctx.wildcard() != null) {
 				if (!inAttribute) {
 					luceneQuery += ConceptFieldNames.ID + ":*";
 				} else {
 					luceneQuery += "*";
 				}
-			} else if (focusconcept.memberof() != null) {
-				luceneQuery += ConceptFieldNames.MEMBER_OF + ":" + focusconcept.conceptreference().conceptid().getText();
 			} else {
-				final String conceptId = focusconcept.conceptreference().conceptid().getText();
-				final ExpressionConstraintParser.ConstraintoperatorContext constraintoperator = ctx.constraintoperator();
-				if (constraintoperator == null) {
-					if (!inAttribute) {
-						luceneQuery += ConceptFieldNames.ID + ":";
-					}
-					luceneQuery += conceptId;
+				String conceptId = ctx.eclconceptreference().conceptid().getText();
+				if (isMemberOf) {
+					luceneQuery += ConceptFieldNames.MEMBER_OF + ":" + conceptId;
 				} else {
-					if (constraintoperator.descendantof() != null) {
-						if (!inAttribute) {
-							luceneQuery += ConceptFieldNames.ANCESTOR + ":" + conceptId;
-						} else {
-							luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OF + "(" + conceptId + ")";
-						}
-					} else if (constraintoperator.descendantorselfof() != null) {
-						if (!inAttribute) {
-							luceneQuery += "(" + ConceptFieldNames.ID + ":" + conceptId + " OR " + ConceptFieldNames.ANCESTOR + ":" + conceptId + ")";
-						} else {
-							luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF + "(" + conceptId + ")";
-						}
-					} else if (constraintoperator.ancestororselfof() != null) {
-						if (!inAttribute) {
-							luceneQuery += InternalFunction.ANCESTOR_OR_SELF_OF + "(" + conceptId + ")";
-						} else {
-							luceneQuery += InternalFunction.ATTRIBUTE_ANCESTOR_OR_SELF_OF + "(" + conceptId + ")";
-						}
-					} else if (constraintoperator.ancestorof() != null) {
-						if (!inAttribute) {
-							luceneQuery += InternalFunction.ANCESTOR_OF + "(" + conceptId + ")";
-						} else {
-							luceneQuery += InternalFunction.ATTRIBUTE_ANCESTOR_OF + "(" + conceptId + ")";
-						}
-					}
+					constructLuceneQuery(constraintOperatorContext, conceptId);
 				}
 			}
 		}
 
 		@Override
-		public void enterRefinement(ExpressionConstraintParser.RefinementContext ctx) {
-			luceneQuery += " AND ";
+		public void exitEclfocusconcept(ECLParser.EclfocusconceptContext ctx) {
+			constraintOperatorContext = null;
+			isMemberOf = false;
+		}
+
+		private void constructLuceneQuery(ECLParser.ConstraintoperatorContext ctx, String focusConceptId) {
+			if (ctx == null) {
+				if (!inAttribute) {
+					luceneQuery += ConceptFieldNames.ID + ":" + focusConceptId;
+				} else {
+					addCardinality(focusConceptId);
+					luceneQuery += focusConceptId;
+				}
+			} else {
+				if (ctx.descendantof() != null) {
+					if (!inAttribute) {
+						luceneQuery += ConceptFieldNames.ANCESTOR + ":" + focusConceptId;
+					} else {
+						luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OF + "(" + focusConceptId + ")";
+					}
+				} else if (ctx.descendantorselfof() != null) {
+					if (!inAttribute) {
+						luceneQuery += "(" + ConceptFieldNames.ID + ":" + focusConceptId + " OR " + ConceptFieldNames.ANCESTOR + ":" + focusConceptId + ")";
+					} else {
+						luceneQuery += InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF + "(" + focusConceptId + ")";
+					}
+				} else if (ctx.ancestororselfof() != null) {
+					if (!inAttribute) {
+						luceneQuery += InternalFunction.ANCESTOR_OR_SELF_OF + "(" + focusConceptId + ")";
+					} else {
+						luceneQuery += InternalFunction.ATTRIBUTE_ANCESTOR_OR_SELF_OF + "(" + focusConceptId + ")";
+					}
+				} else if (ctx.ancestorof() != null) {
+					if (!inAttribute) {
+						luceneQuery += InternalFunction.ANCESTOR_OF + "(" + focusConceptId + ")";
+					} else {
+						luceneQuery += InternalFunction.ATTRIBUTE_ANCESTOR_OF + "(" + focusConceptId + ")";
+					}
+				}
+			}
+		}
+
+		private void addCardinality(String focusConceptId) {
+			if (cardinality != null || attributeInGroupCardinality != null) {
+				if (inAttributeGroup && !isTotalGroupApplied) {
+					cardinality = cardinality == null ? DEFAULT_CARDINALITY : cardinality;
+					luceneQuery += focusConceptId + ConceptFieldNames.TOTAL_GROUPS + ":[" + cardinality + "]" + " AND ";
+					isTotalGroupApplied = true;
+					cardinality = null;
+				}
+				if (attributeInGroupCardinality != null) {
+					luceneQuery += focusConceptId + ConceptFieldNames.GROUP_CARDINALITY + ":[" + attributeInGroupCardinality + "]" + " AND ";
+				} else if (cardinality != null) {
+					luceneQuery += focusConceptId + ConceptFieldNames.CARDINALITY + ":[" + cardinality + "]" + " AND ";
+				}
+			}
 		}
 
 		@Override
-		public void enterAttribute(ExpressionConstraintParser.AttributeContext ctx) {
-			final ExpressionConstraintParser.ConceptreferenceContext conceptreference = ctx.attributename().conceptreference();
-			if (conceptreference != null) {
-				attributeId = conceptreference.conceptid().getText();
-			}
+		public void enterEclattributegroup(ECLParser.EclattributegroupContext ctx) {
+			inAttributeGroup = true;
+		}
+
+		@Override
+		public void enterEclattribute(ECLParser.EclattributeContext ctx) {
 			inAttribute = true;
 		}
 
 		@Override
-		public void exitAttribute(ExpressionConstraintParser.AttributeContext ctx) {
+		public void exitEclattribute(ECLParser.EclattributeContext ctx) {
 			inAttribute = false;
 		}
 
 		@Override
-		public void enterAttributename(ExpressionConstraintParser.AttributenameContext ctx) {
-			final ExpressionConstraintParser.ConceptreferenceContext conceptreference = ctx.conceptreference();
-			if (conceptreference != null) {
-				luceneQuery += conceptreference.conceptid().getText();
-			} else {
-				throwUnsupported("wildcard attributeName");
+		public void enterEclattributename(ECLParser.EclattributenameContext ctx) {
+			if ("*".equals(ctx.getText())) {
+				throwUnsupported("wildcard attribute name");
+			}
+			if (ctx.getText().contains("<") || ctx.getText().contains(">")) {
+				throwUnsupported("attribute name with expression constraint");
 			}
 		}
 
 		@Override
-		public void enterExpressioncomparisonoperator(ExpressionConstraintParser.ExpressioncomparisonoperatorContext ctx) {
+		public void enterExpressioncomparisonoperator(ECLParser.ExpressioncomparisonoperatorContext ctx) {
 			if (ctx.getText().equals("=")) {
 				luceneQuery += ":";
 			} else {
@@ -236,121 +243,84 @@ public class ExpressionConstraintToLuceneConverter {
 		}
 
 		@Override
-		public void enterConjunction(ExpressionConstraintParser.ConjunctionContext ctx) {
+		public void enterEclrefinement(ECLParser.EclrefinementContext ctx) {
 			luceneQuery += " AND ";
 		}
 
 		@Override
-		public void enterDisjunction(ExpressionConstraintParser.DisjunctionContext ctx) {
+		public void enterConjunction(ECLParser.ConjunctionContext ctx) {
+			luceneQuery += " AND ";
+		}
+
+		@Override
+		public void enterDisjunction(ECLParser.DisjunctionContext ctx) {
 			luceneQuery += " OR ";
 		}
 
 		@Override
-		public void enterExclusion(ExpressionConstraintParser.ExclusionContext ctx) {
+		public void enterExclusion(ECLParser.ExclusionContext ctx) {
 			luceneQuery += " NOT ";
 		}
 
 		@Override
-		public void enterSubexpressionconstraint(ExpressionConstraintParser.SubexpressionconstraintContext ctx) {
+		public void enterSubexpressionconstraint(ECLParser.SubexpressionconstraintContext ctx) {
 			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
 		}
 
 		@Override
-		public void exitSubexpressionconstraint(ExpressionConstraintParser.SubexpressionconstraintContext ctx) {
+		public void exitSubexpressionconstraint(ECLParser.SubexpressionconstraintContext ctx) {
 			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
 		}
 
 		@Override
-		public void enterSubrefinement(ExpressionConstraintParser.SubrefinementContext ctx) {
+		public void enterSubrefinement(ECLParser.SubrefinementContext ctx) {
 			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
 		}
 
 		@Override
-		public void exitSubrefinement(ExpressionConstraintParser.SubrefinementContext ctx) {
+		public void exitSubrefinement(ECLParser.SubrefinementContext ctx) {
 			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
 		}
 
 		@Override
-		public void enterSubattributeset(ExpressionConstraintParser.SubattributesetContext ctx) {
+		public void enterSubattributeset(ECLParser.SubattributesetContext ctx) {
 			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
 		}
 
 		@Override
-		public void enterExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
-			addLeftParenthesisIfNotNull(ctx.LEFT_PAREN());
-		}
-
-		@Override
-		public void exitExpressionconstraintvalue(ExpressionConstraintParser.ExpressionconstraintvalueContext ctx) {
-			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
-		}
-
-		@Override
-		public void exitSubattributeset(ExpressionConstraintParser.SubattributesetContext ctx) {
+		public void exitSubattributeset(ECLParser.SubattributesetContext ctx) {
 			addRightParenthesisIfNotNull(ctx.RIGHT_PAREN());
 		}
 
 		private void addLeftParenthesisIfNotNull(TerminalNode terminalNode) {
 			if (terminalNode != null) {
-				luceneQuery += " ( ";
+				luceneQuery = luceneQuery.trim();
+				luceneQuery += " (";
 			}
 		}
 
 		private void addRightParenthesisIfNotNull(TerminalNode terminalNode) {
 			if (terminalNode != null) {
-				luceneQuery += " ) ";
+				luceneQuery = luceneQuery.trim();
+				luceneQuery += ")";
 			}
 		}
-		
+
 		@Override
-		public void enterCardinality(ExpressionConstraintParser.CardinalityContext ctx) {
+		public void enterCardinality(ECLParser.CardinalityContext ctx) {
 			String text = ctx.getText();
-			String range = "";
-			String regex = "\\[*..*\\]";
-			Pattern pattern = Pattern.compile(regex);
-			Matcher matcher = pattern.matcher(text);
-			if (matcher.matches()) {
-				if (isAttributeGroupFound) {
-					if (!isTotalGroupApplied && isDefaultGroupConstraint) {
-						range = attributeId + ConceptFieldNames.TOTAL_GROUPS + ":" + "[1 TO *]";
-						isTotalGroupApplied = true;
-						luceneQuery += range + " AND ";
-						range = "";
-					} 
-					if (!isTotalGroupApplied && !isDefaultGroupConstraint) {
-						range = attributeId + ConceptFieldNames.TOTAL_GROUPS;
-						isTotalGroupApplied = true;
-					} else {
-						range +=  attributeId + ConceptFieldNames.GROUP_CARDINALITY;
-					}
-				} else {
-					range = attributeId + ConceptFieldNames.CARDINALITY;
-				}
+			if (text != null) {
 				text = text.replace("..", " TO ");
-				range += ":" + text;
-			} else {
-				range = text;
-			}
-			luceneQuery += range + " AND ";
-		}
-
-		@Override
-		public void enterAttributegroup(ExpressionConstraintParser.AttributegroupContext ctx) {
-			isAttributeGroupFound = true;
-			if (!ctx.getText().startsWith("[")) {
-				isDefaultGroupConstraint = true;
-			} 
-		}
-		
-		@Override
-		public void exitAttributegroup(ExpressionConstraintParser.AttributegroupContext ctx) {
-			if (luceneQuery.contains("null")) {
-				luceneQuery = luceneQuery.replace("null", attributeId);
+				if (inAttributeGroup && inAttribute) {
+					attributeInGroupCardinality = text;
+				} else {
+					cardinality = text;
+				}
 			}
 		}
 
 		@Override
-		public void enterStringcomparisonoperator(ExpressionConstraintParser.StringcomparisonoperatorContext ctx) {
+		public void enterStringcomparisonoperator(ECLParser.StringcomparisonoperatorContext ctx) {
 			comparisonOperator = ComparisonOperator.fromText(ctx.getText()).get();
 			if (EQUAL_TO == comparisonOperator) {
 				luceneQuery += ":";
@@ -364,18 +334,17 @@ public class ExpressionConstraintToLuceneConverter {
 		}
 
 		@Override
-		public void enterStringvalue(ExpressionConstraintParser.StringvalueContext ctx) {
+		public void enterStringvalue(ECLParser.StringvalueContext ctx) {
 			luceneQuery += ctx.getText();
-
 		}
 
 		@Override
-		public void enterNumericcomparisonoperator(ExpressionConstraintParser.NumericcomparisonoperatorContext ctx) {
+		public void enterNumericcomparisonoperator(ECLParser.NumericcomparisonoperatorContext ctx) {
 			comparisonOperator = ComparisonOperator.fromText(ctx.getText()).get();
 		}
 
 		@Override
-		public void enterNumericvalue(ExpressionConstraintParser.NumericvalueContext ctx) {
+		public void enterNumericvalue(ECLParser.NumericvalueContext ctx) {
 			String value = ctx.getText().startsWith("#") ? ctx.getText().substring(1) : ctx.getText();
 			if (EQUAL_TO == comparisonOperator) {
 				luceneQuery += ":" + value;
@@ -394,7 +363,7 @@ public class ExpressionConstraintToLuceneConverter {
 		}
 
 		@Override
-		public void enterReverseflag(ExpressionConstraintParser.ReverseflagContext ctx) {
+		public void enterReverseflag(ECLParser.ReverseflagContext ctx) {
 			throwUnsupported("reverseFlag");
 		}
 

@@ -42,6 +42,11 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 		final ConceptBuilder hasIntentAttribute = addConcept(363703001, "Has intent (attribute)");
 		final ConceptBuilder intentsQualifierValue = addConcept(363675004, "Intents (nature of procedure values) (qualifier value)");
 		final ConceptBuilder methodAttribute = addConcept(260686004, "Method (attribute)");
+
+		final ConceptBuilder baseCountConcrete = addConcept(3311487004L, "Count of base and modification pair concrete (attribute)");
+		final ConceptBuilder modelDataAttribute = addConcept(762706009, "Concept model data attribute (attribute)");
+		modelDataAttribute.addChildren(baseCountConcrete);
+
 		final ConceptBuilder cuttingAction = addConcept(360314001, "Cutting - action (qualifier value)");
 		final ConceptBuilder actionQualifierValue = addConcept(129264002, "Action (qualifier value)")
 				.addChildren(cuttingAction);
@@ -59,7 +64,8 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 										addConcept(442083009, "Anatomical or acquired body structure (body structure)")
 											.addChildren(nailStructure)
 								),
-						addConcept(404684003, "Clinical finding (finding)"),
+						addConcept(404684003, "Clinical finding (finding)")
+								.addConcreteAttribute(baseCountConcrete, "#100"),
 						addConcept(71388002, "Procedure (procedure)")
 								.addChildren(
 										addConcept(362961001, "Procedure by intent (procedure)")
@@ -104,7 +110,13 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 			}
 			return this;
 		}
-		
+
+		public ConceptBuilder addConcreteAttribute(ConceptBuilder type, String value) {
+			componentFactory.addInferredConceptConcreteAttribute(id, type.id, value);
+			componentFactory.newConcreteRelationshipState("", "20170731", "1", "", id, value, "1", type.id, "900000000000011006", "");
+			return this;
+		}
+
 		public ConceptBuilder addAttribute(ConceptBuilder type, ConceptBuilder value) {
 			componentFactory.addInferredConceptAttribute(id, type.id, value.id);
 			componentFactory.newRelationshipState("", "20170731", "1", "", id, "", "1", type.id, "900000000000011006", "");

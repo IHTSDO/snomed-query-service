@@ -86,12 +86,13 @@ public class ReleaseWriter implements AutoCloseable {
 				doc.add(new StringField(key + ConceptFieldNames.TOTAL_GROUPS, String.valueOf(distinctGroups.size()), Field.Store.YES));
 				List<Integer> countList = new ArrayList<>(groupCountMap.values());
 				java.util.Collections.sort(countList);
+				// attribute in group cardinality
 				if (!countList.isEmpty()) {
 					Integer maxGroup = countList.get(countList.size()-1);
 					doc.add(new StringField(key + ConceptFieldNames.GROUP_CARDINALITY, maxGroup.toString(), Field.Store.YES));
 				}
 			}
-			//attributeGroupCardinality
+			//attribute cardinality
 			doc.add(new StringField(key + ConceptFieldNames.CARDINALITY, String.valueOf(totalCount), Field.Store.YES));
 		}
 	}
@@ -123,7 +124,8 @@ public class ReleaseWriter implements AutoCloseable {
 		if (!isStatedRelationship && concept.getInferredConcreteAttributes() != null) {
 			for (Map.Entry<String, Set<String>> entry: concept.getInferredConcreteAttributes().entrySet()) {
 				for (String value : entry.getValue()) {
-					conceptDoc.add(new StringField(entry.getKey(), value.replace("#",""), Field.Store.YES));
+					conceptDoc.add(new StringField(entry.getKey(), value.replace("#","").replace("\"",""),
+							Field.Store.YES));
 				}
 			}
 		}

@@ -149,21 +149,16 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"47429007 |associated with| = (< 404684003 |clinical finding|:  " +
 						"116676008 |associated morphology| = << 55641003 |infarct|)",
 
-				"ancestor:404684003 " +
-						"AND 47429007: ( ATTRIBUTE_DESCENDANT_OF(404684003) " +
-						"AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(55641003) ) "
+				"ancestor:404684003 AND 47429007: (ATTRIBUTE_DESCENDANT_OF(404684003) AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(55641003))"
 		);
 	}
 
-	@Test
+	@Test(expected = UnsupportedOperationException.class)
 	public void testExample_AttributeOperator_1() {
 		assertConversion(
 				"<< 404684003 |clinical finding|: " +
 						"<< 47429007 |associated with| = << 267038008 |edema|",
-
-				"(id:404684003 " +
-						"OR ancestor:404684003) " +
-						"AND 47429007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(267038008)"
+				" "
 		);
 	}
 
@@ -176,7 +171,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"   111115 |strength magnitude| >= #500, " +
 						"   111115 |strength unit| = 258684004 |mg|)}",
 
-				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) AND 111115: ( 111115 AND 111115:[500 TO *] AND 111115:258684004 ) "
+				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) " +
+						"AND 111115: (111115 AND 111115:[500 TO *] AND 111115:258684004)"
 		);
 	}
 
@@ -189,7 +185,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"   111115 |strength magnitude| >= #500,   111115 |strength magnitude| <= #800,  " +
 						"   111115 |strength unit| = 258684004 |mg|)}",
 
-				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) AND 111115: ( 111115 AND 111115:[500 TO *] AND 111115:[* TO 800] AND 111115:258684004 ) "
+				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) " +
+						"AND 111115: (111115 AND 111115:[500 TO *] AND 111115:[* TO 800] AND 111115:258684004)"
 		);
 	}
 
@@ -199,7 +196,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"< 373873005 |pharmaceutical / biologic product|: " +
 						"111115 |trade name| = \"PANADOL\"",
 
-				"ancestor:373873005 AND 111115:\"PANADOL\""
+				"ancestor:373873005 AND 111115:PANADOL"
 		);
 	}
 
@@ -397,10 +394,10 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"116676008 |associated morphology| = << 415582006 |stenosis| ) AND " +
 						"42752001 |due to| = << 445238008|malignant carcinoid tumor|",
 
-				"ancestor:404684003 " +
-						"AND  ( 363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(39057004) " +
-						"AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(415582006) )  " +
+				"ancestor:404684003 AND (363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(39057004) " +
+						"AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(415582006)) " +
 						"AND 42752001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(445238008)"
+
 		);
 	}
 
@@ -412,10 +409,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"116676008 |associated morphology| = << 415582006 |stenosis|) OR " +
 						"42752001 |due to| = << 445238008|malignant carcinoid tumor|",
 
-				"ancestor:404684003 " +
-						"AND  ( 363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(39057004) " +
-						"AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(415582006) )  " +
-						"OR 42752001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(445238008)"
+				"ancestor:404684003 AND (363698007:ATTRIBUTE_DESCENDANT_OR_SELF_OF(39057004) " +
+						"AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(415582006)) OR 42752001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(445238008)"
 		);
 	}
 
@@ -455,9 +450,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"(< 19829001 |disorder of lung| AND < 301867009 |edema of trunk|) AND  " +
 						"^ 700043003 |example problem list concepts reference set|",
 
-				" ( ancestor:19829001 " +
-						"AND ancestor:301867009 )  " +
-						"AND memberOf:700043003"
+				"(ancestor:19829001 AND ancestor:301867009) AND memberOf:700043003"
 		);
 	}
 
@@ -467,9 +460,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"(< 19829001 |disorder of lung| AND < 301867009 |edema of trunk|) OR  " +
 						"^ 700043003 |example problem list concepts reference set|",
 
-				" ( ancestor:19829001 " +
-						"AND ancestor:301867009 )  " +
-						"OR memberOf:700043003"
+				"(ancestor:19829001 AND ancestor:301867009) OR memberOf:700043003"
 		);
 	}
 
@@ -495,9 +486,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"^ 450990004 |adverse drug reactions reference set for GP/FP health issue|: 246075003 |causative agent| = " +
 						"(< 373873005 |pharmaceutical / biologic product| OR < 105590001 |substance|)",
 
-				"memberOf:450990004 " +
-						"AND 246075003: ( ATTRIBUTE_DESCENDANT_OF(373873005) " +
-						"OR ATTRIBUTE_DESCENDANT_OF(105590001) ) "
+				"memberOf:450990004 AND 246075003: (ATTRIBUTE_DESCENDANT_OF(373873005) OR ATTRIBUTE_DESCENDANT_OF(105590001))"
 		);
 	}
 
@@ -507,9 +496,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"< 404684003 |clinical finding|: 116676008 |associated morphology| = " +
 						"(<< 56208002|ulcer| AND << 50960005|hemorrhage|)",
 
-				"ancestor:404684003 " +
-						"AND 116676008: ( ATTRIBUTE_DESCENDANT_OR_SELF_OF(56208002) " +
-						"AND ATTRIBUTE_DESCENDANT_OR_SELF_OF(50960005) ) "
+				"ancestor:404684003 AND 116676008: (ATTRIBUTE_DESCENDANT_OR_SELF_OF(56208002) AND ATTRIBUTE_DESCENDANT_OR_SELF_OF(50960005))"
 		);
 	}
 
@@ -542,10 +529,8 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"< 404684003 |clinical finding|: 116676008 |associated morphology| = " +
 						"((<< 56208002 |ulcer| AND << 50960005 |hemorrhage|) MINUS << 26036001 |obstruction|)",
 
-				"ancestor:404684003 " +
-						"AND 116676008: (  ( ATTRIBUTE_DESCENDANT_OR_SELF_OF(56208002) " +
-						"AND ATTRIBUTE_DESCENDANT_OR_SELF_OF(50960005) )  " +
-						"NOT ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001) ) "
+				"ancestor:404684003 AND 116676008: ( (ATTRIBUTE_DESCENDANT_OR_SELF_OF(56208002) " +
+						"AND ATTRIBUTE_DESCENDANT_OR_SELF_OF(50960005)) NOT ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001))"
 		);
 	}
 
@@ -609,9 +594,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"(< 19829001|disorder of lung| OR ^ 700043003 |example problem list concepts reference set|)  " +
 						"MINUS ^ 450976002|disorders and diseases reference set for GP/FP reason for encounter|",
 
-				" ( ancestor:19829001 " +
-						"OR memberOf:700043003 )  " +
-						"NOT memberOf:450976002"
+				"(ancestor:19829001 OR memberOf:700043003) NOT memberOf:450976002"
 		);
 	}
 
@@ -621,9 +604,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 				"(< 19829001|disorder of lung| MINUS ^ 700043003 |example problem list concepts reference set|) MINUS " +
 						"^ 450976002|disorders and diseases reference set for GP/FP reason for encounter|",
 
-				" ( ancestor:19829001 " +
-						"NOT memberOf:700043003 )  " +
-						"NOT memberOf:450976002"
+				"(ancestor:19829001 NOT memberOf:700043003) NOT memberOf:450976002"
 		);
 	}
 

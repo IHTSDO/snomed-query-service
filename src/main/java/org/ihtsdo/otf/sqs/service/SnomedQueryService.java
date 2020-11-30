@@ -35,7 +35,7 @@ public class SnomedQueryService {
 
 	public static final int DEFAULT_LIMIT = 1000;
 	private final ReleaseStore releaseStore;
-	private ExpressionConstraintToLuceneConverter elToLucene;
+	private final ExpressionConstraintToLuceneConverter elToLucene;
 	private final IndexSearcher indexSearcher;
 	private final Analyzer analyzer;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -267,7 +267,7 @@ public class SnomedQueryService {
 			conceptRelatives.add("0");
 		}
 		String newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
-		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 100), limitStringLength(newLuceneQuery, 100));
+		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 200), limitStringLength(newLuceneQuery, 200));
 		return newLuceneQuery;
 	}
 

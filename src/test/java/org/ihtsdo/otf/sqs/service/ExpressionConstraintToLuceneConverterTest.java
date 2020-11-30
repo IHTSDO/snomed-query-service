@@ -83,14 +83,22 @@ public class ExpressionConstraintToLuceneConverterTest {
 	
 	@Test
 	public void test_refinedEclWithMultipleDomainsExclusion() {
-		assertConversion("(*:<<272741003=*) MINUS (<<91723000 OR <<723264001)", 
-				" ( id:* AND 272741003:* )  NOT  ( (id:91723000 OR ancestor:91723000) OR (id:723264001 OR ancestor:723264001) ) " );
+		assertConversion("(*:272741003=*) MINUS (<<91723000 OR <<723264001)",
+				"(id:* AND 272741003:*) NOT ((id:91723000 OR ancestor:91723000) OR (id:723264001 OR ancestor:723264001))");
 	}
 	
 	@Test
 	public void test_refinedEclWithOneDomainExclusion() {
-		assertConversion("(*:<<272741003=*) MINUS <<91723000)", 
-				" ( id:* AND 272741003:* )  NOT (id:91723000 OR ancestor:91723000)" );
+		assertConversion("(*:272741003=*) MINUS <<91723000",
+				"(id:* AND 272741003:*) NOT (id:91723000 OR ancestor:91723000)");
+
+	}
+
+	@Test(expected = UnsupportedOperationException.class)
+	public void test_nestedExpressionOnAttributeName() {
+		assertConversion("(*:<<272741003=*) MINUS <<91723000",
+				" ");
+
 	}
 
 	@Test
@@ -120,14 +128,22 @@ public class ExpressionConstraintToLuceneConverterTest {
 	@Test
 	public void test_refinedEclWithConcreteValueRange() {
 		assertConversion("<< 373873005: [0..*] { ([0..1] 3264475007 >= #10 AND [0..1] 3264475007 <= #20) }",
-				"(id:373873005 OR ancestor:373873005) AND 3264475007_totalGrp:[0 TO *] AND  ( 3264475007_grpCard:[0 TO 1] AND 3264475007:[10 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007:[* TO 20] ) ");
+				"(id:373873005 OR ancestor:373873005) AND (3264475007_totalGrp:[0 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007:[10 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007:[* TO 20])");
 	}
 
 	@Test
 	public void test_refinedEclWithConcreteValue() {
 		assertConversion("<< 373873005: [0..*] { ([0..1] 3264475007 = #20) }",
-				"(id:373873005 OR ancestor:373873005) AND 3264475007_totalGrp:[0 TO *] AND  ( 3264475007_grpCard:[0 TO 1] AND 3264475007:20 ) ");
+				"(id:373873005 OR ancestor:373873005) AND (3264475007_totalGrp:[0 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007:20)");
 	}
+
+	@Test
+	public void testEclQueryWithMultipleDomains() {
+		String ecl = "(<< 363787002 |Observable entity (observable entity)| OR << 386053000 |Evaluation procedure (procedure)|): [0..1] { [0..1] 370134009 |Time aspect| = << 7389001 |Time frame (qualifier value)| }";
+		assertConversion(ecl,
+				"((id:363787002 OR ancestor:363787002) OR (id:386053000 OR ancestor:386053000)) AND 370134009_totalGrp:[0 TO 1] AND 370134009_grpCard:[0 TO 1] AND 370134009:ATTRIBUTE_DESCENDANT_OR_SELF_OF(7389001)");
+	}
+
 	private void assertConversion(String ecQuery, String expectedLuceneQuery) {
 		Assert.assertEquals(expectedLuceneQuery, parser.parse(ecQuery));
 	}
