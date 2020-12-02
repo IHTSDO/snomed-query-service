@@ -82,9 +82,7 @@ public class ExpressionConstraintToLuceneConverter {
 			LESS_THAN("<"),
 			GREAT_THAN_OR_EQUAL_TO(">="),
 			LESS_THAN_OR_EQUAL_TO("<="),
-			NOT_EQUAL_TO ("!="),
-			NOT_EQUAL_TO_WITH_WORD("not ="),
-			NOT_EQUAL_TO_WITH_GREAT_THAN_AND_LESS_THAN("<>");
+			NOT_EQUAL_TO ("!=");
 
 			private String text;
 
@@ -324,9 +322,7 @@ public class ExpressionConstraintToLuceneConverter {
 			comparisonOperator = ComparisonOperator.fromText(ctx.getText()).get();
 			if (EQUAL_TO == comparisonOperator) {
 				luceneQuery += ":";
-			} else if (NOT_EQUAL_TO == comparisonOperator
-					|| NOT_EQUAL_TO_WITH_WORD == comparisonOperator
-					|| ComparisonOperator.NOT_EQUAL_TO_WITH_GREAT_THAN_AND_LESS_THAN == comparisonOperator) {
+			} else if (NOT_EQUAL_TO == comparisonOperator) {
 				luceneQuery += " NOT ";
 			} else {
 				throw new IllegalArgumentException(String.format("Invalid comparison operator %s for String", ctx.getText()));
@@ -349,15 +345,14 @@ public class ExpressionConstraintToLuceneConverter {
 			if (EQUAL_TO == comparisonOperator) {
 				luceneQuery += ":" + value;
 			} else if (GREAT_THAN_OR_EQUAL_TO == comparisonOperator) {
-				luceneQuery += ":[" + value + " TO *]";
+				luceneQuery += "_value:[" + value + " TO *]";
 			} else if (GREAT_THAN == comparisonOperator) {
-				luceneQuery += ":{" + value + " TO *}";
+				luceneQuery += "_value:{" + value + " TO *}";
 			} else if (LESS_THAN == comparisonOperator) {
-				luceneQuery += ":{* TO " + value + "}";
+				luceneQuery += "_value:{* TO " + value + "}";
 			} else if (LESS_THAN_OR_EQUAL_TO == comparisonOperator) {
-				luceneQuery += ":[* TO " + value + "]";
-			} else if (NOT_EQUAL_TO == comparisonOperator || NOT_EQUAL_TO_WITH_WORD == comparisonOperator
-					|| NOT_EQUAL_TO_WITH_GREAT_THAN_AND_LESS_THAN == comparisonOperator ) {
+				luceneQuery += "_value:[* TO " + value + "]";
+			} else if (NOT_EQUAL_TO == comparisonOperator) {
 				luceneQuery += " NOT " + value;
 			}
 		}

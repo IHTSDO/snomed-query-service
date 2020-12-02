@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
@@ -31,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.ihtsdo.otf.sqs.domain.ConceptFieldNames.*;
+
 public class SnomedQueryService {
 
 	public static final int DEFAULT_LIMIT = 1000;
@@ -42,7 +45,7 @@ public class SnomedQueryService {
 	private final Map<String, RefsetMembershipResult> refsetResultMap = new ConcurrentHashMap<>();
 
 	private static final Set<String> CONCEPT_FIELD_SET = Collections.singleton(ConceptFieldNames.ID);
-	public static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
+	protected static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
 	static {
 		for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : ExpressionConstraintToLuceneConverter.InternalFunction.values()) {
 			internalFunctionPatternMap.put(internalFunction, Pattern.compile(".*(" + internalFunction + "\\(([^\\)]+)\\)).*"));
@@ -131,8 +134,9 @@ public class SnomedQueryService {
 		}
 		String luceneQueryString = preprocessECLQuery(ecQuery);
 		try {
+//			return getQueryParser().parse(luceneQueryString, ConceptFieldNames.ID);
 			return getQueryParser().parse(luceneQueryString);
-		} catch (ParseException e) {
+		} catch ( ParseException e) {
 			throw new InternalError("Error parsing internal search query.", e);
 		}
 	}
@@ -141,16 +145,15 @@ public class SnomedQueryService {
 		if (ecQuery != null && !ecQuery.isEmpty()) {
 			String luceneQuery = preprocessECLQuery(ecQuery);
 			try {
-				final Query query = getQueryParser().parse(luceneQuery);
+				Query query = getQueryParser().parse(luceneQuery);
 				final ConceptIdResults conceptIdResults = getConceptIdResults(query, offset, limit);
-
 				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.getTotal());
 				return conceptIdResults;
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
 			}
 		}
-		return new ConceptIdResults(new ArrayList<Long>(), offset, 0, limit);
+		return new ConceptIdResults(new ArrayList<>(), offset, 0, limit);
 	}
 
 	public ConceptResults retrieveConceptAncestors(String conceptId) throws ServiceException {
@@ -227,11 +230,9 @@ public class SnomedQueryService {
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
 			int total = (int) topDocs.totalHits;
 			List<ConceptResult> concepts = new ArrayList<>();
-			Map<String, ConceptResult> conceptsMap = new HashMap<>();
 			for (int a = offset; a < scoreDocs.length; a++) {
 				ScoreDoc scoreDoc = scoreDocs[a];
 				final ConceptResult conceptResult = getConceptResult(getDocument(scoreDoc));
-				conceptsMap.put(conceptResult.getId(), conceptResult);
 				concepts.add(conceptResult);
 			}
 
@@ -368,9 +369,42 @@ public class SnomedQueryService {
 	}
 
 	private QueryParser getQueryParser() {
-		QueryParser parser = new QueryParser(ConceptFieldNames.ID, analyzer);
+		QueryParser parser = new CustomizedQueryParser(ConceptFieldNames.ID, analyzer);
 		parser.setAllowLeadingWildcard(true);
 		return parser;
+	}
+
+	// Implement a customized query parser to create the RangeQuery for numeric fields
+	// The alternative option is to use StandardQueryParser and set the dynamic field name in the PointsConfigMap
+	private static class CustomizedQueryParser extends QueryParser {
+
+		public CustomizedQueryParser(String f, Analyzer a) {
+			super(f, a);
+		}
+
+		@Override
+		protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws ParseException {
+			if (field.contains("_value") || field.contains(TOTAL_GROUPS)
+					|| field.contains(CARDINALITY) || field.contains(GROUP_CARDINALITY)) {
+				float min = 0f;
+				float max = Integer.MAX_VALUE;
+				if (part1 != null) {
+					min = Float.parseFloat(part1);
+					if (!startInclusive) {
+						min += 0.00001f;
+					}
+				}
+				if (part2 != null) {
+					max = Float.parseFloat(part2);
+					if (!endInclusive) {
+						max += 0.00001f;
+					}
+				}
+				return FloatPoint.newRangeQuery(field, min, max);
+			} else {
+				return super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
+			}
+		}
 	}
 
 	private String limitStringLength(String string, int limit) {

@@ -83,17 +83,17 @@ public class ReleaseWriter implements AutoCloseable {
 			}
 			Set<String> distinctGroups = new HashSet<>(roleGroups);
 			if (!distinctGroups.isEmpty()) {
-				doc.add(new StringField(key + ConceptFieldNames.TOTAL_GROUPS, String.valueOf(distinctGroups.size()), Field.Store.YES));
+				doc.add(new FloatPoint(key + ConceptFieldNames.TOTAL_GROUPS, distinctGroups.size()));
 				List<Integer> countList = new ArrayList<>(groupCountMap.values());
 				java.util.Collections.sort(countList);
 				// attribute in group cardinality
 				if (!countList.isEmpty()) {
 					Integer maxGroup = countList.get(countList.size()-1);
-					doc.add(new StringField(key + ConceptFieldNames.GROUP_CARDINALITY, maxGroup.toString(), Field.Store.YES));
+					doc.add(new FloatPoint(key + ConceptFieldNames.GROUP_CARDINALITY, maxGroup));
 				}
 			}
 			//attribute cardinality
-			doc.add(new StringField(key + ConceptFieldNames.CARDINALITY, String.valueOf(totalCount), Field.Store.YES));
+			doc.add(new FloatPoint(key + ConceptFieldNames.CARDINALITY, totalCount));
 		}
 	}
 
@@ -119,13 +119,17 @@ public class ReleaseWriter implements AutoCloseable {
 				conceptDoc.add(new StringField(type, value, Field.Store.YES));
 			}
 		}
-
 		// concrete values
 		if (!isStatedRelationship && concept.getInferredConcreteAttributes() != null) {
 			for (Map.Entry<String, Set<String>> entry: concept.getInferredConcreteAttributes().entrySet()) {
 				for (String value : entry.getValue()) {
-					conceptDoc.add(new StringField(entry.getKey(), value.replace("#","").replace("\"",""),
-							Field.Store.YES));
+					// The string field is used for exact match and NOT query
+					conceptDoc.add(new StringField(entry.getKey(), value.replace("#",""), Field.Store.YES));
+					if (value.startsWith("#")) {
+						conceptDoc.add(new FloatPoint( entry.getKey() + "_value", Float.valueOf(value.replace("#",""))));
+					} else {
+						conceptDoc.add(new StringField(entry.getKey(), value.replace("\"",""), Field.Store.YES));
+					}
 				}
 			}
 		}

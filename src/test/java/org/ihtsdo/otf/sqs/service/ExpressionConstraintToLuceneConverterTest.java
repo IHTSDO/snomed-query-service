@@ -104,31 +104,37 @@ public class ExpressionConstraintToLuceneConverterTest {
 	@Test
 	public void test_refinedEclWithConcreteValueMinRangeOnly() {
 		assertConversion("<< 373873005: 3264475007 >= #10",
-				"(id:373873005 OR ancestor:373873005) AND 3264475007:[10 TO *]");
+				"(id:373873005 OR ancestor:373873005) AND 3264475007_value:[10 TO *]");
 	}
 
 	@Test
 	public void test_refinedEclWithConcreteValueMaxRangeOnly() {
 		assertConversion("<< 373873005: 3264475007 < #10",
-				"(id:373873005 OR ancestor:373873005) AND 3264475007:{* TO 10}");
+				"(id:373873005 OR ancestor:373873005) AND 3264475007_value:{* TO 10}");
+	}
+
+	@Test
+	public void test_refinedEclWithConcreteValueNotEqualTo() {
+		assertConversion("<< 373873005: 3264475007 != #1",
+				"(id:373873005 OR ancestor:373873005) AND 3264475007 NOT 1");
 	}
 
 	@Test
 	public void test_refinedEclWithConcreteValueRangeInclusive() {
 		assertConversion("<< 373873005: 3264475007 >= #1 AND 3264475007 <= #10",
-				"(id:373873005 OR ancestor:373873005) AND 3264475007:[1 TO *] AND 3264475007:[* TO 10]");
+				"(id:373873005 OR ancestor:373873005) AND 3264475007_value:[1 TO *] AND 3264475007_value:[* TO 10]");
 	}
 
 	@Test
 	public void test_refinedEclWithConcreteValueRangeExclusive() {
 		assertConversion("<< 373873005: 3264475007 > #1 AND 3264475007 < #10",
-				"(id:373873005 OR ancestor:373873005) AND 3264475007:{1 TO *} AND 3264475007:{* TO 10}");
+				"(id:373873005 OR ancestor:373873005) AND 3264475007_value:{1 TO *} AND 3264475007_value:{* TO 10}");
 	}
 
 	@Test
 	public void test_refinedEclWithConcreteValueRange() {
 		assertConversion("<< 373873005: [0..*] { ([0..1] 3264475007 >= #10 AND [0..1] 3264475007 <= #20) }",
-				"(id:373873005 OR ancestor:373873005) AND (3264475007_totalGrp:[0 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007:[10 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007:[* TO 20])");
+				"(id:373873005 OR ancestor:373873005) AND (3264475007_totalGrp:[0 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007_value:[10 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007_value:[* TO 20])");
 	}
 
 	@Test
