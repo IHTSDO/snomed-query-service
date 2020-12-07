@@ -227,7 +227,7 @@ public class ExpressionConstraintToLuceneConverter {
 				throwUnsupported("wildcard attribute name");
 			}
 			if (ctx.getText().contains("<") || ctx.getText().contains(">")) {
-				throwUnsupported("attribute name with expression constraint");
+				throwUnsupported( "attribute name with expression constraint " + ctx.getText());
 			}
 		}
 

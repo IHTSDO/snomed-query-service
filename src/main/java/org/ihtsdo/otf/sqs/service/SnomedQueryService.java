@@ -397,7 +397,7 @@ public class SnomedQueryService {
 				if (part2 != null) {
 					max = Float.parseFloat(part2);
 					if (!endInclusive) {
-						max += 0.00001f;
+						max -= 0.00001f;
 					}
 				}
 				return FloatPoint.newRangeQuery(field, min, max);
