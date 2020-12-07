@@ -116,7 +116,7 @@ public class ExpressionConstraintToLuceneConverterTest {
 	@Test
 	public void test_refinedEclWithConcreteValueNotEqualTo() {
 		assertConversion("<< 373873005: 3264475007 != #1",
-				"(id:373873005 OR ancestor:373873005) AND 3264475007 NOT 1");
+				"(id:373873005 OR ancestor:373873005) AND 3264475007_value:{1 TO *} OR 3264475007_value:{* TO 1}");
 	}
 
 	@Test

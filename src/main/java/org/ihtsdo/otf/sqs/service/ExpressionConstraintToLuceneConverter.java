@@ -111,13 +111,12 @@ public class ExpressionConstraintToLuceneConverter {
 		String cardinality = null;
 		String attributeInGroupCardinality = null;
 		private boolean isTotalGroupApplied;
-
+		private String attributeId;
 
 		@Override
 		public void visitErrorNode(ErrorNode node) {
 			super.visitErrorNode(node);
 		}
-
 
 		@Override
 		public void enterMemberof(ECLParser.MemberofContext ctx) {
@@ -139,6 +138,9 @@ public class ExpressionConstraintToLuceneConverter {
 				}
 			} else {
 				String conceptId = ctx.eclconceptreference().conceptid().getText();
+				if (inAttribute) {
+					attributeId = conceptId;
+				}
 				if (isMemberOf) {
 					luceneQuery += ConceptFieldNames.MEMBER_OF + ":" + conceptId;
 				} else {
@@ -219,6 +221,7 @@ public class ExpressionConstraintToLuceneConverter {
 		@Override
 		public void exitEclattribute(ECLParser.EclattributeContext ctx) {
 			inAttribute = false;
+			attributeId = null;
 		}
 
 		@Override
@@ -353,7 +356,9 @@ public class ExpressionConstraintToLuceneConverter {
 			} else if (LESS_THAN_OR_EQUAL_TO == comparisonOperator) {
 				luceneQuery += "_value:[* TO " + value + "]";
 			} else if (NOT_EQUAL_TO == comparisonOperator) {
-				luceneQuery += " NOT " + value;
+				// Use > or < instead of NOT as lucene doesn't allow NOT to be used on its own.
+				luceneQuery += "_value:{" + value + " TO *}";
+				luceneQuery += " OR " + attributeId + "_value:{* TO " + value + "}";
 			}
 		}
 

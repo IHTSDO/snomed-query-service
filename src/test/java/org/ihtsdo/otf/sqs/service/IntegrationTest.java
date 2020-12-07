@@ -40,7 +40,8 @@ public class IntegrationTest {
 		// * MINUS (<<91723000  OR <<723264001) :  272741003=*
 		// <<71388002: 363703001 = *
 		// <<71388002: [0..1] 363703001 = <<363675004
-		ConceptIdResults results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 >= #100", 0, -1);
+		ConceptIdResults results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #10", 0, -1);
+		results.getConceptIds().stream().forEach(System.out::println);
 	}
 
 	@Test
@@ -326,22 +327,9 @@ public class IntegrationTest {
 
 		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #100", 0, -1).getConceptIds();
 		assertEquals(0, results.size());
-	}
 
-	@Test
-	public void testIntegers() throws Exception {
-		StandardQueryParser parser = new StandardQueryParser();
-		Map<String, PointsConfig> pointsConfig = new HashMap<>();
-		pointsConfig.put("intField", new PointsConfig(NumberFormat.getIntegerInstance(Locale.ROOT), Integer.class));
-		parser.setPointsConfigMap(pointsConfig);
-
-		Query query = IntPoint.newRangeQuery("intField", 1, 3);
-		System.out.println(query.toString());
-
-		assertEquals(IntPoint.newRangeQuery("intField", 1, 3),
-				parser.parse("intField:[1 TO 3]", "body"));
-		assertEquals(IntPoint.newRangeQuery("intField", 1, 1),
-				parser.parse("intField:1", "body"));
+		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #10", 0, -1).getConceptIds();
+		assertEquals(1, results.size());
 	}
 
 	private void assertResultSet(List<ConceptResult> conceptResults, int... conceptIds) {
