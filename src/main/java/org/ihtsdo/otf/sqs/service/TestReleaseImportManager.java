@@ -72,11 +72,12 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 												.addAttribute(hasIntentAttribute, intentsQualifierValue),
 										addConcept(128927009, "Procedure by method (procedure)")
 												.addAttribute(methodAttribute, actionQualifierValue)
-												.addAttribute(methodAttribute, actionQualifierValue)
 												.addAttribute(procedureSiteDirectAttribute, nailStructure)
 												.addChildren(
 														addConcept(8367003, "Clipping nails of patient (procedure)")
 																.addAttribute(methodAttribute, cuttingAction)
+																// for range constraint testing
+																.addAttribute(methodAttribute, nailStructure)
 												)
 								)
 				);

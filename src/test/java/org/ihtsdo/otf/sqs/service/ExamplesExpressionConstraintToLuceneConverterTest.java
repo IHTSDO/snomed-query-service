@@ -534,14 +534,13 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_NotEqualToAttributeValue_1() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
 						"116676008 |associated morphology| !=  << 26036001 |obstruction|",
 
-				"ancestor:404684003 " +
-						"AND 116676008:-ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001)"
+				"ancestor:404684003 AND 116676008: (* NOT ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001))"
 		);
 	}
 
@@ -555,27 +554,26 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_NotEqualToAttributeValue_3() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
 						"[0..0] 116676008 |associated morphology| != << 26036001 |obstruction|",
 
-				"ancestor:404684003 " +
-						"AND 116676008:-ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001)"
+				"ancestor:404684003 AND 116676008_card:[0 TO 0] AND 116676008: (* NOT ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001))"
 		);
 	}
 
-	@Test(expected = UnsupportedOperationException.class)
+	@Test
 	public void testExample_NotEqualToAttributeValue_4() {
 		assertConversion(
 				"< 404684003 |clinical finding|:  " +
 						"[0..0] 116676008 |associated morphology| !=  << 26036001 |obstruction| and " +
 						"[1..*] 116676008 |associated morphology| =   << 26036001 |obstruction|",
 
-				"ancestor:404684003 " +
-						"AND 116676008:-ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001) " +
-						"AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001)"
+				"ancestor:404684003 AND 116676008_card:[0 TO 0] " +
+						"AND 116676008: (* NOT ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001)) " +
+						"AND 116676008_card:[1 TO *] AND 116676008:ATTRIBUTE_DESCENDANT_OR_SELF_OF(26036001)"
 		);
 	}
 

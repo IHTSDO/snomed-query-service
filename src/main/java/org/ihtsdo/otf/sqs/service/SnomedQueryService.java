@@ -38,7 +38,7 @@ public class SnomedQueryService {
 
 	public static final int DEFAULT_LIMIT = 1000;
 	private final ReleaseStore releaseStore;
-	private final ExpressionConstraintToLuceneConverter elToLucene;
+	private final ExpressionConstraintToLuceneConverter eclToLucene;
 	private final IndexSearcher indexSearcher;
 	private final Analyzer analyzer;
 	private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -53,7 +53,7 @@ public class SnomedQueryService {
 	}
 
 	public SnomedQueryService(ReleaseStore releaseStore) throws IOException {
-		elToLucene = new ExpressionConstraintToLuceneConverter();
+		eclToLucene = new ExpressionConstraintToLuceneConverter();
 		this.releaseStore = releaseStore;
 		indexSearcher = new IndexSearcher(DirectoryReader.open(this.releaseStore.getDirectory()));
 		analyzer = releaseStore.createAnalyzer();
@@ -184,7 +184,7 @@ public class SnomedQueryService {
 	private String preprocessECLQuery(String ecQuery) throws InvalidECLSyntaxException, NotFoundException, InternalError {
 		String luceneQuery;
 		try {
-			luceneQuery = elToLucene.parse(ecQuery);
+			luceneQuery = eclToLucene.parse(ecQuery);
 			logger.info("ec:'{}', unprocessed-lucene:'{}'", ecQuery, luceneQuery);
 		} catch (RecognitionException e) {
 			throw new InvalidECLSyntaxException(ecQuery, e);

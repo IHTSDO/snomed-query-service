@@ -76,11 +76,12 @@ public class ExpressionConstraintToLuceneConverter {
 	}
 
 	protected static final class ExpressionConstraintListener extends ImpotentECLListener {
+
 		enum ComparisonOperator {
 			EQUAL_TO("="),
-			GREAT_THAN(">"),
+			GREATER_THAN(">"),
 			LESS_THAN("<"),
-			GREAT_THAN_OR_EQUAL_TO(">="),
+			GREATER_THAN_OR_EQUAL_TO(">="),
 			LESS_THAN_OR_EQUAL_TO("<="),
 			NOT_EQUAL_TO ("!=");
 
@@ -112,6 +113,7 @@ public class ExpressionConstraintToLuceneConverter {
 		String attributeInGroupCardinality = null;
 		private boolean isTotalGroupApplied;
 		private String attributeId;
+		private boolean addCloseParenthesis;
 
 		@Override
 		public void visitErrorNode(ErrorNode node) {
@@ -190,6 +192,10 @@ public class ExpressionConstraintToLuceneConverter {
 					}
 				}
 			}
+			if (addCloseParenthesis) {
+				luceneQuery += ")";
+				addCloseParenthesis = false;
+			}
 		}
 
 		private void addCardinality(String focusConceptId) {
@@ -238,8 +244,11 @@ public class ExpressionConstraintToLuceneConverter {
 		public void enterExpressioncomparisonoperator(ECLParser.ExpressioncomparisonoperatorContext ctx) {
 			if (ctx.getText().equals("=")) {
 				luceneQuery += ":";
+			} else if (ctx.getText().equals("!=")){
+				luceneQuery += ": (* NOT ";
+				addCloseParenthesis = true;
 			} else {
-				throwUnsupported("not-equal expressionComparisonOperator");
+				throwUnsupported(ctx.getText() + " expressionComparisonOperator");
 			}
 		}
 
@@ -345,19 +354,20 @@ public class ExpressionConstraintToLuceneConverter {
 		@Override
 		public void enterNumericvalue(ECLParser.NumericvalueContext ctx) {
 			String value = ctx.getText().startsWith("#") ? ctx.getText().substring(1) : ctx.getText();
+			luceneQuery += "_value:";
 			if (EQUAL_TO == comparisonOperator) {
-				luceneQuery += ":" + value;
-			} else if (GREAT_THAN_OR_EQUAL_TO == comparisonOperator) {
-				luceneQuery += "_value:[" + value + " TO *]";
-			} else if (GREAT_THAN == comparisonOperator) {
-				luceneQuery += "_value:{" + value + " TO *}";
+				luceneQuery += "[" + value + " TO " + value + "]";
+			} else if (GREATER_THAN_OR_EQUAL_TO == comparisonOperator) {
+				luceneQuery += "[" + value + " TO *]";
+			} else if (GREATER_THAN == comparisonOperator) {
+				luceneQuery += "{" + value + " TO *}";
 			} else if (LESS_THAN == comparisonOperator) {
-				luceneQuery += "_value:{* TO " + value + "}";
+				luceneQuery += "{* TO " + value + "}";
 			} else if (LESS_THAN_OR_EQUAL_TO == comparisonOperator) {
-				luceneQuery += "_value:[* TO " + value + "]";
+				luceneQuery += "[* TO " + value + "]";
 			} else if (NOT_EQUAL_TO == comparisonOperator) {
-				// Use > or < instead of NOT as lucene doesn't allow NOT to be used on its own.
-				luceneQuery += "_value:{" + value + " TO *}";
+				// Use > or < instead for numeric not equal to
+				luceneQuery += "{" + value + " TO *}";
 				luceneQuery += " OR " + attributeId + "_value:{* TO " + value + "}";
 			}
 		}

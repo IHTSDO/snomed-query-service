@@ -140,7 +140,7 @@ public class ExpressionConstraintToLuceneConverterTest {
 	@Test
 	public void test_refinedEclWithConcreteValue() {
 		assertConversion("<< 373873005: [0..*] { ([0..1] 3264475007 = #20) }",
-				"(id:373873005 OR ancestor:373873005) AND (3264475007_totalGrp:[0 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007:20)");
+				"(id:373873005 OR ancestor:373873005) AND (3264475007_totalGrp:[0 TO *] AND 3264475007_grpCard:[0 TO 1] AND 3264475007_value:[20 TO 20])");
 	}
 
 	@Test
@@ -149,6 +149,13 @@ public class ExpressionConstraintToLuceneConverterTest {
 		assertConversion(ecl,
 				"((id:363787002 OR ancestor:363787002) OR (id:386053000 OR ancestor:386053000)) AND 370134009_totalGrp:[0 TO 1] AND 370134009_grpCard:[0 TO 1] AND 370134009:ATTRIBUTE_DESCENDANT_OR_SELF_OF(7389001)");
 	}
+
+	@Test
+	public void testEclQueryWithNotEqualToOperator() {
+		assertConversion("<< 363787002:370134009 != << 7389001",
+				"(id:363787002 OR ancestor:363787002) AND 370134009: (* NOT ATTRIBUTE_DESCENDANT_OR_SELF_OF(7389001))");
+	}
+
 
 	private void assertConversion(String ecQuery, String expectedLuceneQuery) {
 		Assert.assertEquals(expectedLuceneQuery, parser.parse(ecQuery));
