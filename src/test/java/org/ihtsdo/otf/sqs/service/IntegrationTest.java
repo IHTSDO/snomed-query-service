@@ -36,7 +36,9 @@ public class IntegrationTest {
 		// <<71388002: 363703001 = *
 		// <<71388002: [0..1] 363703001 = <<363675004
 		// <<404684003: [0..1] 3311487004 != #10
-		ConceptIdResults results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<71388002: [0..1] 363703001 != <<363675004", 0, -1);
+		// *:260686004 != < 129264002
+		// <<71388002: [0..1] 363703001 != <<363675004
+		ConceptIdResults results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:260686004 != << 129264002", 0, -1);
 		assertNotNull(results);
 		results.getConceptIds().forEach(System.out::println);
 	}
@@ -336,6 +338,36 @@ public class IntegrationTest {
 	}
 
 	@Test
+	public void testQueryWithNotEqualToOperator() throws Exception {
+		// Two concepts have attribute 260686004
+		List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004 = *").getItems();
+		assertEquals(2, conceptResults.size());
+		List<String> conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
+		assertTrue(conceptIds.contains("128927009"));
+		assertTrue(conceptIds.contains("8367003"));
+
+		// concept 8367003 has two values one (360314001) is a child of 129264002
+		// and the other 72651009 | Nail structure (body structure) is not child of 129264002.
+		conceptResults = snomedQueryService.search("*:260686004 = < 129264002").getItems();
+		assertEquals(1, conceptResults.size());
+		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
+		assertTrue(conceptIds.contains("8367003"));
+
+		// Concept 128927009 has attribute value of 129264002
+		conceptResults = snomedQueryService.search("*:260686004 != < 129264002").getItems();
+		assertEquals(2, conceptResults.size());
+		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
+		assertTrue(conceptIds.contains("128927009"));
+		assertTrue(conceptIds.contains("8367003"));
+
+		// only one should be in the results
+		conceptResults = snomedQueryService.search("*:260686004 != << 129264002").getItems();
+		assertEquals(1, conceptResults.size());
+		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
+		assertTrue(conceptIds.contains("8367003"));
+	}
+
+	@Test
 	public void testQueryWithMinusOperator() throws Exception {
 		List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004 = *").getItems();
 		assertEquals(2, conceptResults.size());
@@ -349,28 +381,10 @@ public class IntegrationTest {
 		assertTrue(conceptIds.contains("8367003"));
 
 		conceptResults = snomedQueryService.search("*:260686004 = (* MINUS < 129264002)").getItems();
-		assertEquals(1, conceptResults.size());
-		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
-		assertTrue(conceptIds.contains("128927009"));
-	}
-
-
-	@Test
-	public void testQueryWithNotEqualToOperator() throws Exception {
-		List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004 = *").getItems();
 		assertEquals(2, conceptResults.size());
-		List<String> conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
-		assertTrue(conceptIds.contains("128927009"));
-		assertTrue(conceptIds.contains("8367003"));
-
-		conceptResults = snomedQueryService.search("*:260686004 = < 129264002").getItems();
-		assertEquals(1, conceptResults.size());
-		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
-		assertTrue(conceptIds.contains("8367003"));
-		conceptResults = snomedQueryService.search("*:260686004 != < 129264002").getItems();
-		assertEquals(1, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("128927009"));
+		assertTrue(conceptIds.contains("8367003"));
 	}
 
 	private void assertResultSet(List<ConceptResult> conceptResults, int... conceptIds) {

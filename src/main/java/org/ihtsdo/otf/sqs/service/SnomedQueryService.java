@@ -2,7 +2,6 @@ package org.ihtsdo.otf.sqs.service;
 
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
-import org.antlr.v4.runtime.RecognitionException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FloatPoint;
@@ -25,6 +24,7 @@ import org.ihtsdo.otf.sqs.service.exception.*;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.snomed.langauges.ecl.ECLException;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,7 +37,6 @@ import static org.ihtsdo.otf.sqs.domain.ConceptFieldNames.*;
 public class SnomedQueryService {
 
 	public static final int DEFAULT_LIMIT = 1000;
-	private final ReleaseStore releaseStore;
 	private final ExpressionConstraintToLuceneConverter eclToLucene;
 	private final IndexSearcher indexSearcher;
 	private final Analyzer analyzer;
@@ -54,8 +53,7 @@ public class SnomedQueryService {
 
 	public SnomedQueryService(ReleaseStore releaseStore) throws IOException {
 		eclToLucene = new ExpressionConstraintToLuceneConverter();
-		this.releaseStore = releaseStore;
-		indexSearcher = new IndexSearcher(DirectoryReader.open(this.releaseStore.getDirectory()));
+		indexSearcher = new IndexSearcher(DirectoryReader.open(releaseStore.getDirectory()));
 		analyzer = releaseStore.createAnalyzer();
 		BooleanQuery.setMaxClauseCount(4 * 100 * 1000);
 	}
@@ -134,7 +132,6 @@ public class SnomedQueryService {
 		}
 		String luceneQueryString = preprocessECLQuery(ecQuery);
 		try {
-//			return getQueryParser().parse(luceneQueryString, ConceptFieldNames.ID);
 			return getQueryParser().parse(luceneQueryString);
 		} catch ( ParseException e) {
 			throw new InternalError("Error parsing internal search query.", e);
@@ -186,7 +183,7 @@ public class SnomedQueryService {
 		try {
 			luceneQuery = eclToLucene.parse(ecQuery);
 			logger.info("ec:'{}', unprocessed-lucene:'{}'", ecQuery, luceneQuery);
-		} catch (RecognitionException e) {
+		} catch (ECLException e) {
 			throw new InvalidECLSyntaxException(ecQuery, e);
 		}
 		try {
@@ -264,12 +261,48 @@ public class SnomedQueryService {
 			conceptRelatives.add(conceptId);
 		}
 		if (conceptRelatives.isEmpty()) {
-			logger.warn(internalFunction.name() + " internalFunction returned empty result therefore the default value 0 is used.");
+			logger.warn("{} internalFunction returned empty result therefore the default value 0 is used.", internalFunction.name());
 			conceptRelatives.add("0");
 		}
-		String newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
+		String newLuceneQuery = null;
+		// specific logic for range query e.g *:272741003 != << 442083009
+		if (ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OF == internalFunction
+				|| ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF == internalFunction) {
+			Pattern pattern = Pattern.compile(".*(\\(\\* NOT " + internalFunction + "\\(([^\\)]+)\\)\\)).*");
+			Matcher rangeMatcher = pattern.matcher(luceneQuery);
+			if (rangeMatcher.matches()) {
+				Collections.sort(conceptRelatives);
+				String rangeQuery = "(" + buildRangeList(conceptRelatives) + ")";
+				newLuceneQuery = luceneQuery.replace(rangeMatcher.group(1), rangeQuery);
+			}
+		}
+		if (newLuceneQuery == null) {
+			newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
+		}
 		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 200), limitStringLength(newLuceneQuery, 200));
 		return newLuceneQuery;
+	}
+
+	private String buildRangeList(List<String> conceptRelatives) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("{* TO ");
+		String previous = null;
+		for (String conceptRelative : conceptRelatives) {
+			if (previous != null) {
+				builder.append(" OR {");
+				builder.append(previous);
+				builder.append(" TO ");
+			}
+			builder.append(conceptRelative);
+			builder.append("}");
+			previous = conceptRelative;
+		}
+		if (!conceptRelatives.isEmpty()) {
+			builder.append(" OR {");
+			builder.append(previous);
+			builder.append(" TO * }");
+		}
+		return builder.toString();
 	}
 
 	private String buildOptionsList(List<String> conceptRelatives, boolean includeIdFieldName) {

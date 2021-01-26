@@ -14,40 +14,40 @@ public class ExpressionConstraintToLuceneConverterTest {
 	}
 
 	@Test
-	public void test_simpleExpressionConstraint_conceptReference() throws Exception {
+	public void test_simpleExpressionConstraint_conceptReference() {
 		final String ecQuery = "307824009";
 		final String expectedLuceneQuery = "id:307824009";
 		assertConversion(ecQuery, expectedLuceneQuery);
 	}
 
 	@Test
-	public void test_simpleExpressionConstraint_descendantOrSelfOf() throws Exception {
+	public void test_simpleExpressionConstraint_descendantOrSelfOf() {
 		final String parse = parser.parse("<< 307824009");
 		Assert.assertEquals("(id:307824009 OR ancestor:307824009)", parse);
 	}
 
 	@Test
-	public void test_simpleExpressionConstraint_descendantOf() throws Exception {
+	public void test_simpleExpressionConstraint_descendantOf() {
 		assertConversion("<307824009", "ancestor:307824009");
 	}
 
 	@Test
-	public void test_simpleExpressionConstraint_ancestorOrSelfOf() throws Exception {
+	public void test_simpleExpressionConstraint_ancestorOrSelfOf() {
 		assertConversion(">>307824009", "ANCESTOR_OR_SELF_OF(307824009)");
 	}
 
 	@Test
-	public void test_simpleExpressionConstraint_ancestorOf() throws Exception {
+	public void test_simpleExpressionConstraint_ancestorOf() {
 		assertConversion(">307824009", "ANCESTOR_OF(307824009)");
 	}
 
 	@Test
-	public void test_simpleExpressionConstraint_wildcard() throws Exception {
+	public void test_simpleExpressionConstraint_wildcard() {
 		assertConversion("*", "id:*");
 	}
 
 	@Test
-	public void test_simpleExpressionConstraint_memberOf() throws Exception {
+	public void test_simpleExpressionConstraint_memberOf() {
 		assertConversion("^900000000000509007", "memberOf:900000000000509007");
 	}
 
@@ -77,7 +77,7 @@ public class ExpressionConstraintToLuceneConverterTest {
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
-	public void test_refinedExpressionConstraint_wildcardAttributeNameAndConceptValue() {
+	public void test_refinedExpressionConstraint_wildcardAttributeNameAndConceptValue()  {
 		parser.parse("307824009:*=34164001");
 	}
 	

@@ -21,7 +21,6 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 	public void testExample_Self_1() {
 		assertConversion(
 				"404684003 |clinical finding|",
-
 				"id:404684003"
 		);
 	}

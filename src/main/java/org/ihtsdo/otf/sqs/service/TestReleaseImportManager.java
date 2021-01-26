@@ -76,7 +76,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 												.addChildren(
 														addConcept(8367003, "Clipping nails of patient (procedure)")
 																.addAttribute(methodAttribute, cuttingAction)
-																// for range constraint testing
+																// added for range constraint out of range testing
 																.addAttribute(methodAttribute, nailStructure)
 												)
 								)
