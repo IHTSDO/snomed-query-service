@@ -171,7 +171,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"   111115 |strength unit| = 258684004 |mg|)}",
 
 				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) " +
-						"AND 111115: (111115 AND 111115_value:[500 TO *] AND 111115:258684004)"
+						"AND 111115: (111115 AND 111115_value:[500 TO *} AND 111115:258684004)"
 		);
 	}
 
@@ -185,7 +185,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 						"   111115 |strength unit| = 258684004 |mg|)}",
 
 				"ancestor:27658006 AND 411116001:ATTRIBUTE_DESCENDANT_OR_SELF_OF(385049006) " +
-						"AND 111115: (111115 AND 111115_value:[500 TO *] AND 111115_value:[* TO 800] AND 111115:258684004)"
+						"AND 111115: (111115 AND 111115_value:[500 TO *} AND 111115_value:{* TO 800] AND 111115:258684004)"
 		);
 	}
 

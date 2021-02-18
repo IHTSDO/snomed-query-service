@@ -348,13 +348,13 @@ public class ExpressionConstraintToLuceneConverter {
 			if (EQUAL_TO == comparisonOperator) {
 				luceneQuery += "[" + value + " TO " + value + "]";
 			} else if (GREATER_THAN_OR_EQUAL_TO == comparisonOperator) {
-				luceneQuery += "[" + value + " TO *]";
+				luceneQuery += "[" + value + " TO *}";
 			} else if (GREATER_THAN == comparisonOperator) {
 				luceneQuery += "{" + value + " TO *}";
 			} else if (LESS_THAN == comparisonOperator) {
 				luceneQuery += "{* TO " + value + "}";
 			} else if (LESS_THAN_OR_EQUAL_TO == comparisonOperator) {
-				luceneQuery += "[* TO " + value + "]";
+				luceneQuery += "{* TO " + value + "]";
 			} else if (NOT_EQUAL_TO == comparisonOperator) {
 				// Use > or < instead for numeric not equal to
 				luceneQuery += "{" + value + " TO *}";
