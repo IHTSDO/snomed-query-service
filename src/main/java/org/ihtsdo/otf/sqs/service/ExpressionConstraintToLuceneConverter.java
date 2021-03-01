@@ -182,10 +182,6 @@ public class ExpressionConstraintToLuceneConverter {
 					}
 				}
 			}
-			if (addCloseParenthesis) {
-				luceneQuery += ")";
-				addCloseParenthesis = false;
-			}
 		}
 
 		private void addCardinality(String focusConceptId) {
@@ -218,6 +214,10 @@ public class ExpressionConstraintToLuceneConverter {
 		public void exitEclattribute(ECLParser.EclattributeContext ctx) {
 			inAttribute = false;
 			attributeId = null;
+			if (addCloseParenthesis) {
+				luceneQuery += ")";
+				addCloseParenthesis = false;
+			}
 		}
 
 		@Override
@@ -301,6 +301,10 @@ public class ExpressionConstraintToLuceneConverter {
 
 		private void addRightParenthesisIfNotNull(TerminalNode terminalNode) {
 			if (terminalNode != null) {
+				if (addCloseParenthesis) {
+					luceneQuery += ")";
+					addCloseParenthesis = false;
+				}
 				luceneQuery = luceneQuery.trim();
 				luceneQuery += ")";
 			}

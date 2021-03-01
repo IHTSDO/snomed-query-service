@@ -33,10 +33,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.ihtsdo.otf.sqs.domain.ConceptFieldNames.*;
+import static org.ihtsdo.otf.sqs.service.ExpressionConstraintToLuceneConverter.*;
 
 public class SnomedQueryService {
 
 	public static final int DEFAULT_LIMIT = 1000;
+	public static final Pattern SCTID_PATTERN = Pattern.compile("\\d{6,18}");
+	public static final Pattern NOT_EQUAL_TO_PATTERN = Pattern.compile(".*(\\(\\* NOT.*\\)).*");
 	private final ExpressionConstraintToLuceneConverter eclToLucene;
 	private final IndexSearcher indexSearcher;
 	private final Analyzer analyzer;
@@ -44,9 +47,9 @@ public class SnomedQueryService {
 	private final Map<String, RefsetMembershipResult> refsetResultMap = new ConcurrentHashMap<>();
 
 	private static final Set<String> CONCEPT_FIELD_SET = Collections.singleton(ConceptFieldNames.ID);
-	protected static final Map<ExpressionConstraintToLuceneConverter.InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
+	protected static final Map<InternalFunction, Pattern> internalFunctionPatternMap = new TreeMap<>();
 	static {
-		for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : ExpressionConstraintToLuceneConverter.InternalFunction.values()) {
+		for (InternalFunction internalFunction : InternalFunction.values()) {
 			internalFunctionPatternMap.put(internalFunction, Pattern.compile(".*(" + internalFunction + "\\(([^\\)]+)\\)).*"));
 		}
 	}
@@ -187,13 +190,17 @@ public class SnomedQueryService {
 			throw new InvalidECLSyntaxException(ecQuery, e);
 		}
 		try {
-			for (ExpressionConstraintToLuceneConverter.InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
+			for (InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
 				while (luceneQuery.contains(internalFunction.name())) {
 					luceneQuery = processInternalFunction(luceneQuery, internalFunction);
 				}
 			}
 		} catch (IOException e) {
 			throw new InternalError("Error preparing internal search query.", e);
+		}
+		// process NOT equal TO
+		if (luceneQuery.contains("* NOT")) {
+			return processQueryWithNotEqualTo(luceneQuery);
 		}
 		return luceneQuery;
 	}
@@ -239,15 +246,22 @@ public class SnomedQueryService {
 		}
 	}
 
-	private String processInternalFunction(String luceneQuery, ExpressionConstraintToLuceneConverter.InternalFunction internalFunction) throws IOException, NotFoundException {
+	private String processInternalFunction(String luceneQuery, InternalFunction internalFunction) throws IOException, NotFoundException {
+		String newLuceneQuery = null;
 		final Matcher matcher = internalFunctionPatternMap.get(internalFunction).matcher(luceneQuery);
 		if (!matcher.matches() || matcher.groupCount() != 2) {
 			final String message = "Failed to extract the id from the function " + internalFunction + " in internal query '" + luceneQuery + "'";
 			logger.error(message);
 			throw new IllegalStateException(message);
 		}
-		final String conceptId = matcher.group(2);
-		List<String> conceptRelatives;
+		List<String> conceptRelatives = getConceptRelatives(internalFunction, matcher.group(2));
+		newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
+		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 200), limitStringLength(newLuceneQuery, 200));
+		return newLuceneQuery;
+	}
+	
+	private List<String> getConceptRelatives(InternalFunction internalFunction, String conceptId) throws IOException, NotFoundException {
+		List<String> conceptRelatives = new ArrayList<>();
 		if (internalFunction.isAncestorType()) {
 			conceptRelatives = Lists.newArrayList(getConceptDocument(conceptId).getValues(ConceptFieldNames.ANCESTOR));
 		} else {
@@ -264,23 +278,24 @@ public class SnomedQueryService {
 			logger.warn("{} internalFunction returned empty result therefore the default value 0 is used.", internalFunction.name());
 			conceptRelatives.add("0");
 		}
-		String newLuceneQuery = null;
-		// specific logic for range query e.g *:272741003 != << 442083009
-		if (ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OF == internalFunction
-				|| ExpressionConstraintToLuceneConverter.InternalFunction.ATTRIBUTE_DESCENDANT_OR_SELF_OF == internalFunction) {
-			Pattern pattern = Pattern.compile(".*(\\(\\* NOT " + internalFunction + "\\(([^\\)]+)\\)\\)).*");
-			Matcher rangeMatcher = pattern.matcher(luceneQuery);
-			if (rangeMatcher.matches()) {
-				Collections.sort(conceptRelatives);
-				String rangeQuery = "(" + buildRangeList(conceptRelatives) + ")";
-				newLuceneQuery = luceneQuery.replace(rangeMatcher.group(1), rangeQuery);
+		return conceptRelatives;
+	}
+
+	private String processQueryWithNotEqualTo(String luceneQuery) {
+		// specific logic for range query for ECL with != e.g *:272741003 != << 442083009
+		// * AND 260686004: (* NOT ((360314001 OR 129264002) OR (405813007)))
+		Matcher matcher = NOT_EQUAL_TO_PATTERN.matcher(luceneQuery);
+		if (matcher.matches()) {
+			List<String> conceptRelatives = new ArrayList<>();
+			Matcher sctIdMatcher = SCTID_PATTERN.matcher(matcher.group(1));
+			while(sctIdMatcher.find()) {
+				conceptRelatives.add(sctIdMatcher.group());
 			}
+			Collections.sort(conceptRelatives);
+			String rangeQuery = "(" + buildRangeList(conceptRelatives) + ")";
+			return luceneQuery.replace(matcher.group(1), rangeQuery);
 		}
-		if (newLuceneQuery == null) {
-			newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
-		}
-		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 200), limitStringLength(newLuceneQuery, 200));
-		return newLuceneQuery;
+		return luceneQuery;
 	}
 
 	private String buildRangeList(List<String> conceptRelatives) {

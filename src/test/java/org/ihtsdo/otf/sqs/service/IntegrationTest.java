@@ -365,6 +365,11 @@ public class IntegrationTest {
 		assertEquals(1, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("8367003"));
+
+		conceptResults = snomedQueryService.search("*:260686004 != (<< 129264002 OR << 405813007)").getItems();
+		assertEquals(1, conceptResults.size());
+		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
+		assertTrue(conceptIds.contains("8367003"));
 	}
 
 	@Test

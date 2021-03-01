@@ -617,6 +617,26 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
+	@Test
+	public void testRangeConstraintWithOR() {
+		assertConversion(
+				"<<1144649008:704321009 = (<< 71388002 |Procedure (procedure)| OR << 719982003 |Process (qualifier value)|)",
+
+				"(id:1144649008 OR ancestor:1144649008) AND 704321009: " +
+						"(ATTRIBUTE_DESCENDANT_OR_SELF_OF(71388002) OR ATTRIBUTE_DESCENDANT_OR_SELF_OF(719982003))"
+		);
+	}
+
+	@Test
+	public void testRangeConstraintWitNotEqualsTo() {
+		assertConversion(
+				"<<1144649008:704321009 != (<< 71388002 |Procedure (procedure)| OR << 719982003 |Process (qualifier value)|)",
+
+				"(id:1144649008 OR ancestor:1144649008) AND 704321009: (* NOT (ATTRIBUTE_DESCENDANT_OR_SELF_OF(71388002)" +
+						" OR ATTRIBUTE_DESCENDANT_OR_SELF_OF(719982003)))"
+		);
+	}
+
 	private void assertConversion(String ecQuery, String expectedLuceneQuery) {
 		Assert.assertEquals(expectedLuceneQuery, parser.parse(ecQuery));
 	}
