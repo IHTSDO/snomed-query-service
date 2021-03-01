@@ -287,9 +287,14 @@ public class SnomedQueryService {
 		Matcher matcher = NOT_EQUAL_TO_PATTERN.matcher(luceneQuery);
 		if (matcher.matches()) {
 			List<String> conceptRelatives = new ArrayList<>();
-			Matcher sctIdMatcher = SCTID_PATTERN.matcher(matcher.group(1));
-			while(sctIdMatcher.find()) {
-				conceptRelatives.add(sctIdMatcher.group());
+			String group = matcher.group(1);
+			if (group.contains("(0)")) {
+				conceptRelatives.add("0");
+			} else {
+				Matcher sctIdMatcher = SCTID_PATTERN.matcher(group);
+				while(sctIdMatcher.find()) {
+					conceptRelatives.add(sctIdMatcher.group());
+				}
 			}
 			Collections.sort(conceptRelatives);
 			String rangeQuery = "(" + buildRangeList(conceptRelatives) + ")";
