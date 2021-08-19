@@ -1,6 +1,8 @@
-package org.ihtsdo.otf.sqs.service;
+package org.ihtsdo.otf.sqs.service.manualtest;
 
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
+import org.ihtsdo.otf.sqs.service.ReleaseImportManager;
+import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;

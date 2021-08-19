@@ -1,13 +1,9 @@
 package org.ihtsdo.otf.sqs.service;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Random;
-
 import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
-import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentStore;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentStoreComponentFactoryImpl;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
@@ -15,17 +11,21 @@ import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Random;
+
 public class TestReleaseImportManager extends ReleaseImportManager {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final ComponentStore componentStore;
-	private ComponentFactoryImpl componentFactory;
+	private ComponentStoreComponentFactoryImpl componentFactory;
 
 	private final boolean writeToRam;
 
 	public TestReleaseImportManager(boolean writeToRam) {
 		componentStore = new ComponentStore();
-		componentFactory = new ComponentFactoryImpl(componentStore);
+		componentFactory = new ComponentStoreComponentFactoryImpl(componentStore);
 		this.writeToRam = writeToRam;
 	}
 

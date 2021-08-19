@@ -10,8 +10,9 @@ import org.ihtsdo.otf.snomedboot.ReleaseImportException;
 import org.ihtsdo.otf.snomedboot.ReleaseImporter;
 import org.ihtsdo.otf.snomedboot.domain.Concept;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
-import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentFactoryImpl;
+import org.ihtsdo.otf.snomedboot.factory.implementation.HighLevelComponentFactoryAdapterImpl;
 import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentStore;
+import org.ihtsdo.otf.snomedboot.factory.implementation.standard.ComponentStoreComponentFactoryImpl;
 import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.RamReleaseStore;
 import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
@@ -39,15 +40,17 @@ public class ReleaseImportManager {
 	}
 
 	public ReleaseStore loadReleaseFilesToDiskBasedIndex(File releaseDirectory, LoadingProfile loadingProfile, File indexDirectory) throws ReleaseImportException, IOException {
-		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new DiskReleaseStore(indexDirectory));
+		return loadReleaseFilesToStore(releaseDirectory, loadingProfile, new DiskReleaseStore(indexDirectory));
 	}
 
 	public ReleaseStore loadReleaseFilesToMemoryBasedIndex(File releaseDirectory, LoadingProfile loadingProfile) throws ReleaseImportException, IOException {
-		return loadReleaseFiledToStore(releaseDirectory, loadingProfile, new RamReleaseStore());
+		return loadReleaseFilesToStore(releaseDirectory, loadingProfile, new RamReleaseStore());
 	}
 
-	private ReleaseStore loadReleaseFiledToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException {
-		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile, new ComponentFactoryImpl(componentStore));
+	private ReleaseStore loadReleaseFilesToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException {
+		final ComponentStoreComponentFactoryImpl componentFactory = new ComponentStoreComponentFactoryImpl(componentStore);
+		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile,
+				new HighLevelComponentFactoryAdapterImpl(loadingProfile, componentFactory, componentFactory), true);
 		final Map<Long, ? extends Concept> conceptMap = componentStore.getConcepts();
 		return writeToIndex(conceptMap, releaseStore, loadingProfile);
 	}

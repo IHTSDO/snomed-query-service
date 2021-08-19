@@ -55,10 +55,10 @@ public class Application implements CommandLineRunner {
 
 	private ReleaseImportManager releaseImportManager;
 
-	private LoadingProfile loadingProfile = LoadingProfile.light.withFullRelationshipObjects().withFullConcreteRelationshipObjects(); // TODO Configure via config
+	private LoadingProfile loadingProfile = LoadingProfile.light;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
-	private static File releaseDirectory = null;
+	private File releaseDirectory = null;
 
 	@Bean
 	public SnomedQueryService getReleaseReader() throws IOException, InterruptedException {
