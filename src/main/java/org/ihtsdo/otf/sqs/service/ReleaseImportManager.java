@@ -50,7 +50,7 @@ public class ReleaseImportManager {
 	private ReleaseStore loadReleaseFilesToStore(File releaseDirectory, LoadingProfile loadingProfile, ReleaseStore releaseStore) throws ReleaseImportException, IOException {
 		final ComponentStoreComponentFactoryImpl componentFactory = new ComponentStoreComponentFactoryImpl(componentStore);
 		releaseImporter.loadSnapshotReleaseFiles(releaseDirectory.getPath(), loadingProfile,
-				new HighLevelComponentFactoryAdapterImpl(loadingProfile, componentFactory, componentFactory), true);
+				new HighLevelComponentFactoryAdapterImpl(loadingProfile, componentFactory, componentFactory), false);
 		final Map<Long, ? extends Concept> conceptMap = componentStore.getConcepts();
 		return writeToIndex(conceptMap, releaseStore, loadingProfile);
 	}
