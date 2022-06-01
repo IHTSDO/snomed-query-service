@@ -41,12 +41,16 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 
 
 ## Quick Start
-Download the latest release Jar from the [releases](https://github.com/IHTSDO/snomed-query-service/releases) page, unzip your SNOMED RF2 archive, load your SNOMED content and then serve.
+- Java version 11 is required
+- Download the latest application Jar from the [releases page](https://github.com/IHTSDO/snomed-query-service/releases)
+- Use the commands listed below which:
+  - Unzip your SNOMED RF2 archive
+  - Load your SNOMED content and then serve
 ```
 cd my-documents
-unzip SnomedCT_RF2Release_INT_20160131.zip
-java -jar snomed-query-service-1.4.0.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
-java -jar snomed-query-service-1.4.0.jar --serve
+unzip SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip
+java -Xms3g -jar snomed-query-service-3.0.0.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
+java -jar snomed-query-service-3.0.0.jar --serve
 ```
 This will create an "index" directory. This directory must be removed before running the load process again.
 Once the service is running in serve mode Swagger API documentation can be found at: http://localhost:8080/
