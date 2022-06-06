@@ -49,7 +49,7 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 ```
 cd my-documents
 unzip SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip
-java -Xms3g -jar snomed-query-service-3.0.0.jar --loadRelease="/my-documents/SnomedCT_RF2Release_INT_20160131"
+java -Xms3g -jar snomed-query-service-3.0.0.jar --loadRelease="/my-documents/SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z"
 java -jar snomed-query-service-3.0.0.jar --serve
 ```
 This will create an "index" directory. This directory must be removed before running the load process again.
