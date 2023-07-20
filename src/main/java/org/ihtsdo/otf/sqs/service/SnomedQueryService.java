@@ -68,7 +68,7 @@ public class SnomedQueryService {
 	public ConceptResult retrieveConceptByDescriptionId(String descriptionId) throws ServiceException {
 		try {
 			TopDocs conceptDocs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.DESCRIPTION_IDS, descriptionId)), 1);
-			if (conceptDocs.totalHits > 0) {
+			if (conceptDocs.totalHits.value > 0) {
 				Document conceptDoc = getDocument(conceptDocs.scoreDocs[0]);
 				return getConceptResult(conceptDoc);
 			}
@@ -211,7 +211,7 @@ public class SnomedQueryService {
 			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
 			final TopDocs topDocs = indexSearcher.search(query, fetchLimit);
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = (int) topDocs.totalHits;
+			int total = (int) topDocs.totalHits.value;
 			List<Long> conceptIds = new LongArrayList();
 			for (int a = offset; a < scoreDocs.length; a++) {
 				String conceptId = getConceptId(scoreDocs[a]);
@@ -232,7 +232,7 @@ public class SnomedQueryService {
 					new SortedNumericSortField(ConceptFieldNames.FSN_LENGTH, SortField.Type.INT)));
 
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = (int) topDocs.totalHits;
+			int total = (int) topDocs.totalHits.value;
 			List<ConceptResult> concepts = new ArrayList<>();
 			for (int a = offset; a < scoreDocs.length; a++) {
 				ScoreDoc scoreDoc = scoreDocs[a];
@@ -350,7 +350,7 @@ public class SnomedQueryService {
 
 	private Document getConceptDocument(String conceptId) throws IOException, NotFoundException {
 		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.ID, conceptId)), Integer.MAX_VALUE);
-		if (docs.totalHits < 1) {
+		if (docs.totalHits.value < 1) {
 			throw new ConceptNotFoundException(conceptId);
 		}
 		return indexSearcher.doc(docs.scoreDocs[0].doc);
@@ -358,7 +358,7 @@ public class SnomedQueryService {
 
 	private Document getDescriptionDocument(String descriptionId) throws IOException, NotFoundException {
 		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(DescriptionFieldNames.ID, descriptionId)), 1);
-		if (docs.totalHits < 1) {
+		if (docs.totalHits.value < 1) {
 			throw new NotFoundException("Description not found with id " + descriptionId);
 		}
 		return indexSearcher.doc(docs.scoreDocs[0].doc);
