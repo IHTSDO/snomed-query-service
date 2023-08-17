@@ -8,7 +8,6 @@ import org.apache.tomcat.util.http.fileupload.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
-
 public class DiskReleaseStore implements ReleaseStore {
 
 	private final Directory directory;

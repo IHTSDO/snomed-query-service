@@ -124,9 +124,8 @@ public class ReleaseWriter implements AutoCloseable {
 			for (Map.Entry<String, Set<String>> entry: concept.getInferredConcreteAttributes().entrySet()) {
 				for (String value : entry.getValue()) {
 					// The string field is used for exact match and NOT query
-//					conceptDoc.add(new StringField(entry.getKey(), value.replace("#",""), Field.Store.YES));
 					if (value.startsWith("#")) {
-						conceptDoc.add(new FloatPoint( entry.getKey() + "_value", Float.valueOf(value.replace("#",""))));
+						conceptDoc.add(new FloatPoint( entry.getKey() + "_value", Float.parseFloat(value.replace("#",""))));
 					} else {
 						conceptDoc.add(new StringField(entry.getKey(), value.replace("\"",""), Field.Store.YES));
 					}

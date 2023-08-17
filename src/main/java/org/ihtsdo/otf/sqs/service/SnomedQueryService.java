@@ -12,7 +12,6 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.ihtsdo.otf.sqs.service.dto.RefsetMembershipResult;
@@ -247,7 +246,7 @@ public class SnomedQueryService {
 	}
 
 	private String processInternalFunction(String luceneQuery, InternalFunction internalFunction) throws IOException, NotFoundException {
-		String newLuceneQuery = null;
+		String newLuceneQuery;
 		final Matcher matcher = internalFunctionPatternMap.get(internalFunction).matcher(luceneQuery);
 		if (!matcher.matches() || matcher.groupCount() != 2) {
 			final String message = "Failed to extract the id from the function " + internalFunction + " in internal query '" + luceneQuery + "'";
@@ -261,7 +260,7 @@ public class SnomedQueryService {
 	}
 	
 	private List<String> getConceptRelatives(InternalFunction internalFunction, String conceptId) throws IOException, NotFoundException {
-		List<String> conceptRelatives = new ArrayList<>();
+		List<String> conceptRelatives;
 		if (internalFunction.isAncestorType()) {
 			conceptRelatives = Lists.newArrayList(getConceptDocument(conceptId).getValues(ConceptFieldNames.ANCESTOR));
 		} else {

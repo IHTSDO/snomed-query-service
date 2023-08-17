@@ -1,6 +1,5 @@
 package org.ihtsdo.otf.sqs.rest;
 
-import com.google.common.base.Strings;
 import com.wordnik.swagger.annotations.ApiOperation;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;

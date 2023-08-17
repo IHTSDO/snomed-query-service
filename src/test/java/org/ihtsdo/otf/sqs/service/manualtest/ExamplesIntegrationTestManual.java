@@ -679,7 +679,7 @@ public class ExamplesIntegrationTestManual {
 			}
 		}
 		if (!notFound.isEmpty()) {
-			Assert.fail("Results set did not match expected concept ids." + (notFound.isEmpty() ? "" : "\nConcepts not found are: " + notFound));
+			Assert.fail("Results set did not match expected concept ids." + "\nConcepts not found are: " + notFound);
 		}
 		if (conceptIds.length == 0 && !conceptResults.isEmpty()) {
 			Assert.fail("Expected no results but got " + conceptResults.size() + ": " + conceptResults);

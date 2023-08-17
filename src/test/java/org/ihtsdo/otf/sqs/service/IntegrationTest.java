@@ -100,7 +100,7 @@ public class IntegrationTest {
 		assertEquals(1, idResults.getTotal());
 		List<Long> conceptIds = idResults.getConceptIds();
 		assertEquals(1, conceptIds.size());
-		assertEquals(new Long(442083009L), conceptIds.get(0));
+		assertEquals(442083009L, conceptIds.get(0).longValue());
 	}
 
 	@Test
@@ -246,15 +246,15 @@ public class IntegrationTest {
 	public void testAttributeCardinalityWithSpecificDomain() throws Exception {
 		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("128927009:[1..*] 260686004 = *", 0, -1).getConceptIds();
 		assertEquals(1,results.size());
-		assertTrue(results.contains(new Long("128927009")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
 	}
 	
 	@Test
 	public void testAttributeCardinality() throws Exception {
 		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:[1..2] 260686004 = *", 0, -1).getConceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 	
 	@Test
@@ -268,15 +268,15 @@ public class IntegrationTest {
 	public void testAttributeGroupCardinality() throws Exception {
 		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..*] { [0..1] 260686004 = *}", 0, -1).getConceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("128927009")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
 	}
 	
 	@Test
 	public void testAttributeGroupCardinalityWithMatchedResults() throws Exception {
 		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..*] { [1..*] 260686004 = *}", 0, -1).getConceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 	
 	@Test
@@ -296,39 +296,39 @@ public class IntegrationTest {
 	public void testDefaultAttributeGroupCardinality() throws Exception {
 		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { [1..*] 260686004 = *}", 0, -1).getConceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 
 	@Test
 	public void testDefaultAttributeGroupCardinalities() throws Exception {
 		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { 260686004 = *}", 0, -1).getConceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 
 	@Test
 	public void testConcreteValue() throws ServiceException {
 		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: 3311487004 = #100", 0, -1).getConceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
 		// search with #100.0 should returns the same result as above
 		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: 3311487004 = #100.0", 0, -1).getConceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
 		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 >= #100", 0, -1).getConceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
 		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 > #100", 0, -1).getConceptIds();
 		assertEquals(0, results.size());
 
 		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 > #20", 0, -1).getConceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
 		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #100", 0, -1).getConceptIds();
 		assertEquals(0, results.size());
