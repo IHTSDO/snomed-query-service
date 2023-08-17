@@ -12,9 +12,6 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
-import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
-import org.ihtsdo.otf.sqs.service.dto.RefsetMembershipResult;
 import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
 import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
 import org.ihtsdo.otf.sqs.service.dto.*;
@@ -24,6 +21,7 @@ import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.langauges.ecl.ECLException;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.*;
@@ -53,7 +51,7 @@ public class SnomedQueryService {
 		}
 	}
 
-	public SnomedQueryService(ReleaseStore releaseStore) throws IOException {
+	public SnomedQueryService(@Autowired  ReleaseStore releaseStore) throws IOException {
 		eclToLucene = new ExpressionConstraintToLuceneConverter();
 		indexSearcher = new IndexSearcher(DirectoryReader.open(releaseStore.getDirectory()));
 		analyzer = releaseStore.createAnalyzer();

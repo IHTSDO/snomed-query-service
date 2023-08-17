@@ -7,11 +7,11 @@ import java.io.IOException;
 
 public interface ReleaseStore {
 
-	public Analyzer createAnalyzer();
+	Analyzer createAnalyzer();
 
-	public Directory getDirectory();
+	Directory getDirectory();
 
-	public boolean isIndexExisting();
+	boolean isIndexExisting();
 
-	public void destroy() throws IOException;
+	void destroy() throws IOException;
 }

@@ -8,6 +8,8 @@ import org.apache.tomcat.util.http.fileupload.FileUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
+
 public class DiskReleaseStore implements ReleaseStore {
 
 	private final Directory directory;
@@ -32,7 +34,7 @@ public class DiskReleaseStore implements ReleaseStore {
 	}
 
 	public boolean isIndexExisting() {
-		return directoryFile.isDirectory() && directoryFile.list().length > 0;
+		return directoryFile.isDirectory() && Objects.requireNonNull(directoryFile.list()).length > 0;
 	}
 
 	public void destroy() throws IOException {

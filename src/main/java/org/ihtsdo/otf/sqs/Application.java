@@ -1,42 +1,39 @@
 package org.ihtsdo.otf.sqs;
 
-import com.mangofactory.swagger.configuration.SpringSwaggerConfig;
-import com.mangofactory.swagger.models.dto.ApiInfo;
-import com.mangofactory.swagger.plugin.EnableSwagger;
-import com.mangofactory.swagger.plugin.SwaggerSpringMvcPlugin;
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
 import org.ihtsdo.otf.sqs.service.ReleaseImportManager;
 import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.TestReleaseImportManager;
+import org.ihtsdo.otf.sqs.service.store.DiskReleaseStore;
+import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springdoc.core.GroupedOpenApi;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.io.File;
 import java.io.IOException;
 
-@Controller
-@EnableSwagger
-@EnableAutoConfiguration
-@ComponentScan(basePackages = "org.ihtsdo.otf.sqs.rest")
-@RequestMapping(produces={MediaType.APPLICATION_JSON_VALUE}, method = RequestMethod.GET)
+
+@SpringBootApplication
 public class Application implements CommandLineRunner {
 
 	public static final String USAGE = "Use one of --loadRelease='pathOfExtractedRelease', --serve";
 
-	@Autowired
-	private SpringSwaggerConfig springSwaggerConfig;
+	@Autowired(required = false)
+	private BuildProperties buildProperties;
 
 	@Autowired
 	private ConfigurableApplicationContext context;
@@ -60,6 +57,15 @@ public class Application implements CommandLineRunner {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Application.class);
 	private File releaseDirectory = null;
 
+	public static void main(String[] argsArray) throws IOException {
+		SpringApplication.run(Application.class, argsArray);
+	}
+
+	@Bean
+	public ReleaseStore getReleaseStore() throws IOException, InterruptedException {
+		return new DiskReleaseStore(new File("index"));
+	}
+
 	@Bean
 	public SnomedQueryService getReleaseReader() throws IOException, InterruptedException {
 		releaseImportManager = isParamSet(loadTestData) ? new TestReleaseImportManager(false) : new ReleaseImportManager();
@@ -71,25 +77,36 @@ public class Application implements CommandLineRunner {
 	}
 
 	@Bean
-	public SwaggerSpringMvcPlugin customImplementation() {
-		return new SwaggerSpringMvcPlugin(this.springSwaggerConfig)
-				.apiInfo(new ApiInfo(
-						"SNOMED-CT Query Service API",
-						"This app lets you query a snomed release.",
-						null,
-						null,
-						"Apache 2.0",
-						null
-				))
-				// Disable auto generating of responses for REST-endpoints
-				.useDefaultResponseMessages(false)
-				// Specify URI patterns which will be included in Swagger docs using regex
-				.includePatterns("/stats.*", "/concepts.*", "/refsets.*");
+	public OpenAPI apiInfo() {
+		final String version = buildProperties != null ? buildProperties.getVersion() : "DEV";
+		return new OpenAPI()
+				.info(new Info().title("snomed-query-service")
+						.description("SNOMED-CT Query Service API")
+						.version(version)
+						.contact(new Contact().name("SNOMED International").url("https://www.snomed.org"))
+						.license(new License().name("Apache 2.0").url("http://www.apache.org/licenses/LICENSE-2.0")))
+				.externalDocs(new ExternalDocumentation().description("See more about snomed-query-service in GitHub").url("https://github.com/IHTSDO/snomed-query-service"));
 	}
 
-	public static void main(String[] argsArray) throws IOException {
-		SpringApplication.run(Application.class, argsArray);
+	@Bean
+	public GroupedOpenApi apiDocs() {
+		GroupedOpenApi.Builder apiBuilder = GroupedOpenApi.builder()
+				.group("snomed-query-service")
+				.packagesToScan("org.ihtsdo.otf.sqs.rest");
+		// Don't show the error or root endpoints in swagger
+		apiBuilder.pathsToExclude("/error", "/");
+//		apiBuilder.pathsToMatch("/stats.*", "/concepts.*", "/refsets.*");
+		return apiBuilder.build();
 	}
+
+	@Bean
+	public GroupedOpenApi springActuatorApi() {
+		return GroupedOpenApi.builder().group("actuator")
+				.packagesToScan("org.springframework.boot.actuate")
+				.pathsToMatch("/actuator/**")
+				.build();
+	}
+
 
 	private static void exit(String error) {
 		LOGGER.error(error);

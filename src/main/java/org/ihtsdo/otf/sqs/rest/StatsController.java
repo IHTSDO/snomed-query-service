@@ -16,7 +16,7 @@ import java.util.Map;
 @RequestMapping(value = "/stats", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 public class StatsController {
 
-	@Autowired
+	@Autowired(required = false)
 	private SnomedQueryService snomedQueryService;
 
 	@RequestMapping

@@ -4,10 +4,10 @@ import java.util.List;
 
 public class ConceptResults {
 
-	private List<ConceptResult> items;
-	private int offset;
-	private int total;
-	private int limit;
+	private final List<ConceptResult> items;
+	private final int offset;
+	private final int total;
+	private final int limit;
 
 	public ConceptResults(List<ConceptResult> items, int offset, int total, int limit) {
 		this.items = items;

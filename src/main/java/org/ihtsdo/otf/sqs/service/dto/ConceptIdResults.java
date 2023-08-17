@@ -4,10 +4,10 @@ import java.util.List;
 
 public class ConceptIdResults {
 
-	private List<Long> conceptIds;
-	private int offset;
-	private int total;
-	private int limit;
+	private final List<Long> conceptIds;
+	private final int offset;
+	private final int total;
+	private final int limit;
 
 	public ConceptIdResults(List<Long> conceptIds, int offset, int total, int limit) {
 		this.conceptIds = conceptIds;

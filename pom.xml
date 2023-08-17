@@ -68,14 +68,14 @@
 			<version>${lucene.version}</version>
 		</dependency>
 		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-ui</artifactId>
+			<version>1.7.0</version>
+		</dependency>
+		<dependency>
 			<groupId>it.unimi.dsi</groupId>
 			<artifactId>fastutil</artifactId>
 			<version>8.5.4</version>
-		</dependency>
-		<dependency>
-			<groupId>com.mangofactory</groupId>
-			<artifactId>swagger-springmvc</artifactId>
-			<version>0.9.5</version>
 		</dependency>
 		<dependency>
 			<groupId>com.coasttocoastresearch</groupId>
@@ -103,6 +103,11 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<mainClass>org.ihtsdo.otf.sqs.Application</mainClass>
+					<classifier>exec</classifier>
+				</configuration>
+
 			</plugin>
 		</plugins>
 	</build>
