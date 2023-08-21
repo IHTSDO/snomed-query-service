@@ -76,7 +76,7 @@ public class ExamplesIntegrationTestManual {
 
 	@Test
 	public void testExpressionConstraintQuery_wildcardFocusConcept() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*", null, 0, -1).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*", null, 0, -1).items();
 		Assert.assertEquals(317057, conceptResults.size());
 	}
 
@@ -671,7 +671,7 @@ public class ExamplesIntegrationTestManual {
 //	}
 
 	private void assertQueryMatches(String eclQuery, long... conceptIds) throws ServiceException {
-		final List<ConceptResult> conceptResults = snomedQueryService.search(eclQuery, null, 0, -1).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search(eclQuery, null, 0, -1).items();
 		Set<ConceptResult> notFound = new HashSet<>();
 		for (long conceptId : conceptIds) {
 			final ConceptResult testConcept = new ConceptResult(conceptId + "");

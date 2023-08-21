@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 
 
+@SuppressWarnings("unused")
 @SpringBootApplication
 public class Application implements CommandLineRunner {
 
@@ -95,7 +96,6 @@ public class Application implements CommandLineRunner {
 				.packagesToScan("org.ihtsdo.otf.sqs.rest");
 		// Don't show the error or root endpoints in swagger
 		apiBuilder.pathsToExclude("/error", "/");
-//		apiBuilder.pathsToMatch("/stats.*", "/concepts.*", "/refsets.*");
 		return apiBuilder.build();
 	}
 

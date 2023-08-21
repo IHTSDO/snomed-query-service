@@ -76,7 +76,7 @@ public class SnomedQueryService {
 	}
 
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
-		final List<ConceptResult> results = search(conceptId).getItems();
+		final List<ConceptResult> results = search(conceptId).items();
 		if (!results.isEmpty()) {
 			return results.get(0);
 		} else {
@@ -107,7 +107,7 @@ public class SnomedQueryService {
 
 		BooleanQuery query = queryBuilder.build();
 		final ConceptResults conceptResults = getConceptResults(query, offset, limit);
-		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 200), conceptResults.getTotal());
+		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 200), conceptResults.total());
 		return conceptResults;
 	}
 
@@ -144,7 +144,7 @@ public class SnomedQueryService {
 			try {
 				Query query = getQueryParser().parse(luceneQuery);
 				final ConceptIdResults conceptIdResults = getConceptIdResults(query, offset, limit);
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.getTotal());
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.total());
 				return conceptIdResults;
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
