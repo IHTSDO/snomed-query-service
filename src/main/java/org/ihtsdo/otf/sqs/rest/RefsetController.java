@@ -5,12 +5,14 @@ import org.ihtsdo.otf.sqs.service.SnomedQueryService;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @SuppressWarnings("unused")
 @RestController
 @RequestMapping(value = "/refsets", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnProperty(name = "serve", havingValue = "true")
 public class RefsetController {
 
 	@Autowired

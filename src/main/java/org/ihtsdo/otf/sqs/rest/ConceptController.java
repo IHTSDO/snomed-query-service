@@ -6,12 +6,15 @@ import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
 import org.ihtsdo.otf.sqs.service.exception.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 @SuppressWarnings("unused")
 @RestController
 @RequestMapping(value = "/concepts", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+@ConditionalOnProperty(name = "serve", havingValue = "true")
 public class ConceptController {
 
 	@Autowired
