@@ -378,6 +378,14 @@ public class ExpressionConstraintToLuceneConverter {
 		public String getLuceneQuery() {
 			return luceneQuery;
 		}
+
+		public void enterMatchsearchterm(ECLParser.MatchsearchtermContext ctx) {
+			if (ctx == null) {
+				return;
+			}
+
+			luceneQuery += ctx.getText();
+		}
 	}
 
 }
