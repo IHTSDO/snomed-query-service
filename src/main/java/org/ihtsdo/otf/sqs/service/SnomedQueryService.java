@@ -12,10 +12,6 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
-import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
-import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
-import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
-import org.ihtsdo.otf.sqs.service.dto.RefsetMembershipResult;
 import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
 import org.ihtsdo.otf.sqs.domain.RelationshipFieldNames;
 import org.ihtsdo.otf.sqs.service.dto.*;
@@ -25,6 +21,7 @@ import org.ihtsdo.otf.sqs.service.store.ReleaseStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.snomed.langauges.ecl.ECLException;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.*;
@@ -54,7 +51,7 @@ public class SnomedQueryService {
 		}
 	}
 
-	public SnomedQueryService(ReleaseStore releaseStore) throws IOException {
+	public SnomedQueryService(@Autowired  ReleaseStore releaseStore) throws IOException {
 		eclToLucene = new ExpressionConstraintToLuceneConverter();
 		indexSearcher = new IndexSearcher(DirectoryReader.open(releaseStore.getDirectory()));
 		analyzer = releaseStore.createAnalyzer();
@@ -68,7 +65,7 @@ public class SnomedQueryService {
 	public ConceptResult retrieveConceptByDescriptionId(String descriptionId) throws ServiceException {
 		try {
 			TopDocs conceptDocs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.DESCRIPTION_IDS, descriptionId)), 1);
-			if (conceptDocs.totalHits > 0) {
+			if (conceptDocs.totalHits.value > 0) {
 				Document conceptDoc = getDocument(conceptDocs.scoreDocs[0]);
 				return getConceptResult(conceptDoc);
 			}
@@ -79,7 +76,7 @@ public class SnomedQueryService {
 	}
 
 	public ConceptResult retrieveConcept(String conceptId) throws ServiceException {
-		final List<ConceptResult> results = search(conceptId).getItems();
+		final List<ConceptResult> results = search(conceptId).items();
 		if (!results.isEmpty()) {
 			return results.get(0);
 		} else {
@@ -110,7 +107,7 @@ public class SnomedQueryService {
 
 		BooleanQuery query = queryBuilder.build();
 		final ConceptResults conceptResults = getConceptResults(query, offset, limit);
-		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 200), conceptResults.getTotal());
+		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 200), conceptResults.total());
 		return conceptResults;
 	}
 
@@ -147,7 +144,7 @@ public class SnomedQueryService {
 			try {
 				Query query = getQueryParser().parse(luceneQuery);
 				final ConceptIdResults conceptIdResults = getConceptIdResults(query, offset, limit);
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.getTotal());
+				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.total());
 				return conceptIdResults;
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
@@ -211,7 +208,7 @@ public class SnomedQueryService {
 			final int fetchLimit = limit == -1 ? Integer.MAX_VALUE : limit + offset;
 			final TopDocs topDocs = indexSearcher.search(query, fetchLimit);
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = (int) topDocs.totalHits;
+			int total = (int) topDocs.totalHits.value;
 			List<Long> conceptIds = new LongArrayList();
 			for (int a = offset; a < scoreDocs.length; a++) {
 				String conceptId = getConceptId(scoreDocs[a]);
@@ -232,7 +229,7 @@ public class SnomedQueryService {
 					new SortedNumericSortField(ConceptFieldNames.FSN_LENGTH, SortField.Type.INT)));
 
 			final ScoreDoc[] scoreDocs = topDocs.scoreDocs;
-			int total = (int) topDocs.totalHits;
+			int total = (int) topDocs.totalHits.value;
 			List<ConceptResult> concepts = new ArrayList<>();
 			for (int a = offset; a < scoreDocs.length; a++) {
 				ScoreDoc scoreDoc = scoreDocs[a];
@@ -247,7 +244,7 @@ public class SnomedQueryService {
 	}
 
 	private String processInternalFunction(String luceneQuery, InternalFunction internalFunction) throws IOException, NotFoundException {
-		String newLuceneQuery = null;
+		String newLuceneQuery;
 		final Matcher matcher = internalFunctionPatternMap.get(internalFunction).matcher(luceneQuery);
 		if (!matcher.matches() || matcher.groupCount() != 2) {
 			final String message = "Failed to extract the id from the function " + internalFunction + " in internal query '" + luceneQuery + "'";
@@ -261,7 +258,7 @@ public class SnomedQueryService {
 	}
 	
 	private List<String> getConceptRelatives(InternalFunction internalFunction, String conceptId) throws IOException, NotFoundException {
-		List<String> conceptRelatives = new ArrayList<>();
+		List<String> conceptRelatives;
 		if (internalFunction.isAncestorType()) {
 			conceptRelatives = Lists.newArrayList(getConceptDocument(conceptId).getValues(ConceptFieldNames.ANCESTOR));
 		} else {
@@ -350,7 +347,7 @@ public class SnomedQueryService {
 
 	private Document getConceptDocument(String conceptId) throws IOException, NotFoundException {
 		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(ConceptFieldNames.ID, conceptId)), Integer.MAX_VALUE);
-		if (docs.totalHits < 1) {
+		if (docs.totalHits.value < 1) {
 			throw new ConceptNotFoundException(conceptId);
 		}
 		return indexSearcher.doc(docs.scoreDocs[0].doc);
@@ -358,7 +355,7 @@ public class SnomedQueryService {
 
 	private Document getDescriptionDocument(String descriptionId) throws IOException, NotFoundException {
 		final TopDocs docs = indexSearcher.search(new TermQuery(new Term(DescriptionFieldNames.ID, descriptionId)), 1);
-		if (docs.totalHits < 1) {
+		if (docs.totalHits.value < 1) {
 			throw new NotFoundException("Description not found with id " + descriptionId);
 		}
 		return indexSearcher.doc(docs.scoreDocs[0].doc);

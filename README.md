@@ -41,7 +41,7 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 
 
 ## Quick Start
-- Java version 11 is required
+- Java version 17 is required
 - Download the latest application Jar from the [releases page](https://github.com/IHTSDO/snomed-query-service/releases)
 - Use the commands listed below which:
   - Unzip your SNOMED RF2 archive
@@ -49,11 +49,11 @@ Not Equal To Attribute Value | < 404684003 \|clinical finding\|: 116676008 \|ass
 ```
 cd my-documents
 unzip SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z.zip
-java -Xms3g -jar snomed-query-service-3.0.0.jar --loadRelease="/my-documents/SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z"
-java -jar snomed-query-service-3.0.0.jar --serve
+java -Xms3g -jar snomed-query-service-4.0.0-exec.jar --loadRelease="/my-documents/SnomedCT_InternationalRF2_PRODUCTION_20220131T120000Z"
+java -jar snomed-query-service-4.0.0-exec.jar --serve=true
 ```
 This will create an "index" directory. This directory must be removed before running the load process again.
-Once the service is running in serve mode Swagger API documentation can be found at: http://localhost:8080/
+Once the service is running in serve mode Swagger API documentation can be found at: http://localhost:8080/swagger-ui/index.html
 
 ## Example Expression Constraint Language queries:
 Follow the quick start to use these examples:
@@ -66,7 +66,7 @@ Follow the quick start to use these examples:
 ### Run on another port
 This is useful for running multiple instances of the tool to serve more releases.
 ```
-java -jar target/*.jar --serve --server.port=8081
+java -jar target/*-exec.jar --serve=true --server.port=8081
 ```
 
 ### Building the software yourself

@@ -7,6 +7,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Objects;
 
 public class ExamplesExpressionConstraintToLuceneConverterTest {
 
@@ -645,7 +646,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 //	@Test
 	public void generate() throws IOException {
 		final File file = new File("/Users/kaikewley/code/SNOMEDCT-Languages/SnomedCTExpressionConstraintLanguage/ECL Examples");
-		for (File file1 : file.listFiles()) {
+		for (File file1 : Objects.requireNonNull(file.listFiles())) {
 			if (file1.isFile() && file1.getName().endsWith(".txt")) {
 				final String[] split = file1.getName().split(" ");
 				final String testName = split[5];

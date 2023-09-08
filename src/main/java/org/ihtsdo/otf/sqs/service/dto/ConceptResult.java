@@ -9,7 +9,7 @@ import java.util.List;
 @JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
 public class ConceptResult {
 
-	private String id;
+	private final String id;
 	private String effectiveTime;
 	private String active;
 	private String moduleId;

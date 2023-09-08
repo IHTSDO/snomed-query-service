@@ -19,7 +19,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final ComponentStore componentStore;
-	private ComponentStoreComponentFactoryImpl componentFactory;
+	private final ComponentStoreComponentFactoryImpl componentFactory;
 
 	private final boolean writeToRam;
 
@@ -85,7 +85,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 	}
 
 	private ConceptBuilder addConcept(String id, String fsn) {
-		return addConcept(new Long(id), fsn);
+		return addConcept(Long.parseLong(id), fsn);
 	}
 
 	private ConceptBuilder addConcept(long id, String fsn) {

@@ -1,24 +1,25 @@
 package org.ihtsdo.otf.sqs.rest;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.web.ErrorAttributes;
+import org.springframework.boot.web.error.ErrorAttributeOptions;
+import org.springframework.boot.web.servlet.error.ErrorAttributes;
+import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.util.Assert;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.context.request.ServletWebRequest;
 
 import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/error")
-public class ErrorController implements org.springframework.boot.autoconfigure.web.ErrorController {
+public class CustomErrorController implements ErrorController {
 
 	private final ErrorAttributes errorAttributes;
 
 	@Autowired
-	public ErrorController(ErrorAttributes errorAttributes) {
+	public CustomErrorController(ErrorAttributes errorAttributes) {
 		Assert.notNull(errorAttributes, "ErrorAttributes must not be null");
 		this.errorAttributes = errorAttributes;
 	}
@@ -33,15 +34,14 @@ public class ErrorController implements org.springframework.boot.autoconfigure.w
 		if (parameter == null) {
 			return false;
 		}
-		return !"false".equals(parameter.toLowerCase());
+		return !"false".equalsIgnoreCase(parameter);
 	}
 
 	private Map<String, Object> getErrorAttributes(HttpServletRequest aRequest, boolean includeStackTrace) {
-		RequestAttributes requestAttributes = new ServletRequestAttributes(aRequest);
-		return errorAttributes.getErrorAttributes(requestAttributes, includeStackTrace);
+		return errorAttributes.getErrorAttributes(new ServletWebRequest(aRequest), includeStackTrace ? ErrorAttributeOptions.of(ErrorAttributeOptions.Include.STACK_TRACE) : ErrorAttributeOptions.defaults());
 	}
 
-	@Override
+	@SuppressWarnings("unused")
 	public String getErrorPath() {
 		return "/error";
 	}

@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -25,7 +26,7 @@ import java.util.Set;
 public class ExamplesIntegrationTestManual {
 
 	private SnomedQueryService snomedQueryService;
-	private Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Before
 	public void setup() throws Exception {
@@ -75,7 +76,7 @@ public class ExamplesIntegrationTestManual {
 
 	@Test
 	public void testExpressionConstraintQuery_wildcardFocusConcept() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*", null, 0, -1).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*", null, 0, -1).items();
 		Assert.assertEquals(317057, conceptResults.size());
 	}
 
@@ -670,7 +671,7 @@ public class ExamplesIntegrationTestManual {
 //	}
 
 	private void assertQueryMatches(String eclQuery, long... conceptIds) throws ServiceException {
-		final List<ConceptResult> conceptResults = snomedQueryService.search(eclQuery, null, 0, -1).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search(eclQuery, null, 0, -1).items();
 		Set<ConceptResult> notFound = new HashSet<>();
 		for (long conceptId : conceptIds) {
 			final ConceptResult testConcept = new ConceptResult(conceptId + "");
@@ -679,7 +680,7 @@ public class ExamplesIntegrationTestManual {
 			}
 		}
 		if (!notFound.isEmpty()) {
-			Assert.fail("Results set did not match expected concept ids." + (notFound.isEmpty() ? "" : "\nConcepts not found are: " + notFound));
+			Assert.fail("Results set did not match expected concept ids." + "\nConcepts not found are: " + notFound);
 		}
 		if (conceptIds.length == 0 && !conceptResults.isEmpty()) {
 			Assert.fail("Expected no results but got " + conceptResults.size() + ": " + conceptResults);
@@ -691,7 +692,7 @@ public class ExamplesIntegrationTestManual {
 	@SuppressWarnings("unused")
 	public void generate() throws IOException {
 		final File file = new File("/Users/kaikewley/code/SNOMEDCT-Languages/SnomedCTExpressionConstraintLanguage/ECL Examples");
-		for (File file1 : file.listFiles()) {
+		for (File file1 : Objects.requireNonNull(file.listFiles())) {
 			if (file1.isFile() && file1.getName().endsWith(".txt")) {
 				final String[] split = file1.getName().split(" ");
 				final String testName = split[5];

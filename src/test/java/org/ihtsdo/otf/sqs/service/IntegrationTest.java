@@ -40,12 +40,12 @@ public class IntegrationTest {
 		// <<71388002: [0..1] 363703001 != <<363675004
 		ConceptIdResults results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:260686004 != << 129264002", 0, -1);
 		assertNotNull(results);
-		results.getConceptIds().forEach(System.out::println);
+		results.conceptIds().forEach(System.out::println);
 	}
 
 	@Test
 	public void testWordSearch() throws ServiceException {
-		final List<ConceptResult> conceptResults = snomedQueryService.search(null, "action", 0, 10).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search(null, "action", 0, 10).items();
 		assertEquals(2, conceptResults.size());
 		assertTrue(conceptResults.contains(snomedQueryService.retrieveConcept("360314001")));
 		assertTrue(conceptResults.contains(snomedQueryService.retrieveConcept("129264002")));
@@ -53,7 +53,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testWordWildcardSearch() throws ServiceException {
-		final List<ConceptResult> conceptResults = snomedQueryService.search(null, "val*", 0, 10).getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search(null, "val*", 0, 10).items();
 		assertEquals(3, conceptResults.size());
 		assertTrue(conceptResults.contains(snomedQueryService.retrieveConcept("363675004")));
 		assertTrue(conceptResults.contains(snomedQueryService.retrieveConcept("360314001")));
@@ -62,122 +62,122 @@ public class IntegrationTest {
 
 	@Test
 	public void testExpressionConstraintQuery_wildcardFocusConcept() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*").items();
 		assertEquals(18, conceptResults.size());
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_pagination() throws Exception {
-		final List<ConceptResult> fullItems = snomedQueryService.search("*").getItems();
+		final List<ConceptResult> fullItems = snomedQueryService.search("*").items();
 
 		ConceptResults results = snomedQueryService.search("*", null, 0, 5);
-		assertEquals(0, results.getOffset());
-		assertEquals(18, results.getTotal());
-		assertEquals(5, results.getLimit());
-		assertEquals(5, results.getItems().size());
-		assertTrue(results.getItems().containsAll(fullItems.subList(0, 5)));
+		assertEquals(0, results.offset());
+		assertEquals(18, results.total());
+		assertEquals(5, results.limit());
+		assertEquals(5, results.items().size());
+		assertTrue(results.items().containsAll(fullItems.subList(0, 5)));
 
 		results = snomedQueryService.search("*", null, 0, 10);
-		assertEquals(0, results.getOffset());
-		assertEquals(18, results.getTotal());
-		assertEquals(10, results.getLimit());
-		assertEquals(10, results.getItems().size());
-		assertTrue(results.getItems().containsAll(fullItems.subList(0, 10)));
+		assertEquals(0, results.offset());
+		assertEquals(18, results.total());
+		assertEquals(10, results.limit());
+		assertEquals(10, results.items().size());
+		assertTrue(results.items().containsAll(fullItems.subList(0, 10)));
 
 		results = snomedQueryService.search("*", null, 10, 10);
-		assertEquals(10, results.getOffset());
-		assertEquals(18, results.getTotal());
-		assertEquals(10, results.getLimit());
-		assertEquals(8, results.getItems().size());
-		assertTrue(results.getItems().containsAll(fullItems.subList(10, 16)));
+		assertEquals(10, results.offset());
+		assertEquals(18, results.total());
+		assertEquals(10, results.limit());
+		assertEquals(8, results.items().size());
+		assertTrue(results.items().containsAll(fullItems.subList(10, 16)));
 	}
 
 	@Test
 	public void testECLReturnId() throws ServiceException {
 		ConceptIdResults idResults = snomedQueryService.eclQueryReturnConceptIdentifiers("442083009", 0, 100);
-		assertEquals(0, idResults.getOffset());
-		assertEquals(100, idResults.getLimit());
-		assertEquals(1, idResults.getTotal());
-		List<Long> conceptIds = idResults.getConceptIds();
+		assertEquals(0, idResults.offset());
+		assertEquals(100, idResults.limit());
+		assertEquals(1, idResults.total());
+		List<Long> conceptIds = idResults.conceptIds();
 		assertEquals(1, conceptIds.size());
-		assertEquals(new Long(442083009L), conceptIds.get(0));
+		assertEquals(442083009L, conceptIds.get(0).longValue());
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_ancestorOfConjunctionOnlyRootOverlap() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search(">442083009 AND >8367003").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search(">442083009 AND >8367003").items();
 		assertResultSet(conceptResults, 138875005);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_ancestorOfConjunctionSomeOverlap() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search(">>128927009 AND >8367003").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search(">>128927009 AND >8367003").items();
 		assertResultSet(conceptResults, 138875005, 71388002, 128927009);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_descendantOfConjunction() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("<71388002 AND <128927009").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("<71388002 AND <128927009").items();
 		assertResultSet(conceptResults, 8367003);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_descendantOfDisjunction() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("<123037004 OR <71388002").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("<123037004 OR <71388002").items();
 		assertResultSet(conceptResults, 442083009, 362961001, 128927009, 8367003, 72651009);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_descendantOfExclusion() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("<71388002 MINUS <<362961001").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("<71388002 MINUS <<362961001").items();
 		assertResultSet(conceptResults, 128927009, 8367003);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_refinement_attributeName() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=*").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=*").items();
 		assertResultSet(conceptResults, 128927009, 8367003);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_refinement_attributeValue() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=129264002").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=129264002").items();
 		assertResultSet(conceptResults, 128927009);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_refinement_attributeValueDescendantOrSelfOf() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=<<129264002").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=<<129264002").items();
 		assertResultSet(conceptResults, 128927009, 8367003);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_refinement_attributeValueDescendantOf() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=<129264002").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=<129264002").items();
 		assertResultSet(conceptResults, 8367003);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_refinement_attributeValueAncestorOf() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=>360314001").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=>360314001").items();
 		assertResultSet(conceptResults, 128927009);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_refinement_attributeValueAncestorOrSelfOf() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=>>360314001").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=>>360314001").items();
 		assertResultSet(conceptResults, 8367003, 128927009);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_conjunctionAttributeSet() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=* AND 405813007=*").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=* AND 405813007=*").items();
 		assertResultSet(conceptResults, 128927009);
 	}
 
 	@Test
 	public void testExpressionConstraintQuery_disjunctionAttributeSet() throws Exception {
-		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=* OR 405813007=*").getItems();
+		final List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004=* OR 405813007=*").items();
 		assertResultSet(conceptResults, 128927009, 8367003);
 	}
 
@@ -185,7 +185,7 @@ public class IntegrationTest {
 	public void testExpressionConstraintQuery() throws Exception {
 		final ConceptResults conceptResults = snomedQueryService.search("< 404684003 |clinical finding|: 116676008 |associated morphology| = ((<< 56208002 |ulcer| AND << 50960005 |hemorrhage|) MINUS << 26036001 |obstruction|)");
 		assertNotNull(conceptResults);
-		assertEquals(0, conceptResults.getTotal());
+		assertEquals(0, conceptResults.total());
 	}
 
 	@Test(expected = NotFoundException.class)
@@ -205,7 +205,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testRetrieveConceptAncestors() throws Exception {
-		final List<ConceptResult> ancestors = snomedQueryService.retrieveConceptAncestors("128927009").getItems();
+		final List<ConceptResult> ancestors = snomedQueryService.retrieveConceptAncestors("128927009").items();
 		assertEquals(2, ancestors.size());
 		assertTrue(ancestors.contains(new ConceptResult("138875005")));
 		assertTrue(ancestors.contains(new ConceptResult("71388002")));
@@ -213,7 +213,7 @@ public class IntegrationTest {
 
 	@Test
 	public void testRetrieveConceptDescendants() throws Exception {
-		final List<ConceptResult> descendants = snomedQueryService.retrieveConceptDescendants("71388002").getItems();
+		final List<ConceptResult> descendants = snomedQueryService.retrieveConceptDescendants("71388002").items();
 		assertEquals(3, descendants.size());
 		assertTrue(descendants.contains(new ConceptResult("362961001")));
 		assertTrue(descendants.contains(new ConceptResult("128927009")));
@@ -223,12 +223,12 @@ public class IntegrationTest {
 	@Test
 	public void testEclQueryWhenConceptDescendantIsEmpty() throws Exception {
 		final ConceptResults result = snomedQueryService.search("<< 105590001 |Substance (substance)|: 726542003 = < 726711005 |Disposition (disposition)|");
-		assertEquals(0,result.getItems().size());
+		assertEquals(0,result.items().size());
 	}
 	
 	@Test
 	public void testAttribute() throws Exception {
-		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:260686004 = *", 0, -1).getConceptIds();
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:260686004 = *", 0, -1).conceptIds();
 		assertEquals(2,results.size());
 		assertTrue(results.contains(128927009L));
 		assertTrue(results.contains(8367003L));
@@ -239,108 +239,108 @@ public class IntegrationTest {
 	@Test
 	public void testAttributeWithCardinality() throws Exception {
 		final ConceptIdResults result = snomedQueryService.eclQueryReturnConceptIdentifiers("< 373873005 |Pharmaceutical / biologic product| : [1..3]  127489000 |Has active ingredient|  = <  105590001 |Substance|", 0 ,-1);
-		assertEquals(0,result.getConceptIds().size());
+		assertEquals(0,result.conceptIds().size());
 	}
 	
 	@Test
 	public void testAttributeCardinalityWithSpecificDomain() throws Exception {
-		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("128927009:[1..*] 260686004 = *", 0, -1).getConceptIds();
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("128927009:[1..*] 260686004 = *", 0, -1).conceptIds();
 		assertEquals(1,results.size());
-		assertTrue(results.contains(new Long("128927009")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
 	}
 	
 	@Test
 	public void testAttributeCardinality() throws Exception {
-		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:[1..2] 260686004 = *", 0, -1).getConceptIds();
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:[1..2] 260686004 = *", 0, -1).conceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 	
 	@Test
 	public void testAttributeCardinalityWithoutMatch() throws Exception {
-		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("128927009:[2..*] 260686004 = *", 0, -1).getConceptIds();
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("128927009:[2..*] 260686004 = *", 0, -1).conceptIds();
 		assertEquals(0,results.size());
 	}
 	
 	
 	@Test
 	public void testAttributeGroupCardinality() throws Exception {
-		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..*] { [0..1] 260686004 = *}", 0, -1).getConceptIds();
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..*] { [0..1] 260686004 = *}", 0, -1).conceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("128927009")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
 	}
 	
 	@Test
 	public void testAttributeGroupCardinalityWithMatchedResults() throws Exception {
-		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..*] { [1..*] 260686004 = *}", 0, -1).getConceptIds();
+		final List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..*] { [1..*] 260686004 = *}", 0, -1).conceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 	
 	@Test
 	public void testAttributeGroupCardinalityWithoutMatch() throws Exception {
 		final ConceptIdResults result = snomedQueryService.eclQueryReturnConceptIdentifiers("*: [1..3] { [3..*] 260686004 = *}", 0, -1);
-		assertEquals(0,result.getConceptIds().size());
+		assertEquals(0,result.conceptIds().size());
 	}
 	
 	
 	@Test
 	public void testAttributeGroupCardinalityWithoutMatchWithDefaultGroupCardinality() throws Exception {
 		final ConceptResults result = snomedQueryService.search("*: [2..*] { 260686004 = *}");
-		assertEquals(0,result.getItems().size());
+		assertEquals(0,result.items().size());
 	}
 	
 	@Test
 	public void testDefaultAttributeGroupCardinality() throws Exception {
-		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { [1..*] 260686004 = *}", 0, -1).getConceptIds();
+		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { [1..*] 260686004 = *}", 0, -1).conceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 
 	@Test
 	public void testDefaultAttributeGroupCardinalities() throws Exception {
-		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { 260686004 = *}", 0, -1).getConceptIds();
+		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("*: { 260686004 = *}", 0, -1).conceptIds();
 		assertEquals(2,results.size());
-		assertTrue(results.contains(new Long("128927009")));
-		assertTrue(results.contains(new Long("8367003")));
+		assertTrue(results.contains(Long.parseLong("128927009")));
+		assertTrue(results.contains(Long.parseLong("8367003")));
 	}
 
 	@Test
 	public void testConcreteValue() throws ServiceException {
-		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: 3311487004 = #100", 0, -1).getConceptIds();
+		List<Long> results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: 3311487004 = #100", 0, -1).conceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
 		// search with #100.0 should returns the same result as above
-		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: 3311487004 = #100.0", 0, -1).getConceptIds();
+		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: 3311487004 = #100.0", 0, -1).conceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
-		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 >= #100", 0, -1).getConceptIds();
+		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 >= #100", 0, -1).conceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
-		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 > #100", 0, -1).getConceptIds();
+		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 > #100", 0, -1).conceptIds();
 		assertEquals(0, results.size());
 
-		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 > #20", 0, -1).getConceptIds();
+		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 > #20", 0, -1).conceptIds();
 		assertEquals(1, results.size());
-		assertTrue(results.contains(new Long("404684003")));
+		assertTrue(results.contains(Long.parseLong("404684003")));
 
-		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #100", 0, -1).getConceptIds();
+		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #100", 0, -1).conceptIds();
 		assertEquals(0, results.size());
 
-		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #10", 0, -1).getConceptIds();
+		results = snomedQueryService.eclQueryReturnConceptIdentifiers("<<404684003: [0..1] 3311487004 != #10", 0, -1).conceptIds();
 		assertEquals(1, results.size());
 	}
 
 	@Test
 	public void testQueryWithNotEqualToOperator() throws Exception {
 		// Two concepts have attribute 260686004
-		List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004 = *").getItems();
+		List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004 = *").items();
 		assertEquals(2, conceptResults.size());
 		List<String> conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("128927009"));
@@ -348,25 +348,25 @@ public class IntegrationTest {
 
 		// concept 8367003 has two values one (360314001) is a child of 129264002
 		// and the other 72651009 | Nail structure (body structure) is not child of 129264002.
-		conceptResults = snomedQueryService.search("*:260686004 = < 129264002").getItems();
+		conceptResults = snomedQueryService.search("*:260686004 = < 129264002").items();
 		assertEquals(1, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("8367003"));
 
 		// Concept 128927009 has attribute value of 129264002
-		conceptResults = snomedQueryService.search("*:260686004 != < 129264002").getItems();
+		conceptResults = snomedQueryService.search("*:260686004 != < 129264002").items();
 		assertEquals(2, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("128927009"));
 		assertTrue(conceptIds.contains("8367003"));
 
 		// only one should be in the results
-		conceptResults = snomedQueryService.search("*:260686004 != << 129264002").getItems();
+		conceptResults = snomedQueryService.search("*:260686004 != << 129264002").items();
 		assertEquals(1, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("8367003"));
 
-		conceptResults = snomedQueryService.search("*:260686004 != (<< 129264002 OR << 405813007)").getItems();
+		conceptResults = snomedQueryService.search("*:260686004 != (<< 129264002 OR << 405813007)").items();
 		assertEquals(1, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("8367003"));
@@ -374,18 +374,18 @@ public class IntegrationTest {
 
 	@Test
 	public void testQueryWithMinusOperator() throws Exception {
-		List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004 = *").getItems();
+		List<ConceptResult> conceptResults = snomedQueryService.search("*:260686004 = *").items();
 		assertEquals(2, conceptResults.size());
 		List<String> conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("128927009"));
 		assertTrue(conceptIds.contains("8367003"));
 
-		conceptResults = snomedQueryService.search("*:260686004 = < 129264002").getItems();
+		conceptResults = snomedQueryService.search("*:260686004 = < 129264002").items();
 		assertEquals(1, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("8367003"));
 
-		conceptResults = snomedQueryService.search("*:260686004 = (* MINUS < 129264002)").getItems();
+		conceptResults = snomedQueryService.search("*:260686004 = (* MINUS < 129264002)").items();
 		assertEquals(2, conceptResults.size());
 		conceptIds = conceptResults.stream().map(ConceptResult::getId).collect(Collectors.toList());
 		assertTrue(conceptIds.contains("128927009"));
