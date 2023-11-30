@@ -5,7 +5,7 @@
 
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>snomed-query-service</artifactId>
-    <version>4.1.0-SNAPSHOT</version>
+    <version>5.1.0-SNAPSHOT</version>
 
     <name>Snomed CT Query Service</name>
     <description>Snomed CT Query Service, an implementation of ECL.</description>
@@ -13,7 +13,7 @@
     <parent>
         <groupId>org.snomed</groupId>
         <artifactId>snomed-parent-bom</artifactId>
-        <version>2.1.0-SNAPSHOT</version>
+        <version>3.0.0</version>
     </parent>
 
     <dependencies>
