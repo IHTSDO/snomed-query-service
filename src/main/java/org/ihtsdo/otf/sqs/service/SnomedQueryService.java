@@ -107,7 +107,7 @@ public class SnomedQueryService {
 
 		BooleanQuery query = queryBuilder.build();
 		final ConceptResults conceptResults = getConceptResults(query, offset, limit);
-		logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 200), conceptResults.total());
+		logger.trace("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(query.toString(), 200), conceptResults.total());
 		return conceptResults;
 	}
 
@@ -144,7 +144,7 @@ public class SnomedQueryService {
 			try {
 				Query query = getQueryParser().parse(luceneQuery);
 				final ConceptIdResults conceptIdResults = getConceptIdResults(query, offset, limit);
-				logger.info("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.total());
+				logger.trace("ec:'{}', lucene:'{}', totalHits:{}", ecQuery, limitStringLength(luceneQuery, 200), conceptIdResults.total());
 				return conceptIdResults;
 			} catch (ParseException e) {
 				throw new InternalError("Error parsing internal search query.", e);
@@ -182,7 +182,7 @@ public class SnomedQueryService {
 		String luceneQuery;
 		try {
 			luceneQuery = eclToLucene.parse(ecQuery);
-			logger.info("ec:'{}', unprocessed-lucene:'{}'", ecQuery, luceneQuery);
+			logger.trace("ec:'{}', unprocessed-lucene:'{}'", ecQuery, luceneQuery);
 		} catch (ECLException e) {
 			throw new InvalidECLSyntaxException(ecQuery, e);
 		}
@@ -253,7 +253,7 @@ public class SnomedQueryService {
 		}
 		List<String> conceptRelatives = getConceptRelatives(internalFunction, matcher.group(2));
 		newLuceneQuery = luceneQuery.replace(matcher.group(1), buildOptionsList(conceptRelatives, !internalFunction.isAttributeType()));
-		logger.info("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 200), limitStringLength(newLuceneQuery, 200));
+		logger.debug("Processed statement of internal query. Before:'{}', After:'{}'", limitStringLength(luceneQuery, 200), limitStringLength(newLuceneQuery, 200));
 		return newLuceneQuery;
 	}
 	
