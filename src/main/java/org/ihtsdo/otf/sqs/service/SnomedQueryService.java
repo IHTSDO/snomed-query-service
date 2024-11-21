@@ -375,7 +375,7 @@ public class SnomedQueryService {
 		for (String memberOfRefsetId : memberOfRefsetIds) {
 			memberOfRefsets.add(getRefsetMembershipResult(memberOfRefsetId));
 		}
-
+		final String[] parents = document.getValues(ConceptConstants.isA);
 		return new ConceptResult(
 				document.get(ConceptFieldNames.ID),
 				document.get(ConceptFieldNames.EFFECTIVE_TIME),
@@ -383,7 +383,8 @@ public class SnomedQueryService {
 				document.get(ConceptFieldNames.MODULE_ID),
 				document.get(ConceptFieldNames.DEFINITION_STATUS_ID),
 				document.get(ConceptFieldNames.FSN),
-				memberOfRefsets);
+				memberOfRefsets,
+				Set.of(parents));
 	}
 
 	private RelationshipResult getRelationshipResult(Document document) {

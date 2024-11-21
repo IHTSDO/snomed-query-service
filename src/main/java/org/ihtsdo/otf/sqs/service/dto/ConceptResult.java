@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 @SuppressWarnings("unused")
 @JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
@@ -16,6 +17,7 @@ public class ConceptResult {
 	private String definitionStatusId;
 	private String fsn;
 	private List<RefsetMembershipResult> refsetMemberships;
+	private Set<String> parents;
 
 	public ConceptResult(String id) {
 		this.id = id;
@@ -29,6 +31,11 @@ public class ConceptResult {
 		this.definitionStatusId = definitionStatusId;
 		this.fsn = fsn;
 		this.refsetMemberships = memberOfRefsets;
+	}
+
+	public ConceptResult(String id, String effectiveTime, String active, String moduleId, String definitionStatusId, String fsn, List<RefsetMembershipResult> memberOfRefsets, Set<String> parents) {
+		this(id, effectiveTime, active, moduleId, definitionStatusId, fsn, memberOfRefsets);
+		this.parents = parents;
 	}
 
 	public String getId() {
@@ -57,6 +64,10 @@ public class ConceptResult {
 
 	public List<RefsetMembershipResult> getRefsetMemberships() {
 		return refsetMemberships;
+	}
+
+	public Set<String> getParents() {
+		return parents;
 	}
 
 	public void addRefsetMembership(RefsetMembershipResult result) {
