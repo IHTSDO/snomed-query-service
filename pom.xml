@@ -120,17 +120,4 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>ihtsdo-public-nexus-releases</id>
-            <name>IHTSDO Public Nexus Releases</name>
-            <url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>ihtsdo-public-nexus-snapshots</id>
-            <name>IHTSDO Public Nexus Snapshots</name>
-            <url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
