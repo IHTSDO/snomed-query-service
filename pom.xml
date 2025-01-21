@@ -5,7 +5,7 @@
 
     <groupId>org.ihtsdo.otf</groupId>
     <artifactId>snomed-query-service</artifactId>
-    <version>5.2.0</version>
+    <version>5.3.0-SNAPSHOT</version>
 
     <name>Snomed CT Query Service</name>
     <description>Snomed CT Query Service, an implementation of ECL.</description>
@@ -13,7 +13,7 @@
     <parent>
         <groupId>org.snomed</groupId>
         <artifactId>snomed-parent-bom</artifactId>
-        <version>3.7.0</version>
+        <version>3.9.0-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -120,17 +120,4 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>ihtsdo-public-nexus-releases</id>
-            <name>IHTSDO Public Nexus Releases</name>
-            <url>https://nexus3.ihtsdotools.org/repository/maven-releases/</url>
-        </repository>
-        <snapshotRepository>
-            <id>ihtsdo-public-nexus-snapshots</id>
-            <name>IHTSDO Public Nexus Snapshots</name>
-            <url>https://nexus3.ihtsdotools.org/repository/maven-snapshots/</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
