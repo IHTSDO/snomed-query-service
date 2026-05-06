@@ -20,6 +20,7 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 	private final Logger logger = LoggerFactory.getLogger(getClass());
 	private final ComponentStore componentStore;
 	private final ComponentStoreComponentFactoryImpl componentFactory;
+	private Random random = new Random();
 
 	private final boolean writeToRam;
 
@@ -90,9 +91,9 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 
 	private ConceptBuilder addConcept(long id, String fsn) {
 		final String conceptId = id + "";
-		componentFactory.newConceptState(conceptId, "20150731", "1", "900000000000207008", "900000000000074008");
+		componentFactory.newConceptState("", random.nextLong(), conceptId, "20150731", "1", "900000000000207008", "900000000000074008");
 		componentFactory.addConceptFSN(conceptId, fsn);
-		componentFactory.newDescriptionState(String.valueOf(new Random().nextLong()), "", "1", "", conceptId, "en", ConceptConstants.FSN, fsn, "");
+		componentFactory.newDescriptionState("", random.nextLong(), String.valueOf(random.nextLong()), "", "1", "", conceptId, "en", ConceptConstants.FSN, fsn, "");
 		return new ConceptBuilder(conceptId);
 	}
 
@@ -107,20 +108,20 @@ public class TestReleaseImportManager extends ReleaseImportManager {
 		public ConceptBuilder addChildren(ConceptBuilder... conceptBuilder) {
 			for (ConceptBuilder builder : conceptBuilder) {
 				componentFactory.addInferredConceptParent(builder.id, id);
-				componentFactory.newRelationshipState("", "", "1", "", builder.id, id, "0", ConceptConstants.isA, "", "");
+				componentFactory.newRelationshipState("", 0L, "", "", "1", "", builder.id, id, "0", ConceptConstants.isA, "", "");
 			}
 			return this;
 		}
 
 		public ConceptBuilder addConcreteAttribute(ConceptBuilder type, String value) {
 			componentFactory.addInferredConceptConcreteAttribute(id, type.id, value);
-			componentFactory.newConcreteRelationshipState("", "20170731", "1", "", id, value, "1", type.id, "900000000000011006", "");
+			componentFactory.newConcreteRelationshipState("", random.nextLong(), "", "20170731", "1", "", id, value, "1", type.id, "900000000000011006", "");
 			return this;
 		}
 
 		public ConceptBuilder addAttribute(ConceptBuilder type, ConceptBuilder value) {
 			componentFactory.addInferredConceptAttribute(id, type.id, value.id);
-			componentFactory.newRelationshipState("", "20170731", "1", "", id, "", "1", type.id, "900000000000011006", "");
+			componentFactory.newRelationshipState("", random.nextLong(),"", "20170731", "1", "", id, "", "1", type.id, "900000000000011006", "");
 			return this;
 		}
 	}
