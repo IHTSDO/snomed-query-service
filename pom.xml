@@ -7,6 +7,10 @@
     <artifactId>snomed-query-service</artifactId>
     <version>5.9.0-SNAPSHOT</version>
 
+    <properties>
+        <java.version>25</java.version>
+    </properties>
+
     <name>Snomed CT Query Service</name>
     <description>Snomed CT Query Service, an implementation of ECL.</description>
 
