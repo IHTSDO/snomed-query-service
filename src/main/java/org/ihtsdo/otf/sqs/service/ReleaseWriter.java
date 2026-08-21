@@ -132,7 +132,7 @@ public class ReleaseWriter implements AutoCloseable {
 				}
 			}
 		}
-		final Set<Long> ancestorIds = concept.getInferredAncestorIds();
+		final Set<Long> ancestorIds = isStatedRelationship ? concept.getStatedAncestorIds() : concept.getInferredAncestorIds();
 		for (Long ancestorId : ancestorIds) {
 			conceptDoc.add(new StringField(ConceptFieldNames.ANCESTOR, ancestorId.toString(), Field.Store.YES));
 		}
