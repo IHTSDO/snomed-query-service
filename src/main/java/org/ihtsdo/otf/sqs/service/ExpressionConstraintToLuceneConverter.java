@@ -51,7 +51,7 @@ public class ExpressionConstraintToLuceneConverter {
 	}
 
 	public String parse(String ecl) throws ECLException {
-		ANTLRInputStream inputStream = new ANTLRInputStream(ecl);
+		CharStream inputStream = CharStreams.fromString(ecl);
 		final ECLLexer lexer = new ECLLexer(inputStream);
 		final CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 		final ECLParser parser = new ECLParser(tokenStream);
