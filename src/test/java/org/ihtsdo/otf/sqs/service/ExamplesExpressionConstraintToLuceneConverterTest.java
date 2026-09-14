@@ -77,7 +77,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		assertConversion(
 				"*",
 
-				"id:*"
+				"type:concept"
 		);
 	}
 
@@ -121,7 +121,7 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		assertConversion(
 				"* : 246075003 |causative agent| = 387517004 |paracetamol|",
 
-				"id:* " +
+				"type:concept " +
 						"AND 246075003:387517004"
 		);
 	}

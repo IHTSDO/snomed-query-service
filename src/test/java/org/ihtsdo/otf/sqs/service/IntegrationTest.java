@@ -43,6 +43,102 @@ public class IntegrationTest {
 		results.conceptIds().forEach(System.out::println);
 	}
 
+	/**
+	 * Several {@code !=} clauses in one query. Locating a clause by regex
+	 * rewrote one clause using the next clause's values, and harvested the
+	 * next clause's FIELD id as though it were an excluded concept, collapsing
+	 * both clauses into one.
+	 *
+	 * <p>The two fields are chosen so the expected intersection is NOT empty.
+	 * An assertion against an empty oracle would be satisfied by any regression
+	 * that silently empties the result, which is the failure being guarded
+	 * against.
+	 */
+	@Test
+	public void testTwoNotEqualClausesOnDifferentFields() throws ServiceException {
+		List<Long> first = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 360314001", 0, -1).conceptIds();
+		List<Long> second = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:405813007 != 129264002", 0, -1).conceptIds();
+
+		Set<Long> expected = new HashSet<>(first);
+		expected.retainAll(new HashSet<>(second));
+		assertFalse("the oracle intersection must not be empty, or this proves nothing",
+				expected.isEmpty());
+
+		List<Long> both = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 360314001 AND 405813007 != 129264002", 0, -1).conceptIds();
+		assertEquals(expected, new HashSet<>(both));
+	}
+
+	/** Two clauses whose excluded sets are identical, so their text is too. */
+	@Test
+	public void testTwoNotEqualClausesWithTheSameValueSet() throws ServiceException {
+		List<Long> both = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 129264002 AND 363698007 != 129264002", 0, -1).conceptIds();
+		assertNotNull(both);
+
+		List<Long> first = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 129264002", 0, -1).conceptIds();
+		List<Long> second = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:363698007 != 129264002", 0, -1).conceptIds();
+
+		Set<Long> expected = new HashSet<>(first);
+		expected.retainAll(new HashSet<>(second));
+		assertEquals(expected, new HashSet<>(both));
+	}
+
+	/**
+	 * {@code != *} excludes every value, so nothing can lie outside it and the
+	 * answer is empty.
+	 *
+	 * <p>This pins the CONTRACT, not the implementation: a corrupted token
+	 * would also return empty, so this cannot tell the two apart. It fails if
+	 * anyone makes the case throw, which is what the base version did.
+	 */
+	@Test
+	public void testNotEqualToWildcardReturnsNothingRatherThanFailing() throws ServiceException {
+		assertEquals(List.of(), snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != *", 0, -1).conceptIds());
+	}
+
+	/**
+	 * The point of the term-set rendering is that it is USED. A correctness
+	 * result proves nothing if the query quietly fell back to the range chain,
+	 * so every {@code !=} clause must be answered with a term set - including
+	 * each clause of a query that carries several.
+	 */
+	@Test
+	public void testEveryNotEqualClauseIsAnsweredWithATermSet() throws ServiceException {
+		long before = SnomedQueryService.termSetQueriesBuilt();
+		snomedQueryService.eclQueryReturnConceptIdentifiers("*:260686004 != 129264002", 0, -1);
+		long afterSingle = SnomedQueryService.termSetQueriesBuilt();
+		assertEquals("a single != clause must be answered with a term set", before + 1, afterSingle);
+
+		snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 129264002 AND 363698007 != 129264002", 0, -1);
+		assertEquals("both clauses of a two-clause query must be answered with a term set",
+				afterSingle + 2, SnomedQueryService.termSetQueriesBuilt());
+	}
+
+	/** The escape hatch must restore the range chain, and still answer. */
+	@Test
+	public void testRangeFormPropertyRestoresTheOldRendering() throws ServiceException {
+		List<Long> termSetForm = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 129264002", 0, -1).conceptIds();
+		System.setProperty(SnomedQueryService.RANGE_FORM_PROPERTY, "true");
+		try {
+			long before = SnomedQueryService.termSetQueriesBuilt();
+			List<Long> rangeForm = snomedQueryService.eclQueryReturnConceptIdentifiers(
+					"*:260686004 != 129264002", 0, -1).conceptIds();
+			assertEquals("no term set may be built while the range form is forced",
+					before, SnomedQueryService.termSetQueriesBuilt());
+			assertEquals("both renderings must select the same concepts", termSetForm, rangeForm);
+		} finally {
+			System.clearProperty(SnomedQueryService.RANGE_FORM_PROPERTY);
+		}
+	}
+
 	@Test
 	public void testWordSearch() throws ServiceException {
 		final List<ConceptResult> conceptResults = snomedQueryService.search(null, "action", 0, 10).items();

@@ -43,7 +43,7 @@ public class ExpressionConstraintToLuceneConverterTest {
 
 	@Test
 	public void test_simpleExpressionConstraint_wildcard() {
-		assertConversion("*", "id:*");
+		assertConversion("*", "type:concept");
 	}
 
 	@Test
@@ -63,17 +63,17 @@ public class ExpressionConstraintToLuceneConverterTest {
 
 	@Test
 	public void test_refinedExpressionConstraint_wildcardConcept_attributeNameAndConceptValue() {
-		assertConversion("*:363699004=34164001", "id:* AND 363699004:34164001");
+		assertConversion("*:363699004=34164001", "type:concept AND 363699004:34164001");
 	}
 
 	@Test
 	public void test_refinedExpressionConstraint_wildcardConcept_attributeValueDescendantOf() {
-		assertConversion("*:260686004=<129264002", "id:* AND 260686004:ATTRIBUTE_DESCENDANT_OF(129264002)");
+		assertConversion("*:260686004=<129264002", "type:concept AND 260686004:ATTRIBUTE_DESCENDANT_OF(129264002)");
 	}
 
 	@Test
 	public void test_refinedExpressionConstraint_wildcardConcept_attributeValueDescendantOrSelf() {
-		assertConversion("*:260686004=<<129264002", "id:* AND 260686004:ATTRIBUTE_DESCENDANT_OR_SELF_OF(129264002)");
+		assertConversion("*:260686004=<<129264002", "type:concept AND 260686004:ATTRIBUTE_DESCENDANT_OR_SELF_OF(129264002)");
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
@@ -84,13 +84,13 @@ public class ExpressionConstraintToLuceneConverterTest {
 	@Test
 	public void test_refinedEclWithMultipleDomainsExclusion() {
 		assertConversion("(*:272741003=*) MINUS (<<91723000 OR <<723264001)",
-				"(id:* AND 272741003:*) NOT ((id:91723000 OR ancestor:91723000) OR (id:723264001 OR ancestor:723264001))");
+				"(type:concept AND 272741003:*) NOT ((id:91723000 OR ancestor:91723000) OR (id:723264001 OR ancestor:723264001))");
 	}
 	
 	@Test
 	public void test_refinedEclWithOneDomainExclusion() {
 		assertConversion("(*:272741003=*) MINUS <<91723000",
-				"(id:* AND 272741003:*) NOT (id:91723000 OR ancestor:91723000)");
+				"(type:concept AND 272741003:*) NOT (id:91723000 OR ancestor:91723000)");
 
 	}
 
