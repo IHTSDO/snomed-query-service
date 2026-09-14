@@ -577,10 +577,53 @@ public class ExamplesExpressionConstraintToLuceneConverterTest {
 		);
 	}
 
+	/**
+	 * This expected the DESCENDANTS of the refset's members to convert to the
+	 * members themselves, which is the defect this change fixes: the "<" was
+	 * being discarded. The members are not known until the index is read, so
+	 * the operator becomes a function the query service resolves.
+	 */
 	@Test
 	public void testExample_UnaryOperators_1() {
 		assertConversion(
 				"< ^ 700043003 |example problem list concepts reference set|",
+
+				"REFSET_MEMBER_DESCENDANTS(700043003)"
+		);
+	}
+
+	@Test
+	public void testExample_UnaryOperators_1_descendantOrSelf() {
+		assertConversion(
+				"<< ^ 700043003 |example problem list concepts reference set|",
+
+				"REFSET_MEMBER_DESCENDANTS_OR_SELF(700043003)"
+		);
+	}
+
+	@Test
+	public void testExample_UnaryOperators_1_ancestor() {
+		assertConversion(
+				"> ^ 700043003 |example problem list concepts reference set|",
+
+				"REFSET_MEMBER_ANCESTORS(700043003)"
+		);
+	}
+
+	@Test
+	public void testExample_UnaryOperators_1_ancestorOrSelf() {
+		assertConversion(
+				">> ^ 700043003 |example problem list concepts reference set|",
+
+				"REFSET_MEMBER_ANCESTORS_OR_SELF(700043003)"
+		);
+	}
+
+	/** No operator: still the members, unchanged. */
+	@Test
+	public void testExample_UnaryOperators_1_membersOnly() {
+		assertConversion(
+				"^ 700043003 |example problem list concepts reference set|",
 
 				"memberOf:700043003"
 		);
