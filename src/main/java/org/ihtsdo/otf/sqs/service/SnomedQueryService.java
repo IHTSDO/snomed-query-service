@@ -6,10 +6,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.BytesRef;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
 import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
@@ -188,7 +190,12 @@ public class SnomedQueryService {
 		}
 		try {
 			for (InternalFunction internalFunction : internalFunctionPatternMap.keySet()) {
-				while (luceneQuery.contains(internalFunction.name())) {
+				// Match the CALL, not the bare name. One function's name can be a
+				// prefix of another's, and the name alone would then send a
+				// longer function's text to the shorter one's pattern, which
+				// cannot match it - the query dies with "failed to extract the
+				// id" rather than resolving.
+				while (luceneQuery.contains(internalFunction.name() + "(")) {
 					luceneQuery = processInternalFunction(luceneQuery, internalFunction);
 				}
 			}
@@ -259,6 +266,9 @@ public class SnomedQueryService {
 	
 	private List<String> getConceptRelatives(InternalFunction internalFunction, String conceptId) throws IOException, NotFoundException {
 		List<String> conceptRelatives;
+		if (internalFunction.isRefsetMemberType()) {
+			return getRefsetMemberRelatives(internalFunction, conceptId);
+		}
 		if (internalFunction.isAncestorType()) {
 			conceptRelatives = Lists.newArrayList(getConceptDocument(conceptId).getValues(ConceptFieldNames.ANCESTOR));
 		} else {
@@ -276,6 +286,61 @@ public class SnomedQueryService {
 			conceptRelatives.add("0");
 		}
 		return conceptRelatives;
+	}
+
+	/**
+	 * The concepts a constraint operator selects when it is applied to a
+	 * member-of expression: the operator distributes over the MEMBERS of the
+	 * refset, not over the refset concept itself.
+	 *
+	 * <p>So {@code << ^X} is every member of X plus every descendant of a
+	 * member, and {@code >> ^X} is every member plus every ancestor of one.
+	 */
+	private List<String> getRefsetMemberRelatives(InternalFunction internalFunction, String refsetId) throws IOException, NotFoundException {
+		List<String> members = new ArrayList<>();
+		TopDocs memberDocs = indexSearcher.search(
+				new TermQuery(new Term(ConceptFieldNames.MEMBER_OF, refsetId)), Integer.MAX_VALUE);
+		for (ScoreDoc scoreDoc : memberDocs.scoreDocs) {
+			members.add(getConceptId(scoreDoc));
+		}
+
+		// One term-set query either way, never a search per member: a refset can
+		// have tens of thousands of them, and each search here is sized to the
+		// whole index.
+		Set<String> relatives = new LinkedHashSet<>();
+		if (!members.isEmpty()) {
+			List<BytesRef> memberTerms = new ArrayList<>(members.size());
+			for (String member : members) {
+				memberTerms.add(new BytesRef(member));
+			}
+			if (internalFunction.isAncestorType()) {
+				// Every ancestor is already stored on the member's own document,
+				// so the members are fetched and their ANCESTOR values read off.
+				TopDocs memberConceptDocs = indexSearcher.search(
+						new TermInSetQuery(ConceptFieldNames.ID, memberTerms), Integer.MAX_VALUE);
+				StoredFields storedFields = indexSearcher.storedFields();
+				for (ScoreDoc scoreDoc : memberConceptDocs.scoreDocs) {
+					relatives.addAll(Arrays.asList(
+							storedFields.document(scoreDoc.doc).getValues(ConceptFieldNames.ANCESTOR)));
+				}
+			} else {
+				// A concept is a descendant of a member exactly when a member is
+				// among its stored ancestors.
+				TopDocs descendantDocs = indexSearcher.search(
+						new TermInSetQuery(ConceptFieldNames.ANCESTOR, memberTerms), Integer.MAX_VALUE);
+				for (ScoreDoc scoreDoc : descendantDocs.scoreDocs) {
+					relatives.add(getConceptId(scoreDoc));
+				}
+			}
+		}
+		if (internalFunction.isIncludeSelf()) {
+			relatives.addAll(members);
+		}
+		if (relatives.isEmpty()) {
+			logger.warn("{} internalFunction returned empty result therefore the default value 0 is used.", internalFunction.name());
+			relatives.add("0");
+		}
+		return new ArrayList<>(relatives);
 	}
 
 	private String processQueryWithNotEqualTo(String luceneQuery) {

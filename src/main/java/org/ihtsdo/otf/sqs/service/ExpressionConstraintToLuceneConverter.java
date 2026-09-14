@@ -22,18 +22,35 @@ public class ExpressionConstraintToLuceneConverter {
 		ATTRIBUTE_DESCENDANT_OR_SELF_OF(true, false, true),
 		ATTRIBUTE_ANCESTOR_OF(true, true, false),
 		ATTRIBUTE_ANCESTOR_OR_SELF_OF(true, true, true),
-
 		ANCESTOR_OR_SELF_OF(false, true, true),
-		ANCESTOR_OF(false, true, false);
+		ANCESTOR_OF(false, true, false),
+
+		// Constraint operators applied to a member-of expression. The members
+		// are not known until the index is read, so these resolve like the
+		// functions above rather than becoming field queries here.
+		//
+		// Deliberately NOT named *_ANCESTOR_OF or *_DESCENDANT_OF: the resolver
+		// looks for a function by String.contains, so a name containing an
+		// existing one would be rewritten by that one first.
+		REFSET_MEMBER_DESCENDANTS(false, false, false, true),
+		REFSET_MEMBER_DESCENDANTS_OR_SELF(false, false, true, true),
+		REFSET_MEMBER_ANCESTORS(false, true, false, true),
+		REFSET_MEMBER_ANCESTORS_OR_SELF(false, true, true, true);
 
 		private final boolean attributeType;
 		private final boolean ancestorType;
 		private final boolean includeSelf;
+		private final boolean refsetMemberType;
 
 		InternalFunction(boolean attributeType, boolean ancestorType, boolean includeSelf) {
+			this(attributeType, ancestorType, includeSelf, false);
+		}
+
+		InternalFunction(boolean attributeType, boolean ancestorType, boolean includeSelf, boolean refsetMemberType) {
 			this.attributeType = attributeType;
 			this.ancestorType = ancestorType;
 			this.includeSelf = includeSelf;
+			this.refsetMemberType = refsetMemberType;
 		}
 
 		public boolean isAttributeType() {
@@ -46,6 +63,11 @@ public class ExpressionConstraintToLuceneConverter {
 
 		public boolean isIncludeSelf() {
 			return includeSelf;
+		}
+
+		/** Resolve against the MEMBERS of the referenced refset, not the refset concept. */
+		public boolean isRefsetMemberType() {
+			return refsetMemberType;
 		}
 
 	}
@@ -134,7 +156,7 @@ public class ExpressionConstraintToLuceneConverter {
 					attributeId = conceptId;
 				}
 				if (isMemberOf) {
-					luceneQuery += ConceptFieldNames.MEMBER_OF + ":" + conceptId;
+					constructMemberOfQuery(constraintOperatorContext, conceptId);
 				} else {
 					constructLuceneQuery(constraintOperatorContext, conceptId);
 				}
@@ -145,6 +167,43 @@ public class ExpressionConstraintToLuceneConverter {
 		public void exitEclfocusconcept(ECLParser.EclfocusconceptContext ctx) {
 			constraintOperatorContext = null;
 			isMemberOf = false;
+		}
+
+		/**
+		 * A member-of expression, with the constraint operator applied to the
+		 * MEMBERS.
+		 *
+		 * <p>{@code ^X} is the members of X. {@code << ^X} is those members and
+		 * their descendants - the operator distributes over the member set, it
+		 * does not describe the refset concept.
+		 *
+		 * <p>This used to append {@code memberOf:X} whatever the operator was,
+		 * silently discarding it, so {@code << ^X} returned the members alone.
+		 * A caller using that to decide which concepts are permitted something
+		 * saw every descendant of a member as not permitted it.
+		 */
+		private void constructMemberOfQuery(ECLParser.ConstraintoperatorContext ctx, String refsetId) {
+			if (ctx == null) {
+				luceneQuery += ConceptFieldNames.MEMBER_OF + ":" + refsetId;
+				return;
+			}
+			if (inAttribute) {
+				// The value of an attribute is a concept list, and the member
+				// set is not known here. Refusing is not a regression: the
+				// operator was being dropped, so the answer was already wrong.
+				throwUnsupported("constraint operator applied to a member-of expression in an attribute value");
+			}
+			if (ctx.descendantof() != null) {
+				luceneQuery += InternalFunction.REFSET_MEMBER_DESCENDANTS + "(" + refsetId + ")";
+			} else if (ctx.descendantorselfof() != null) {
+				luceneQuery += InternalFunction.REFSET_MEMBER_DESCENDANTS_OR_SELF + "(" + refsetId + ")";
+			} else if (ctx.ancestorof() != null) {
+				luceneQuery += InternalFunction.REFSET_MEMBER_ANCESTORS + "(" + refsetId + ")";
+			} else if (ctx.ancestororselfof() != null) {
+				luceneQuery += InternalFunction.REFSET_MEMBER_ANCESTORS_OR_SELF + "(" + refsetId + ")";
+			} else {
+				throwUnsupported("constraint operator " + ctx.getText() + " applied to a member-of expression");
+			}
 		}
 
 		private void constructLuceneQuery(ECLParser.ConstraintoperatorContext ctx, String focusConceptId) {
