@@ -13,29 +13,59 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class ReleaseWriter implements AutoCloseable {
 
 	private final IndexWriter iwriter;
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 
 	public ReleaseWriter(ReleaseStore releaseStore) throws IOException {
 		IndexWriterConfig config = new IndexWriterConfig(releaseStore.createAnalyzer());
 		iwriter = new IndexWriter(releaseStore.getDirectory(), config);
 	}
 
-	public void addConcept(Concept concept, boolean isStatedRelationship) throws IOException, ParseException {
-		List<Document> documents = new ArrayList<>();
-		documents.add(getConceptDocument(concept, isStatedRelationship));
-		iwriter.addDocuments(documents);
+	public void addConcept(Concept concept, boolean isStatedRelationship) throws IOException {
+		addDocument(buildDocument(concept, isStatedRelationship));
 	}
 
-	private void addCardinalityToDocument(Concept concept, Document doc, boolean isStatedRelationship) throws ParseException {
+	/**
+	 * Builds a concept's document without writing it.
+	 *
+	 * <p>Separated from {@link #addDocument(Document)} so callers can build
+	 * across cores and still write in a fixed order. Document construction is
+	 * the expensive half - cardinality grouping per relationship - while the
+	 * order documents are written in decides their docids, and equal-scoring
+	 * hits come back in docid order. Writing concurrently would leave result
+	 * sets identical but reorder them, so a validation report would name a
+	 * different sample of failing concepts from one run to the next.
+	 */
+	public Document buildDocument(Concept concept, boolean isStatedRelationship) {
+		return getConceptDocument(concept, isStatedRelationship);
+	}
+
+	/** Writes one prepared document. Call in a deterministic order. */
+	public void addDocument(Document document) throws IOException {
+		iwriter.addDocuments(List.of(document));
+	}
+
+	/**
+	 * Records the latest effective time across a concept and its relationships.
+	 *
+	 * <p>RF2 effective times are fixed-width {@code yyyyMMdd}, so the latest one
+	 * is the lexicographic maximum and no date parsing is needed. This used to
+	 * parse each value into a {@link Date} through a {@code SimpleDateFormat}
+	 * held on this writer, and then format the winner back to the same string -
+	 * per concept and per relationship, 722,404 concepts per index.
+	 *
+	 * <p>That formatter was shared mutable state, which is what stopped the
+	 * write loop being parallelised: {@code SimpleDateFormat} under concurrency
+	 * returns wrong dates rather than throwing, so the failure would have been
+	 * silently wrong effective times in the index. Comparing strings removes the
+	 * hazard and the parsing at once.
+	 */
+	private void addCardinalityToDocument(Concept concept, Document doc, boolean isStatedRelationship) {
 		final MultiValueMap<String, String> attributeGroups = new LinkedMultiValueMap<>();
-		Date maxDate = dateFormat.parse(concept.getEffectiveTime());
+		String maxEffectiveTime = requireEffectiveTime(concept.getEffectiveTime(), concept.getId());
 		for (Relationship relationship : concept.getRelationships()) {
 			if (relationship != null) {
 				if (isStatedRelationship && "900000000000011006".equals(relationship.getCharacteristicTypeId())) {
@@ -43,24 +73,56 @@ public class ReleaseWriter implements AutoCloseable {
 				} else if (!isStatedRelationship && "900000000000010007".equals(relationship.getCharacteristicTypeId())) {
 					continue;
 				}
-				if (relationship.getEffectiveTime() != null && !relationship.getEffectiveTime().isEmpty() && 
-						dateFormat.parse(relationship.getEffectiveTime()).after(maxDate)) {
-					maxDate = dateFormat.parse(relationship.getEffectiveTime());
-				}
+				maxEffectiveTime = later(maxEffectiveTime, relationship.getEffectiveTime(), concept.getId());
 				attributeGroups.add(relationship.getTypeId(), relationship.getRelationshipGroup());
 			}
 		}
 		if (concept.getConcreteRelationships() != null && !isStatedRelationship) {
 			for (ConcreteRelationship concreteRelationship : concept.getConcreteRelationships()) {
-				if (concreteRelationship.getEffectiveTime() != null && !concreteRelationship.getEffectiveTime().isEmpty() &&
-						dateFormat.parse(concreteRelationship.getEffectiveTime()).after(maxDate)) {
-					maxDate = dateFormat.parse(concreteRelationship.getEffectiveTime());
-				}
+				maxEffectiveTime = later(maxEffectiveTime, concreteRelationship.getEffectiveTime(), concept.getId());
 				attributeGroups.add(concreteRelationship.getTypeId(), concreteRelationship.getRelationshipGroup());
 			}
 		}
-		doc.add(new StringField(ConceptFieldNames.EFFECTIVE_TIME, dateFormat.format(maxDate), Field.Store.YES));
+		doc.add(new StringField(ConceptFieldNames.EFFECTIVE_TIME, maxEffectiveTime, Field.Store.YES));
 		addAttributeCardinalityDocument(doc, attributeGroups);
+	}
+
+	/** The later of two {@code yyyyMMdd} effective times, ignoring blanks. */
+	private static String later(String current, String candidate, Object conceptId) {
+		if (candidate == null || candidate.isEmpty()) {
+			return current;
+		}
+		requireEffectiveTime(candidate, conceptId);
+		return candidate.compareTo(current) > 0 ? candidate : current;
+	}
+
+	/**
+	 * Rejects an effective time that is not {@code yyyyMMdd}.
+	 *
+	 * <p>Comparing these as strings is only equivalent to comparing dates while
+	 * they really are fixed-width and numeric, so the shape is checked rather
+	 * than assumed.
+	 *
+	 * <p>This is STRICTER than the date parsing it replaces, deliberately. That
+	 * parser was lenient: it read {@code 2015-07-31} as 7 December 2014 and
+	 * indexed {@code 20141207} without complaint, and normalised {@code
+	 * 20230230} to {@code 20230302}. An index is not a place to quietly correct
+	 * a release - nothing downstream can tell that the effective time it is
+	 * reading was invented here - so a value that is not a date is now a failed
+	 * import instead.
+	 */
+	private static String requireEffectiveTime(String value, Object conceptId) {
+		if (value == null || value.length() != 8) {
+			throw new IllegalArgumentException(
+					"Concept " + conceptId + " has effectiveTime '" + value + "', which is not yyyyMMdd.");
+		}
+		for (int i = 0; i < 8; i++) {
+			if (value.charAt(i) < '0' || value.charAt(i) > '9') {
+				throw new IllegalArgumentException(
+						"Concept " + conceptId + " has effectiveTime '" + value + "', which is not yyyyMMdd.");
+			}
+		}
+		return value;
 	}
 
 	private void addAttributeCardinalityDocument(Document doc, final MultiValueMap<String, String> attributeGroups) {
@@ -97,7 +159,7 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 	}
 
-	private Document getConceptDocument(Concept concept, boolean isStatedRelationship) throws ParseException {
+	private Document getConceptDocument(Concept concept, boolean isStatedRelationship) {
 		Document conceptDoc = new Document();
 		conceptDoc.add(new StringField("type", "concept", Field.Store.YES));
 		conceptDoc.add(new StringField(ConceptFieldNames.ID, concept.getId().toString(), Field.Store.YES));
