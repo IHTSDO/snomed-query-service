@@ -1,6 +1,12 @@
 package org.ihtsdo.otf.sqs.service;
 
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.ihtsdo.otf.snomedboot.factory.LoadingProfile;
+import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.service.dto.ConceptIdResults;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResult;
 import org.ihtsdo.otf.sqs.service.dto.ConceptResults;
@@ -12,6 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
@@ -41,6 +48,182 @@ public class IntegrationTest {
 		ConceptIdResults results = snomedQueryService.eclQueryReturnConceptIdentifiers("*:260686004 != << 129264002", 0, -1);
 		assertNotNull(results);
 		results.conceptIds().forEach(System.out::println);
+	}
+
+	/**
+	 * Several {@code !=} clauses in one query must give the intersection of
+	 * each clause alone.
+	 *
+	 * <p>The two fields are chosen so the expected intersection is NOT empty.
+	 * An assertion against an empty oracle would be satisfied by any regression
+	 * that silently empties the result.
+	 */
+	@Test
+	public void testTwoNotEqualClausesOnDifferentFields() throws ServiceException {
+		assertIntersection("*:260686004 != 360314001 AND 405813007 != 129264002",
+				"*:260686004 != 360314001", "*:405813007 != 129264002");
+	}
+
+	/**
+	 * Of several {@code !=} clauses, the regex that used to locate them
+	 * rewrote only the last; the others reached the parser as
+	 * {@code attr:(* NOT X)}, which means "has a value and none of them is X"
+	 * rather than "has a value other than X". 8367003 has two methods,
+	 * 360314001 and 72651009, so
+	 * it satisfies the first clause through 72651009 - and the old rendering
+	 * dropped it because it also has 360314001.
+	 */
+	@Test
+	public void testEveryNotEqualClauseIsRewrittenNotJustTheLast() throws ServiceException {
+		assertEquals(Set.of(8367003L), assertIntersection(
+				"*:260686004 != 360314001 AND 260686004 != 129264002",
+				"*:260686004 != 360314001", "*:260686004 != 129264002"));
+	}
+
+	/**
+	 * A bracketed clause after a {@code !=} clause. The regex that used to
+	 * locate the clause ran to the last closing bracket of the query, so it
+	 * harvested 405813007 and the descendants of 442083009 as excluded values
+	 * of 260686004, and the procedure site clause disappeared: 8367003, which
+	 * has no procedure site, was returned.
+	 */
+	@Test
+	public void testClauseAfterNotEqualIsNotSwallowed() throws ServiceException {
+		assertEquals(Set.of(128927009L), assertIntersection(
+				"*:260686004 != 363675004 AND 405813007 = << 442083009",
+				"*:260686004 != 363675004", "*:405813007 = << 442083009"));
+	}
+
+	/** Two clauses whose excluded sets are identical, so their text is too. */
+	@Test
+	public void testTwoNotEqualClausesWithTheSameValueSet() throws ServiceException {
+		List<Long> both = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 129264002 AND 363698007 != 129264002", 0, -1).conceptIds();
+		assertNotNull(both);
+
+		List<Long> first = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != 129264002", 0, -1).conceptIds();
+		List<Long> second = snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:363698007 != 129264002", 0, -1).conceptIds();
+
+		Set<Long> expected = new HashSet<>(first);
+		expected.retainAll(new HashSet<>(second));
+		assertEquals(expected, new HashSet<>(both));
+	}
+
+	/**
+	 * {@code != *} excludes every value, so nothing can lie outside it. It is
+	 * answered with a query that matches nothing; the range chain could not
+	 * render it and the query failed to parse.
+	 */
+	@Test
+	public void testNotEqualToWildcardMatchesNothing() throws ServiceException {
+		assertEquals(List.of("MatchNoDocsQuery", "TermQuery:type"), leafQueries("*:260686004 != *"));
+		assertEquals(List.of(), snomedQueryService.eclQueryReturnConceptIdentifiers(
+				"*:260686004 != *", 0, -1).conceptIds());
+	}
+
+	/**
+	 * Every {@code !=} clause is answered with a term set over its own field,
+	 * including each clause of a query that carries several, and none falls
+	 * back to the range chain or reaches the index as a literal token.
+	 */
+	@Test
+	public void testEveryNotEqualClauseIsAnsweredWithATermSet() throws ServiceException {
+		assertEquals(List.of("TermInSetQuery:260686004", "TermQuery:type"),
+				leafQueries("*:260686004 != 129264002"));
+		assertEquals(List.of("TermInSetQuery:260686004", "TermInSetQuery:405813007", "TermQuery:type"),
+				leafQueries("*:260686004 != 129264002 AND 405813007 != 129264002"));
+	}
+
+	/** The escape hatch must restore the range chain, and give the same hits in the same order. */
+	@Test
+	public void testRangeFormPropertyRestoresTheOldRendering() throws ServiceException {
+		String ecl = "*:260686004 != 442083009";
+		List<Long> termSetForm = snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, -1).conceptIds();
+		System.setProperty(SnomedQueryService.RANGE_FORM_PROPERTY, "true");
+		try {
+			assertEquals(List.of("TermQuery:type", "TermRangeQuery:260686004", "TermRangeQuery:260686004"),
+					leafQueries(ecl));
+			List<Long> rangeForm = snomedQueryService.eclQueryReturnConceptIdentifiers(ecl, 0, -1).conceptIds();
+			assertEquals("both renderings must return the same concepts in the same order", rangeForm, termSetForm);
+		} finally {
+			System.clearProperty(SnomedQueryService.RANGE_FORM_PROPERTY);
+		}
+	}
+
+	/**
+	 * Proper descendants of any of the given ids. A given id is itself
+	 * returned only when it descends from another given id.
+	 */
+	@Test
+	public void testConceptsWithAnyAncestor() throws ServiceException {
+		assertEquals(List.of(), snomedQueryService.conceptsWithAnyAncestor(List.of()));
+		assertEquals(List.of(360314001L), snomedQueryService.conceptsWithAnyAncestor(List.of(129264002L)));
+
+		long model = Long.parseLong(ConceptConstants.MODEL_CONCEPT);
+		Set<Long> expected = new HashSet<>(snomedQueryService.eclQueryReturnConceptIdentifiers("<" + model, 0, -1).conceptIds());
+		expected.addAll(snomedQueryService.eclQueryReturnConceptIdentifiers("<129264002", 0, -1).conceptIds());
+		List<Long> actual = snomedQueryService.conceptsWithAnyAncestor(List.of(model, 129264002L));
+		assertEquals(expected, new HashSet<>(actual));
+		assertEquals("no concept may be returned twice", expected.size(), actual.size());
+		assertTrue("129264002 descends from the model concept, so it is returned", actual.contains(129264002L));
+		assertFalse(actual.contains(model));
+	}
+
+	/**
+	 * Asserts {@code combined} returns exactly the concepts every one of
+	 * {@code clauses} returns alone, and that this is not the empty set.
+	 */
+	private Set<Long> assertIntersection(String combined, String... clauses) throws ServiceException {
+		Set<Long> expected = null;
+		for (String clause : clauses) {
+			List<Long> ids = snomedQueryService.eclQueryReturnConceptIdentifiers(clause, 0, -1).conceptIds();
+			if (expected == null) {
+				expected = new HashSet<>(ids);
+			} else {
+				expected.retainAll(ids);
+			}
+		}
+		assertFalse("the oracle intersection must not be empty, or this proves nothing", expected.isEmpty());
+		assertEquals(expected, new HashSet<>(
+				snomedQueryService.eclQueryReturnConceptIdentifiers(combined, 0, -1).conceptIds()));
+		return expected;
+	}
+
+	/** The leaf queries {@code ecl} parses to, as {@code QueryClass:field}, sorted. */
+	private List<String> leafQueries(String ecl) throws ServiceException {
+		List<String> leaves = new ArrayList<>();
+		snomedQueryService.getECLQuery(ecl).visit(new QueryVisitor() {
+			@Override
+			public void consumeTerms(Query query, Term... terms) {
+				for (Term term : terms) {
+					assertFalse("a token reached the index as a term: " + term, term.text().contains("__"));
+				}
+				add(query, terms[0].field());
+			}
+
+			@Override
+			public void consumeTermsMatching(Query query, String field, Supplier<ByteRunAutomaton> automaton) {
+				add(query, field);
+			}
+
+			@Override
+			public void visitLeaf(Query query) {
+				leaves.add(query.getClass().getSimpleName());
+			}
+
+			@Override
+			public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+				return this;
+			}
+
+			private void add(Query query, String field) {
+				leaves.add(query.getClass().getSimpleName() + ":" + field);
+			}
+		});
+		Collections.sort(leaves);
+		return leaves;
 	}
 
 	@Test

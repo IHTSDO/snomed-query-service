@@ -137,6 +137,10 @@ public class ExpressionConstraintToLuceneConverter {
 			isMemberOf = true;
 		}
 
+		/** Matches every concept document; see {@link #enterEclfocusconcept}. */
+		private static final String ANY_CONCEPT =
+				ConceptFieldNames.TYPE + ":" + ConceptFieldNames.TYPE_CONCEPT;
+
 		@Override
 		public void enterConstraintoperator(ECLParser.ConstraintoperatorContext ctx) {
 			constraintOperatorContext = ctx;
@@ -146,7 +150,13 @@ public class ExpressionConstraintToLuceneConverter {
 		public void enterEclfocusconcept(ECLParser.EclfocusconceptContext ctx) {
 			if (ctx.wildcard() != null) {
 				if (!inAttribute) {
-					luceneQuery += ConceptFieldNames.ID + ":*";
+					// "any concept" as a single term rather than "id:*", which is
+					// a wildcard the classic parser expands by enumerating the
+					// whole id term dictionary, one term per concept.
+					// Every document this index holds is a concept document
+					// carrying both "type" and "id" (ReleaseWriter writes only
+					// one kind), so the two select the same set.
+					luceneQuery += ANY_CONCEPT;
 				} else {
 					luceneQuery += "*";
 				}
