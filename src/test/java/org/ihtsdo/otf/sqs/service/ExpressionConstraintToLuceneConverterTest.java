@@ -101,6 +101,16 @@ public class ExpressionConstraintToLuceneConverterTest {
 
 	}
 
+	/**
+	 * The member set is not known when converting, so an operator on a
+	 * member-of attribute value cannot be rendered. It used to be dropped,
+	 * leaving "260686004:memberOf:723264001", which fails to parse.
+	 */
+	@Test(expected = UnsupportedOperationException.class)
+	public void test_constraintOperatorOnMemberOfAttributeValueIsRefused() {
+		parser.parse("*:260686004 = << ^723264001");
+	}
+
 	@Test
 	public void test_refinedEclWithConcreteValueMinRangeOnly() {
 		assertConversion("<< 373873005: 3264475007 >= #10",
