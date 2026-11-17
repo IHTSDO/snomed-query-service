@@ -193,24 +193,10 @@ public class ReleaseWriter implements AutoCloseable {
 		conceptDoc.add(new TextField(ConceptFieldNames.FSN, concept.getFsn(), Field.Store.YES));
 		conceptDoc.add(new SortedNumericDocValuesField(ConceptFieldNames.FSN_LENGTH, concept.getFsn() != null ? concept.getFsn().length() : 100));
 
-		final Map<String, Set<String>> attributes = isStatedRelationship ? concept.getStatedAttributes() : concept.getInferredAttributes();
-		for (String type : attributes.keySet()) {
-			for (String value : attributes.get(type)) {
-				conceptDoc.add(new StringField(type, value, Field.Store.YES));
-			}
-		}
+		addAttributeFields(conceptDoc, isStatedRelationship ? concept.getStatedAttributes() : concept.getInferredAttributes());
 		// concrete values
 		if (!isStatedRelationship && concept.getInferredConcreteAttributes() != null) {
-			for (Map.Entry<String, Set<String>> entry: concept.getInferredConcreteAttributes().entrySet()) {
-				for (String value : entry.getValue()) {
-					// The string field is used for exact match and NOT query
-					if (value.startsWith("#")) {
-						conceptDoc.add(new FloatPoint( entry.getKey() + "_value", Float.parseFloat(value.replace("#",""))));
-					} else {
-						conceptDoc.add(new StringField(entry.getKey(), value.replace("\"",""), Field.Store.YES));
-					}
-				}
-			}
+			addConcreteValueFields(conceptDoc, concept.getInferredConcreteAttributes());
 		}
 		final Set<Long> ancestorIds = isStatedRelationship ? concept.getStatedAncestorIds() : concept.getInferredAncestorIds();
 		for (Long ancestorId : ancestorIds) {
@@ -221,6 +207,27 @@ public class ReleaseWriter implements AutoCloseable {
 		}
 		addCardinalityToDocument(concept, conceptDoc, isStatedRelationship);
 		return conceptDoc;
+	}
+
+	private static void addAttributeFields(Document conceptDoc, Map<String, Set<String>> attributes) {
+		for (String type : attributes.keySet()) {
+			for (String value : attributes.get(type)) {
+				conceptDoc.add(new StringField(type, value, Field.Store.YES));
+			}
+		}
+	}
+
+	private static void addConcreteValueFields(Document conceptDoc, Map<String, Set<String>> concreteAttributes) {
+		for (Map.Entry<String, Set<String>> entry: concreteAttributes.entrySet()) {
+			for (String value : entry.getValue()) {
+				// The string field is used for exact match and NOT query
+				if (value.startsWith("#")) {
+					conceptDoc.add(new FloatPoint( entry.getKey() + "_value", Float.parseFloat(value.replace("#",""))));
+				} else {
+					conceptDoc.add(new StringField(entry.getKey(), value.replace("\"",""), Field.Store.YES));
+				}
+			}
+		}
 	}
 
 	@Override
