@@ -17,7 +17,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.BytesRef;
 import org.ihtsdo.otf.sqs.domain.ConceptConstants;
 import org.ihtsdo.otf.sqs.domain.ConceptFieldNames;
 import org.ihtsdo.otf.sqs.domain.DescriptionFieldNames;
@@ -59,6 +58,7 @@ public class SnomedQueryService {
 	private static final String MATCH_NOTHING_TOKEN = "__matchnothing__";
 	/** Restores the pre-existing range-chain rendering. */
 	static final String RANGE_FORM_PROPERTY = "sqs.notin.rangeform";
+	private static final String EMPTY_INTERNAL_FUNCTION_RESULT = "{} internalFunction returned empty result therefore the default value 0 is used.";
 	private final ExpressionConstraintToLuceneConverter eclToLucene;
 	private final IndexSearcher indexSearcher;
 	private final Analyzer analyzer;
@@ -406,7 +406,7 @@ public class SnomedQueryService {
 			conceptRelatives.add(conceptId);
 		}
 		if (conceptRelatives.isEmpty()) {
-			logger.warn("{} internalFunction returned empty result therefore the default value 0 is used.", internalFunction.name());
+			logger.warn(EMPTY_INTERNAL_FUNCTION_RESULT, internalFunction.name());
 			conceptRelatives.add("0");
 		}
 		return conceptRelatives;
@@ -437,7 +437,7 @@ public class SnomedQueryService {
 			members.add(getConceptId(scoreDoc));
 		}
 		if (members.isEmpty()) {
-			logger.warn("{} internalFunction returned empty result therefore the default value 0 is used.", internalFunction.name());
+			logger.warn(EMPTY_INTERNAL_FUNCTION_RESULT, internalFunction.name());
 			return buildOptionsList(List.of("0"), true);
 		}
 
@@ -468,7 +468,7 @@ public class SnomedQueryService {
 			relatives.addAll(members);
 		}
 		if (relatives.isEmpty()) {
-			logger.warn("{} internalFunction returned empty result therefore the default value 0 is used.", internalFunction.name());
+			logger.warn(EMPTY_INTERNAL_FUNCTION_RESULT, internalFunction.name());
 			relatives.add("0");
 		}
 		return buildOptionsList(new ArrayList<>(relatives), true);
