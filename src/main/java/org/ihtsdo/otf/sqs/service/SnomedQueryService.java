@@ -320,36 +320,52 @@ public class SnomedQueryService {
 			}
 			Arrays.sort(scratch, 0, size);
 
-			int leafIndex = 0;
-			NumericDocValues docValues = null;
-			int leafBase = 0;
-			int leafMax = -1;
-
+			final ConceptIdReader reader = new ConceptIdReader(leaves);
 			for (int i = 0; i < size; i++) {
 				final int docId = (int) (scratch[i] >>> 32);
 				final int slot = start + (int) (scratch[i] & 0xFFFFFFFFL);
-				if (docId >= leafMax) {
-					while (leafIndex < leaves.size()) {
-						final LeafReaderContext leaf = leaves.get(leafIndex++);
-						leafBase = leaf.docBase;
-						leafMax = leafBase + leaf.reader().maxDoc();
-						if (docId < leafMax) {
-							docValues = leaf.reader().getNumericDocValues(ConceptFieldNames.ID_DOC_VALUES);
-							break;
-						}
-					}
-				}
-				if (docValues == null || !docValues.advanceExact(docId - leafBase)) {
-					// An index written before the doc-values field existed.
-					// Fall back per hit so an old index still reads correctly,
-					// only slowly.
-					conceptIds.set(slot, Long.parseLong(getConceptId(new ScoreDoc(docId, 0f))));
-					continue;
-				}
-				conceptIds.set(slot, docValues.longValue());
+				conceptIds.set(slot, reader.read(docId));
 			}
 		}
 		return conceptIds;
+	}
+
+	/** Reads concept ids for docids presented in non-decreasing order, one segment at a time. */
+	private class ConceptIdReader {
+		private final List<LeafReaderContext> leaves;
+		private int leafIndex = 0;
+		private NumericDocValues docValues = null;
+		private int leafBase = 0;
+		private int leafMax = -1;
+
+		ConceptIdReader(List<LeafReaderContext> leaves) {
+			this.leaves = leaves;
+		}
+
+		long read(int docId) throws IOException {
+			if (docId >= leafMax) {
+				advanceTo(docId);
+			}
+			if (docValues == null || !docValues.advanceExact(docId - leafBase)) {
+				// An index written before the doc-values field existed.
+				// Fall back per hit so an old index still reads correctly,
+				// only slowly.
+				return Long.parseLong(getConceptId(new ScoreDoc(docId, 0f)));
+			}
+			return docValues.longValue();
+		}
+
+		private void advanceTo(int docId) throws IOException {
+			while (leafIndex < leaves.size()) {
+				final LeafReaderContext leaf = leaves.get(leafIndex++);
+				leafBase = leaf.docBase;
+				leafMax = leafBase + leaf.reader().maxDoc();
+				if (docId < leafMax) {
+					docValues = leaf.reader().getNumericDocValues(ConceptFieldNames.ID_DOC_VALUES);
+					return;
+				}
+			}
+		}
 	}
 
 	private ConceptResults getConceptResults(Query query, int offset, int limit) throws ServiceException {
@@ -479,8 +495,8 @@ public class SnomedQueryService {
 		// * AND 260686004: (* NOT ((360314001 OR 129264002) OR (405813007)))
 		//
 		// "value NOT in S" is the COMPLEMENT of S: a document matches when it
-		// carries some value outside S. This used to be rendered as one {a TO b}
-		// range per gap between consecutive members of S, and the classic parser
+		// carries some value outside S. This used to be rendered as one
+		// {a TO b} range per gap between consecutive members of S, and the classic parser
 		// builds a state machine for every one of those ranges.
 		//
 		// Each clause is replaced by a token naming the excluded ids, which
@@ -567,69 +583,6 @@ public class SnomedQueryService {
 			}
 		}
 		return -1;
-	}
-
-	/**
-	 * Documents holding a value of {@code field} that is not in {@code excluded},
-	 * scored exactly as the range chain scored them.
-	 *
-	 * <p>The range chain is one constant-scoring {@code {a TO b}} clause per gap
-	 * between consecutive excluded ids, so a document scored one point for each
-	 * gap it holds a value in, and hits came back in that order. A single term
-	 * set would score every match the same and return hits in index order
-	 * instead, which changes which concepts a caller reporting the first N
-	 * results names. So the values outside the set are grouped by gap, one
-	 * {@link TermInSetQuery} per non-empty gap: the same score per document,
-	 * at most as many clauses as the chain had, and no state machines.
-	 *
-	 * <p>Only values the field actually holds are listed. A value that is not
-	 * in the index cannot match, so the documents selected are the same.
-	 *
-	 * @param field    the attribute the clause constrains, as given to the parser
-	 * @param excluded the set whose complement is wanted
-	 */
-	private Query notInQuery(String field, List<BytesRef> excluded) throws IOException {
-		Terms terms = MultiTerms.getTerms(indexSearcher.getIndexReader(), field);
-		if (terms == null) {
-			// No document carries any value for this attribute, so none can
-			// carry one outside the set.
-			return new MatchNoDocsQuery("no values for " + field);
-		}
-		BooleanQuery.Builder gaps = new BooleanQuery.Builder();
-		Query onlyGap = null;
-		int gapCount = 0;
-		List<BytesRef> gap = new ArrayList<>();
-		// excluded.get(bound) is the first excluded id not below the current
-		// term, so bound numbers the gap the term falls in
-		int bound = 0;
-		TermsEnum it = terms.iterator();
-		for (BytesRef term = it.next(); term != null; term = it.next()) {
-			int previousBound = bound;
-			while (bound < excluded.size() && excluded.get(bound).compareTo(term) < 0) {
-				bound++;
-			}
-			if (bound != previousBound && !gap.isEmpty()) {
-				onlyGap = new TermInSetQuery(field, gap);
-				gaps.add(onlyGap, BooleanClause.Occur.SHOULD);
-				gapCount++;
-				gap = new ArrayList<>();
-			}
-			if (bound < excluded.size() && excluded.get(bound).bytesEquals(term)) {
-				continue;
-			}
-			// Copied: TermsEnum reuses the BytesRef it returns.
-			gap.add(BytesRef.deepCopyOf(term));
-		}
-		if (!gap.isEmpty()) {
-			onlyGap = new TermInSetQuery(field, gap);
-			gaps.add(onlyGap, BooleanClause.Occur.SHOULD);
-			gapCount++;
-		}
-		if (gapCount == 0) {
-			// Every value present is in the set, so nothing lies outside it.
-			return new MatchNoDocsQuery("every value of " + field + " is excluded");
-		}
-		return gapCount == 1 ? onlyGap : gaps.build();
 	}
 
 	private String buildRangeList(List<String> conceptRelatives) {
@@ -798,6 +751,69 @@ public class SnomedQueryService {
 				}
 			}
 			return super.getFieldQuery(field, queryText, quoted);
+		}
+
+		/**
+		 * Documents holding a value of {@code field} that is not in {@code excluded},
+		 * scored exactly as the range chain scored them.
+		 *
+		 * <p>The range chain is one constant-scoring {@code {a TO b}} clause per gap
+		 * between consecutive excluded ids, so a document scored one point for each
+		 * gap it holds a value in, and hits came back in that order. A single term
+		 * set would score every match the same and return hits in index order
+		 * instead, which changes which concepts a caller reporting the first N
+		 * results names. So the values outside the set are grouped by gap, one
+		 * {@link TermInSetQuery} per non-empty gap: the same score per document,
+		 * at most as many clauses as the chain had, and no state machines.
+		 *
+		 * <p>Only values the field actually holds are listed. A value that is not
+		 * in the index cannot match, so the documents selected are the same.
+		 *
+		 * @param field    the attribute the clause constrains, as given to the parser
+		 * @param excluded the set whose complement is wanted
+		 */
+		private Query notInQuery(String field, List<BytesRef> excluded) throws IOException {
+			Terms terms = MultiTerms.getTerms(indexSearcher.getIndexReader(), field);
+			if (terms == null) {
+				// No document carries any value for this attribute, so none can
+				// carry one outside the set.
+				return new MatchNoDocsQuery("no values for " + field);
+			}
+			BooleanQuery.Builder gaps = new BooleanQuery.Builder();
+			Query onlyGap = null;
+			int gapCount = 0;
+			List<BytesRef> gap = new ArrayList<>();
+			// excluded.get(bound) is the first excluded id not below the current
+			// term, so bound numbers the gap the term falls in
+			int bound = 0;
+			TermsEnum it = terms.iterator();
+			for (BytesRef term = it.next(); term != null; term = it.next()) {
+				int previousBound = bound;
+				while (bound < excluded.size() && excluded.get(bound).compareTo(term) < 0) {
+					bound++;
+				}
+				if (bound != previousBound && !gap.isEmpty()) {
+					onlyGap = new TermInSetQuery(field, gap);
+					gaps.add(onlyGap, BooleanClause.Occur.SHOULD);
+					gapCount++;
+					gap = new ArrayList<>();
+				}
+				if (bound < excluded.size() && excluded.get(bound).bytesEquals(term)) {
+					continue;
+				}
+				// Copied: TermsEnum reuses the BytesRef it returns.
+				gap.add(BytesRef.deepCopyOf(term));
+			}
+			if (!gap.isEmpty()) {
+				onlyGap = new TermInSetQuery(field, gap);
+				gaps.add(onlyGap, BooleanClause.Occur.SHOULD);
+				gapCount++;
+			}
+			if (gapCount == 0) {
+				// Every value present is in the set, so nothing lies outside it.
+				return new MatchNoDocsQuery("every value of " + field + " is excluded");
+			}
+			return gapCount == 1 ? onlyGap : gaps.build();
 		}
 
 		@Override
