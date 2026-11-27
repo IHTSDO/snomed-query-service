@@ -250,6 +250,10 @@ public class ExpressionConstraintToLuceneConverter {
 					} else {
 						luceneQuery += InternalFunction.ATTRIBUTE_ANCESTOR_OF + "(" + focusConceptId + ")";
 					}
+				} else {
+					// childOf, childOrSelfOf, parentOf and parentOrSelfOf parse but have no
+					// translation; appending nothing left a query the Lucene parser rejects.
+					throwUnsupported("constraint operator " + ctx.getText());
 				}
 			}
 		}
