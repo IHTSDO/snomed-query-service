@@ -167,6 +167,19 @@ public class ExpressionConstraintToLuceneConverterTest {
 	}
 
 
+	@Test
+	public void test_childAndParentConstraintOperatorsAreReportedAsUnsupported() {
+		for (String operator : new String[] {"<!", "<<!", ">!", ">>!"}) {
+			for (String ecl : new String[] {
+					operator + "71388002",
+					"<<71388002 MINUS " + operator + "71388002",
+					"<404684003:363698007=" + operator + "39057004"}) {
+				UnsupportedOperationException e = Assert.assertThrows(ecl, UnsupportedOperationException.class, () -> parser.parse(ecl));
+				Assert.assertEquals("constraint operator " + operator + " is not currently supported.", e.getMessage());
+			}
+		}
+	}
+
 	private void assertConversion(String ecQuery, String expectedLuceneQuery) {
 		Assert.assertEquals(expectedLuceneQuery, parser.parse(ecQuery));
 	}

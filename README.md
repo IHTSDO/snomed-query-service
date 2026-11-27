@@ -10,6 +10,10 @@ Descendant Of | < 404684003 \|clinical finding\| | Yes
 Descendant Or Self Of | << 73211009 \|diabetes mellitus\| | Yes
 Ancestor Of | > 40541001 \|acute pulmonary edema\| | Yes
 Ancestor Or Self Of | >> 40541001\|acute pulmonary edema\| | Yes
+Child Of | <! 404684003 \|clinical finding\| | No
+Child Or Self Of | <<! 404684003 \|clinical finding\| | No
+Parent Of | >! 40541001 \|acute pulmonary edema\| | No
+Parent Or Self Of | >>! 40541001 \|acute pulmonary edema\| | No
 MemberOf | ^ 700043003 \|example problem list concepts reference set\| | Yes
 Any | * | Yes
 Attribute | * : 246075003 \|causative agent\| = 387517004 \|paracetamol\| | Yes
@@ -18,7 +22,7 @@ Focus Concept Range, Attribute Value Range | < 404684003 \|clinical finding\|: 3
 Focus Concept Range, Attributes with Value Ranges | < 404684003 \|clinical finding\|: 363698007 \|finding site\| = << 39057004 \|pulmonary valve structure\|, 116676008 \|associated morphology\| = << 415582006 \|stenosis\| | Yes
 Attribute Grouping | < 404684003 \|clinical finding\|: { 363698007 \|finding site\| = << 39057004 \|pulmonary valve structure\|, 116676008 \|associated morphology\| = << 415582006 \|stenosis\|}, { 363698007 \|finding site\| = << 53085002 \|right ventricular structure\|, 116676008 \|associated morphology\| = << 56246009 \|hypertrophy\|} | Yes
 Nested Attribute | < 404684003 \|clinical finding\|: 47429007 \|associated with\| = (< 404684003 \|clinical finding\|: 116676008 \|associated morphology\| = << 55641003 \|infarct\|) | Yes
-Attribute Operator | << 404684003 \|clinical finding\|: << 47429007 \|associated with\| = << 267038008 \|edema\| | Yes
+Attribute Operator | << 404684003 \|clinical finding\|: << 47429007 \|associated with\| = << 267038008 \|edema\| | No
 Concrete Values | < 373873005 \|pharmaceutical / biologic product\|: 111115 \|trade name\| = "PANADOL" | Yes
 Concrete Values | < 27658006 \|amoxicillin\|: 411116001 \|has dose form\| = << 385049006 \|capsule\|, { 111115 \|has basis of strength\| = ( 111115 \|amoxicillin only\|: 111115 \|strength magnitude\| >= #500, 111115 \|strength unit\| = 258684004 \|mg\|)} | Yes
 Reverse Of | < 105590001 \|substance\|: R 127489000 \|has active ingredient\| = 111115 \|TRIPHASIL tablet\| | No
